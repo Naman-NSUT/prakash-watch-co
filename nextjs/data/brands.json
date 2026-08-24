@@ -1,0 +1,192 @@
+[
+  {
+    "brand": "boat",
+    "domains": [
+      "boat-lifestyle.com"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "casio",
+    "domains": [
+      "casio.com/in",
+      "casioindiacompany.com"
+    ],
+    "urls": [
+      "https://www.casio.com/in/watches/"
+    ],
+    "blocksBots": true,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent. Refuses automated readers."
+  },
+  {
+    "brand": "citizen",
+    "domains": [
+      "citizenwatches.in",
+      "citizen.in"
+    ],
+    "urls": [],
+    "blocksBots": true,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent. Refuses automated readers."
+  },
+  {
+    "brand": "daniel wellington",
+    "domains": [
+      "danielwellington.com/in"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "fastrack",
+    "domains": [
+      "fastrack.in"
+    ],
+    "urls": [],
+    "blocksBots": true,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent. Refuses automated readers."
+  },
+  {
+    "brand": "fire-boltt",
+    "domains": [
+      "fireboltt.com"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "fossil",
+    "domains": [
+      "fossil.in"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "garmin",
+    "domains": [
+      "garmin.co.in"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "noise",
+    "domains": [
+      "gonoise.com"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "rado",
+    "domains": [
+      "rado.com/en-in"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "seiko",
+    "domains": [
+      "seikowatches.co.in",
+      "seikowatches.com",
+      "seiko.co.in"
+    ],
+    "urls": [
+      "https://seikowatches.co.in/"
+    ],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "sonata",
+    "domains": [
+      "sonatawatches.in"
+    ],
+    "urls": [],
+    "blocksBots": true,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent. Refuses automated readers."
+  },
+  {
+    "brand": "tag heuer",
+    "domains": [
+      "tagheuer.com/in"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "timex",
+    "domains": [
+      "timexindia.com",
+      "timex.in"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "tissot",
+    "domains": [
+      "tissotwatches.com/en-in"
+    ],
+    "urls": [
+      "https://www.tissotwatches.com/en-in"
+    ],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  },
+  {
+    "brand": "titan",
+    "domains": [
+      "titanworld.com",
+      "titan.co.in"
+    ],
+    "urls": [
+      "https://titanworld.com/"
+    ],
+    "blocksBots": false,
+    "origin": "seed",
+    "checkedAt": "",
+    "note": "Shipped with the agent."
+  }
+]

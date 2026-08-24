@@ -1,0 +1,36 @@
+# --- Secrets -----------------------------------------------------------------
+.env
+.env.local
+.env*.local
+
+# --- Dependencies / build ----------------------------------------------------
+node_modules/
+.next/
+out/
+build/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# --- Agent working files -----------------------------------------------------
+.agent-cache/
+nextjs/.agent-cache/
+
+# --- The shop's live data ----------------------------------------------------
+# Deliberately not published. The stock sheet and the artifacts derived from it
+# carry selling prices and MRPs, from which the shop's margins are trivially
+# read; the media directory holds brand product photography whose rights sit with
+# the brands, not with us. The code that produces all of it is here; the business
+# data is not. Remove these lines if the shop decides otherwise.
+*.xlsx
+*.xls
+nextjs/data/catalog/
+nextjs/data/uploads/
+nextjs/data/media/
+nextjs/data/runs/
+
+# --- OS noise ----------------------------------------------------------------
+.DS_Store
+*.log
+npm-debug.log*

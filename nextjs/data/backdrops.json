@@ -1,0 +1,56 @@
+[
+  {
+    "id": "ink",
+    "name": "Ink",
+    "url": "/media/_backdrops/ink.webp",
+    "css": "radial-gradient(120% 100% at 50% 42%, #141210 0%, #050505 70%)",
+    "luminance": 0.07,
+    "hue": null,
+    "note": "Deepest of the set. For bright steel and white dials."
+  },
+  {
+    "id": "graphite",
+    "name": "Graphite",
+    "url": "/media/_backdrops/graphite.webp",
+    "css": "radial-gradient(120% 100% at 50% 42%, #24262b 0%, #0d0e10 70%)",
+    "luminance": 0.13,
+    "hue": 220.0,
+    "note": "Cool near-black. For gold, bronze and warm dials."
+  },
+  {
+    "id": "bronze",
+    "name": "Bronze",
+    "url": "/media/_backdrops/bronze.webp",
+    "css": "radial-gradient(120% 100% at 50% 42%, #3a2412 0%, #120c07 70%)",
+    "luminance": 0.16,
+    "hue": 28.0,
+    "note": "Warm amber glow. Complements blue dials without competing."
+  },
+  {
+    "id": "slate",
+    "name": "Slate",
+    "url": "/media/_backdrops/slate.webp",
+    "css": "radial-gradient(120% 100% at 50% 42%, #333a44 0%, #12151a 70%)",
+    "luminance": 0.21,
+    "hue": 215.0,
+    "note": "Cool mid grey. For warm metals and black resin."
+  },
+  {
+    "id": "stone",
+    "name": "Stone",
+    "url": "/media/_backdrops/stone.webp",
+    "css": "radial-gradient(120% 100% at 50% 42%, #4a443c 0%, #17151220 70%)",
+    "luminance": 0.27,
+    "hue": 35.0,
+    "note": "Warm mid stone. Lifts black and dark grey watches off the page."
+  },
+  {
+    "id": "clay",
+    "name": "Clay",
+    "url": "/media/_backdrops/clay.webp",
+    "css": "radial-gradient(120% 100% at 50% 42%, #5b463a 0%, #1a1310 70%)",
+    "luminance": 0.31,
+    "hue": 20.0,
+    "note": "Lightest of the set, warm and earthy. For matte black cases."
+  }
+]
