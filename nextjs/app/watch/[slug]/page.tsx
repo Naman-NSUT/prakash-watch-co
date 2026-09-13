@@ -79,7 +79,9 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
           </h1>
 
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 22, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 26 }}>{formatInr(product.price.selling)}</span>
+            <span style={{ fontSize: 26 }}>
+              {product.price.selling === null ? "Price on request" : formatInr(product.price.selling)}
+            </span>
             {product.price.mrp ? (
               <span className="mono" style={{ fontSize: 13, color: "var(--faint)", textDecoration: "line-through" }}>
                 {formatInr(product.price.mrp)}

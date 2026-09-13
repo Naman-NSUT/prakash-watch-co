@@ -12,6 +12,8 @@ import time
 from collections import defaultdict
 from urllib.parse import urlparse
 
+from typing import Any
+
 import httpx
 
 from .cache import Cache
@@ -179,6 +181,33 @@ class HttpClient:
 
         self.cache.set_json("page", url, result)
         return result
+
+    async def get_json(self, url: str) -> Any | None:
+        """Fetches a JSON document, with the same robots and caching rules as a page.
+
+        Separate from get_html because that one insists on an HTML content-type —
+        correct for scraping, wrong for a storefront's product feed, which is the
+        one source that reliably identifies a reference.
+        """
+        cached = self.cache.get_json("doc", url, PAGE_TTL_S)
+        if cached is not None:
+            return None if isinstance(cached, dict) and cached.get("__failed") else cached
+
+        if not await self.is_allowed(url):
+            self.cache.set_json("doc", url, {"__failed": True})
+            return None
+
+        try:
+            response = await self._request(url, {"accept": "application/json"})
+            if response.status_code >= 400:
+                raise httpx.HTTPError(f"HTTP {response.status_code}")
+            payload = response.json()
+        except (httpx.HTTPError, UnicodeDecodeError, ValueError):
+            self.cache.set_json("doc", url, {"__failed": True})
+            return None
+
+        self.cache.set_json("doc", url, payload)
+        return payload
 
     async def get_binary(self, url: str, max_bytes: int) -> tuple[bytes, str] | None:
         """Downloads with a hard size ceiling, abandoning oversized responses."""

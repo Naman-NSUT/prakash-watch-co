@@ -18,6 +18,12 @@ export type AgentEvent =
       sheets: string[];
       skippedSheets: Array<{ sheet: string; reason: string }>;
     }
+  /** Which half of an uploaded sheet this run is the shop's business. */
+  | { type: "sheet:partitioned"; mode: "update" | "add"; kept: number; setAside: number }
+  /** A whole-run step that is not about one watch — reading catalogues, say. */
+  | { type: "run:stage"; stage: string }
+  /** How much of the sheet a published catalogue can answer outright. */
+  | { type: "sheet:planned"; covered: number; uncovered: number; catalogued: number }
   | { type: "row:start"; rowNumber: number; sku: string; label: string }
   | { type: "row:stage"; rowNumber: number; sku: string; stage: string; detail: string }
   | { type: "row:warn"; rowNumber: number; sku: string; message: string }

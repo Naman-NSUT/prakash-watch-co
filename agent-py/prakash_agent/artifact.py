@@ -35,7 +35,12 @@ from .util import format_inr, make_sku, now_iso, read_json, write_json
 #: Specifications a shopper expects; used to score how complete a listing is.
 CORE_FIELDS = ("movement", "case_material", "case_diameter_mm", "water_resistance", "crystal", "strap_material")
 
-BLOCKING_FLAGS = ("no-sources", "model-mismatch", "no-images", "unverified-copy")
+#: Flags that hold a listing back from the shop's website. A missing price is
+#: deliberately NOT among them: a brand master carries no prices, and the shop
+#: would rather show the watch with what is known and quote at the counter than
+#: not show it at all. The flag is still raised — it is worth knowing — it simply
+#: does not block.
+BLOCKING_FLAGS = ("no-sources", "model-mismatch", "no-images", "unverified-copy", "provisional-image")
 
 
 def normalise_gender(value: str | None) -> str | None:
@@ -210,7 +215,7 @@ def build_product(
     # evidence about the page — often that it describes a different reference —
     # rather than as a doubt about the stock list.
     listed = [page.listed_price for page in pages if page.listed_price]
-    if listed:
+    if listed and row.price:
         closest = min(listed, key=lambda price: abs(price - row.price))
         if abs(row.price - closest) / closest > 0.6:
             flag("price-outlier")
@@ -226,9 +231,17 @@ def build_product(
     image_score = min(1.0, (len(images) / 3) * 0.5 + average_match * 0.5) if images else 0.0
     overall = round(identity * 0.45 + spec_score * 0.3 + image_score * 0.25, 3)
 
+    # Unpriced rows come from a brand master. They still list: the card says
+    # "price on request" and the counter quotes. Flagged so the shop can find them
+    # and fill the prices in, but not held back — a watch nobody can see is worth
+    # less than one priced on asking.
+    if row.price is None:
+        flag("no-price")
+        notes.append("The sheet carried no price. The listing shows 'price on request' until one is set.")
+
     status = "needs_review" if (any(f in flags for f in BLOCKING_FLAGS) or overall < 0.55) else "ready"
 
-    mrp = row.mrp if (row.mrp and row.mrp > row.price) else None
+    mrp = row.mrp if (row.mrp and row.price and row.mrp > row.price) else None
 
     return WatchProduct(
         sku=sku,
@@ -244,8 +257,9 @@ def build_product(
             currency="INR",
             selling=row.price,
             mrp=mrp,
-            discount_pct=round((mrp - row.price) / mrp * 100) if mrp else None,
+            discount_pct=round((mrp - row.price) / mrp * 100) if (mrp and row.price) else None,
         ),
+        cost_price=row.cost_price,
         collection=infer_collection(facts.collection, row.collection_hint, attributes),
         gender=normalise_gender(row.gender) or normalise_gender(facts.gender),
         tags=facts.tags,
@@ -276,6 +290,80 @@ def build_product(
             queries=queries,
         ),
     )
+
+
+#: What a later sheet is allowed to change on a listing that already exists.
+#: Commercial facts only — the shop's own numbers. Nothing researched is touched,
+#: because a discount sheet knows the price and knows nothing about the movement.
+def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProduct, list[str]] | None:
+    """Applies a later sheet's commercial data to a listing already in the catalogue.
+
+    The shop re-uploads sheets: a discount run, a stock count, a price revision.
+    Re-researching those rows would cost money to arrive at the same photographs
+    and the same specification, so the research is kept and only the shop's own
+    figures move. Returns None when the sheet says nothing new.
+
+    A sheet price also settles a price the agent had to look up: the shop's figure
+    is authoritative, so the estimate and its flag go.
+    """
+    changes: list[str] = []
+
+    if row.price is not None and row.price != product.price.selling:
+        changes.append(f"price {format_inr(product.price.selling)} → {format_inr(row.price)}")
+        product.price.selling = row.price
+
+    if row.mrp is not None and row.mrp != product.price.mrp:
+        changes.append(f"MRP {format_inr(product.price.mrp)} → {format_inr(row.mrp)}")
+        product.price.mrp = row.mrp
+
+    # Recomputed rather than carried, so a revised price cannot leave a stale
+    # discount percentage on the card.
+    selling, mrp = product.price.selling, product.price.mrp
+    if mrp and selling and mrp > selling:
+        product.price.discount_pct = round((mrp - selling) / mrp * 100)
+    else:
+        product.price.mrp = None if (mrp and selling and mrp <= selling) else product.price.mrp
+        product.price.discount_pct = None
+
+    if row.cost_price is not None and row.cost_price != product.cost_price:
+        changes.append("cost price set")
+        product.cost_price = row.cost_price
+
+    if row.quantity is not None and row.quantity != product.quantity:
+        changes.append(f"quantity {product.quantity} → {row.quantity}")
+        product.quantity = row.quantity
+        product.in_stock = row.quantity > 0
+
+    if row.model_name and not product.model_name:
+        changes.append("model name filled in")
+        product.model_name = row.model_name
+        product.title = f"{product.brand} {row.model_name}"
+
+    if not changes:
+        return None
+
+    # A price the shop has now stated is no longer an estimate, and no longer absent.
+    #
+    # The test is what *this sheet* said, not what the listing happens to hold.
+    # Testing the listing's own figure cleared the warning off prices the agent had
+    # looked up from the trade: a sheet carrying only stock counts — which is a
+    # shape the parser deliberately accepts — would strip "estimated-price" from
+    # every row it touched and write "price is now the shop's own" into the report,
+    # which was untrue. The flag and its note are the only record of where a price
+    # came from, and a re-run trusts an unflagged price as the shop's, so the
+    # laundering could not be undone.
+    flags = [f for f in product.review.flags if f not in ("estimated-price", "no-price")] \
+        if row.price is not None else list(product.review.flags)
+    if flags != list(product.review.flags):
+        product.review.flags = flags  # type: ignore[assignment]
+        product.review.notes = [n for n in product.review.notes if "Price taken from" not in n]
+        changes.append("price is now the shop's own")
+        # The status may have hinged on a flag that has just gone.
+        blocking = any(f in flags for f in BLOCKING_FLAGS)
+        product.status = "needs_review" if (blocking or product.confidence.overall < 0.55) else "ready"
+
+    product.meta.updated_at = now_iso()
+    return product, changes
 
 
 def artifact_path(config: AgentConfig, sku: str) -> Path:

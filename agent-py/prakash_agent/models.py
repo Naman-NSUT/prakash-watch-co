@@ -29,7 +29,10 @@ REVIEW_FLAGS = (
     "price-outlier",
     "unverified-copy",
     "manual-images-only",
+    "provisional-image",
     "llm-unavailable",
+    "no-price",
+    "estimated-price",
 )
 ReviewFlag = Literal[
     "no-images",
@@ -42,7 +45,10 @@ ReviewFlag = Literal[
     "price-outlier",
     "unverified-copy",
     "manual-images-only",
+    "provisional-image",
     "llm-unavailable",
+    "no-price",
+    "estimated-price",
 ]
 
 REVIEW_FLAG_EXPLANATIONS: dict[str, str] = {
@@ -56,7 +62,10 @@ REVIEW_FLAG_EXPLANATIONS: dict[str, str] = {
     "price-outlier": "A source quotes a very different price — often a sign it describes another reference. The shop's price is unaffected.",
     "unverified-copy": "No specification was confirmed, so the copy is generic.",
     "manual-images-only": "Only the shop's own images were used.",
+    "provisional-image": "No photograph could be confirmed as this exact reference, so the closest one found is shown. Check it before publishing.",
     "llm-unavailable": "Written without research (dry run or model unavailable).",
+    "no-price": "No price yet — the listing shows 'price on request'. Set one when you know it.",
+    "estimated-price": "Price taken from what the trade is charging, not from the shop's own sheet. Check it before relying on it.",
 }
 
 
@@ -74,8 +83,11 @@ class SheetRow(Model):
     sheet: str
     brand: str
     model_number: str
-    price: float
+    #: None when the sheet is a brand master with no price column at all. Such a
+    #: row is researched and held; it can never be published unpriced.
+    price: float | None = None
     mrp: float | None = None
+    cost_price: float | None = None
     model_name: str | None = None
     gender: str | None = None
     collection_hint: str | None = None
@@ -85,6 +97,10 @@ class SheetRow(Model):
     notes: str | None = None
     #: Brand website named in the sheet header — the best hint for finding a page.
     brand_site: str | None = None
+    #: The manufacturer's reference, when the sheet's model number turned out to be
+    #: the shop's own internal code. Research uses this; identity stays with
+    #: model_number so a re-uploaded sheet still finds its listing.
+    reference: str | None = None
 
 
 class SheetRowError(Model):
@@ -152,7 +168,8 @@ class Copy(Model):
 
 class Price(Model):
     currency: Literal["INR"] = "INR"
-    selling: float
+    #: None until the shop sets one. The storefront never shows an unpriced watch.
+    selling: float | None = None
     mrp: float | None = None
     discount_pct: int | None = None
 
@@ -221,6 +238,9 @@ class WatchProduct(Model):
     model_name: str | None = None
     title: str
     price: Price
+    #: What the shop paid per unit, when the sheet says. Needed for gross profit,
+    #: cost of goods sold and an honest stock valuation.
+    cost_price: float | None = None
     collection: str | None = None
     gender: Gender | None = None
     tags: list[str] = Field(default_factory=list)
@@ -253,6 +273,9 @@ class CatalogEntry(Model):
     model_name: str | None = None
     title: str
     price: Price
+    #: What the shop paid per unit, when the sheet says. Needed for gross profit,
+    #: cost of goods sold and an honest stock valuation.
+    cost_price: float | None = None
     collection: str | None = None
     gender: Gender | None = None
     in_stock: bool = True
@@ -266,7 +289,7 @@ class CatalogEntry(Model):
 class RowResult(Model):
     row_number: int
     sku: str
-    status: Literal["ready", "needs_review", "failed", "skipped"]
+    status: Literal["ready", "needs_review", "failed", "skipped", "updated"]
     product: WatchProduct | None = None
     error: str | None = None
     cost_usd: float = 0.0
@@ -280,6 +303,8 @@ class RunCounts(Model):
     needs_review: int = 0
     failed: int = 0
     skipped: int = 0
+    #: Already listed, and a later sheet moved its price, stock or cost.
+    updated: int = 0
     images_saved: int = 0
 
 

@@ -145,7 +145,10 @@ export const REVIEW_FLAGS = [
   "price-outlier",
   "unverified-copy",
   "manual-images-only",
+  "provisional-image",
   "llm-unavailable",
+  "no-price",
+  "estimated-price",
 ] as const;
 export type ReviewFlag = (typeof REVIEW_FLAGS)[number];
 
@@ -161,7 +164,11 @@ export const REVIEW_FLAG_EXPLANATIONS: Record<ReviewFlag, string> = {
   "price-outlier": "The sheet price is far from the price listed online.",
   "unverified-copy": "No specification was confirmed, so the copy is generic.",
   "manual-images-only": "Only the shop's own images were used.",
+  "provisional-image":
+    "No photograph could be confirmed as this exact reference, so the closest one found is shown. Check it before publishing.",
   "llm-unavailable": "Written without research (dry run or model unavailable).",
+  "no-price": "No price yet — the listing shows 'price on request'. Set one when you know it.",
+  "estimated-price": "Price taken from what the trade is charging, not the shop's own sheet. Check it before relying on it.",
 };
 
 export const WatchProductSchema = z.object({
@@ -177,11 +184,20 @@ export const WatchProductSchema = z.object({
 
   price: z.object({
     currency: z.literal("INR"),
-    selling: z.number().positive(),
+    /** Null when the sheet was a brand master with no price column. An unpriced
+     *  watch is catalogued but never published. */
+    selling: z.number().positive().nullable(),
     mrp: z.number().positive().nullable(),
     /** Rounded percentage off MRP, when both are known. */
     discountPct: z.number().nullable(),
   }),
+
+  /**
+   * What the shop paid, per unit. Absent unless the stock sheet quoted it or
+   * someone entered it — and the books say so plainly rather than valuing stock
+   * at retail, which would overstate assets and invent a gross profit.
+   */
+  costPrice: z.number().positive().nullable().default(null),
 
   collection: z.enum(COLLECTIONS).nullable(),
   gender: z.enum(["men", "women", "unisex"]).nullable(),
@@ -304,9 +320,24 @@ export interface RunReport {
     needsReview: number;
     failed: number;
     skipped: number;
+    /** Already listed, and a later sheet moved its price, stock or cost. */
+    updated: number;
     imagesSaved: number;
   };
   costUsd: number;
   results: RowResult[];
   sheetErrors: SheetRowError[];
+}
+
+/**
+ * Has this watch been given a price yet?
+ *
+ * A brand master can be ingested with no prices at all, so "listed" and "sellable"
+ * are no longer the same thing. This narrows the type as well as answering the
+ * question, so the compiler enforces the distinction at every call site.
+ */
+export function isPriced<T extends { price: { selling: number | null } }>(
+  entry: T,
+): entry is T & { price: { selling: number } } {
+  return typeof entry.price.selling === "number";
 }

@@ -51,6 +51,13 @@ export async function POST(request: Request): Promise<Response> {
   outbound.set("file", file, file.name);
   outbound.set("dry_run", String(form.get("dryRun") === "true"));
   outbound.set("force", String(form.get("force") === "true"));
+  // Do the rows a shop's catalogue can answer before the ones needing a search,
+  // so a run cut short by an empty balance has bought the good listings first.
+  outbound.set("covered_first", String(form.get("coveredFirst") === "true"));
+  // "update" applies the sheet's figures to watches already listed and researches
+  // nothing; "add" lists only what is missing and leaves existing prices alone.
+  const mode = String(form.get("mode") ?? "both");
+  outbound.set("mode", ["update", "add", "both"].includes(mode) ? mode : "both");
   const limit = Number(form.get("limit"));
   if (Number.isFinite(limit) && limit > 0) outbound.set("limit", String(Math.floor(limit)));
 

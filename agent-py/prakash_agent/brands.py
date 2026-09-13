@@ -51,22 +51,30 @@ BRANDS: dict[str, BrandSite] = {
         urls=("https://seikowatches.co.in/",),
     ),
     "titan": BrandSite(
-        # titan.co.in answers bots with 403, but Titan's own titanworld.com serves
-        # us, so that leads — the brand's photography either way.
-        domains=("titanworld.com", "titan.co.in"),
-        urls=("https://titanworld.com/",),
-        blocks_bots=False,
+        # Verified 2026-09-13. titanworld.com is NOT Titan's Indian site — it is the
+        # export store (titan-malaysia.myshopify.com, country AE, prices in USD), and
+        # treating it as the brand's own put dollar figures into a rupee catalogue.
+        # titan.co.in is the real one and refuses automated readers, so Titan is read
+        # from the trade instead; that is a true statement of the position, where the
+        # old entry was a convenient one.
+        domains=("titan.co.in",),
+        urls=("https://www.titan.co.in/",),
+        blocks_bots=True,
         aliases=("titan raga", "raga", "nebula", "titan edge"),
     ),
     "tissot": BrandSite(
         domains=("tissotwatches.com/en-in",),
         urls=("https://www.tissotwatches.com/en-in",),
     ),
-    "citizen": BrandSite(domains=("citizenwatches.in", "citizen.in"), blocks_bots=True),
+    # Verified 2026-09-13: answers automated readers. The flag was wrong.
+    "citizen": BrandSite(domains=("citizenwatches.in", "citizen.in")),
     "fastrack": BrandSite(domains=("fastrack.in",), blocks_bots=True),
     "sonata": BrandSite(domains=("sonatawatches.in",), blocks_bots=True),
-    "timex": BrandSite(domains=("timexindia.com", "timex.in")),
-    "fossil": BrandSite(domains=("fossil.in",)),
+    # Verified 2026-09-13. The storefront is the shop. subdomain; timexindia.com
+    # alone is the brochure site.
+    "timex": BrandSite(domains=("shop.timexindia.com", "timexindia.com")),
+    # Verified 2026-09-13: refuses automated readers.
+    "fossil": BrandSite(domains=("fossil.in",), blocks_bots=True),
     "rado": BrandSite(domains=("rado.com/en-in",)),
     "tag heuer": BrandSite(domains=("tagheuer.com/in",), aliases=("tagheuer", "tag")),
     "daniel wellington": BrandSite(domains=("danielwellington.com/in",), aliases=("dw",)),
@@ -74,6 +82,19 @@ BRANDS: dict[str, BrandSite] = {
     "boat": BrandSite(domains=("boat-lifestyle.com",), aliases=("boat lifestyle",)),
     "noise": BrandSite(domains=("gonoise.com",)),
     "fire-boltt": BrandSite(domains=("fireboltt.com",), aliases=("fire boltt", "fireboltt")),
+    # Verified 2026-09-13. Gc is a separate line from Guess and is not sold on
+    # guess.in, which is why the registry's old entry matched nothing.
+    "guess collection": BrandSite(
+        domains=("guesswatches.com", "gcwatches.com"), aliases=("gc", "gc watches")
+    ),
+    "michael kors": BrandSite(
+        # michaelkors.com is the US store; India is served from the .global locale.
+        domains=("michaelkors.global/in/en", "michaelkors.global"),
+        blocks_bots=True,
+        aliases=("mk",),
+    ),
+    "alba": BrandSite(domains=("alba-watches.co.in",)),
+    "alexandre christie": BrandSite(domains=("alexandrechristie.in",), aliases=("ac",)),
 }
 
 #: India's authorised watch retailers and the marketplaces the trade actually uses.
@@ -111,6 +132,51 @@ FOREIGN_MARKERS: tuple[str, ...] = (
     "titanwatches.sg", "desertcart", "aliexpress", "lazada", "shopee",
     ".co.uk", ".com.au", ".co.nz", ".com.sg", ".ae/", ".sa/", ".my/",
 )
+
+
+#: Foreign marketplaces and cross-border resellers that must never become a source.
+#:
+#: These are the subset of FOREIGN_MARKERS that *sell*, as opposed to merely being
+#: abroad. A foreign brand site is useful context; a foreign shop is not, because
+#: what it lists is a different article — another market's variant of the
+#: reference, at another market's price, in another currency, with the packaging
+#: and warranty of somewhere else. Walmart supplied 24 sources for the Seiko wall
+#: clocks and Amazon another 14, on listings meant for a Delhi shop.
+#:
+#: Kept separate from FOREIGN_MARKERS because that list also carries plain country
+#: suffixes (".co.uk", ".com.au"), which should lower a page's rank, not ban it.
+FOREIGN_SELLERS: tuple[str, ...] = (
+    "amazon.com", "amazon.co.uk", "amazon.ae", "amazon.sg", "amazon.de", "amazon.ca",
+    "amazon.com.au", "ebay.com", "ebay.co.uk", "walmart.com", "target.com",
+    "macys.com", "jomashop.com", "creationwatches.com", "watches2u.com",
+    "watchshop.com", "chrono24.com", "rivolishop.com", "watchstation.com",
+    "seikoboutique.com", "desertcart", "aliexpress", "lazada", "shopee",
+    "jumia.", "xcite.com", "noon.com",
+)
+
+
+#: Marketplaces barred wherever they trade, India included.
+#:
+#: Not because they are abroad — Amazon India and Flipkart are not — but because a
+#: marketplace listing is written by whichever third-party seller happens to hold
+#: the stock. The title is padded for search, the specification block is often
+#: another variant's, and the photographs are frequently the wrong colourway. It
+#: reads as authoritative and is not, and both rate-limit automated readers anyway.
+#: Every other Indian site passes; this list is deliberately only these two.
+BARRED_MARKETPLACES: tuple[str, ...] = ("amazon.", "flipkart.")
+
+
+def is_foreign_seller(url: str) -> bool:
+    """True for a source that must never be read: a shop abroad, or a marketplace.
+
+    Two different reasons, one answer. A foreign shop sells a different article —
+    another market's variant of the reference, in another currency, under another
+    warranty. A marketplace sells the right article described by a stranger.
+    """
+    lowered = url.lower()
+    if any(marker in lowered for marker in BARRED_MARKETPLACES):
+        return True
+    return any(marker in lowered for marker in FOREIGN_SELLERS)
 
 
 def _norm(value: str) -> str:

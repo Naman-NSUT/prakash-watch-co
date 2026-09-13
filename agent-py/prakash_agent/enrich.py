@@ -9,6 +9,8 @@ publishes an invented 300 m rating owns that claim at the counter.
 
 from __future__ import annotations
 
+import re
+
 from .config import COLLECTIONS
 from .models import Attributes, Copy, Fact, FactsResult, ScrapedPage, SheetRow, Source
 from .openrouter import OpenRouterClient
@@ -189,8 +191,17 @@ async def extract_facts(
     prompt_lines = [
         "Watch from the stock list:",
         f"  Brand: {row.brand}",
-        f"  Reference / model number: {row.model_number}",
+        f"  Reference / model number: {row.reference or row.model_number}",
     ]
+    if row.reference and row.reference != row.model_number:
+        # Both names, or the model reports a mismatch on a page that is in fact
+        # about the right watch: the shop lists Casio as A1149 while every page
+        # calls it LTP-V300L-1AUDF, and judging by the shop's code alone flagged
+        # every one of those as the wrong watch.
+        prompt_lines.append(
+            f"  The shop's own internal code for this watch is {row.model_number}. "
+            f"A page describing {row.reference} IS this watch — treat either name as a match."
+        )
     if row.model_name:
         prompt_lines.append(f"  Model name as written by the shop: {row.model_name}")
     if row.gender:
@@ -234,14 +245,43 @@ async def extract_facts(
     )
 
 
+
+#: A rupee figure in any of the shapes copy tends to use.
+_MONEY = re.compile(r"(₹|\bRs\.?\b|\bINR\b|\bMRP\b)\s*[\d,.]*", re.IGNORECASE)
+
+
+def strip_prices(copy: Copy) -> Copy:
+    """Removes any money from copy for a watch the sheet did not price.
+
+    The prompt already says not to mention a price, and the model does anyway:
+    it reads "MRP ₹12,000" off a source page and repeats it. A price the shop has
+    not set must never appear on its own listing, so this is enforced rather than
+    requested — the same rule that keeps researched prices out of the artifact.
+    """
+    def clean_sentences(text: str) -> str:
+        parts = re.split(r"(?<=[.!?])\s+", text)
+        return " ".join(p for p in parts if not _MONEY.search(p)).strip()
+
+    return Copy(
+        tagline=copy.tagline if not _MONEY.search(copy.tagline) else "",
+        short=clean_sentences(copy.short),
+        long="\n\n".join(
+            clean_sentences(block) for block in copy.long.split("\n\n") if clean_sentences(block)
+        ),
+        bullets=[b for b in copy.bullets if not _MONEY.search(b)],
+        seo_title=copy.seo_title if not _MONEY.search(copy.seo_title) else "",
+        seo_description=clean_sentences(copy.seo_description),
+    )
+
+
 async def write_copy(row: SheetRow, facts: FactsResult, llm: OpenRouterClient) -> tuple[Copy, str, float]:
     """Writes the shop-facing copy from confirmed facts only."""
     confirmed = "\n".join(f"  - {FACT_LABELS[f.field]}: {f.value}" for f in facts.facts)
     name = row.model_name or facts.model_name
 
     prompt = (
-        f"Watch: {row.brand}{f' {name}' if name else ''} (reference {row.model_number})\n"
-        f"Selling price: {format_inr(row.price)}\n"
+        f"Watch: {row.brand}{f' {name}' if name else ''} (reference {row.reference or row.model_number})\n"
+        f"Selling price: {format_inr(row.price) if row.price else 'not set — do not mention price'}\n"
         + (f"Worn by: {facts.gender}\n" if facts.gender else "")
         + (f"Functions: {', '.join(facts.functions)}\n" if facts.functions else "")
         + "\nConfirmed specifications (the only ones you may reference):\n"
@@ -267,6 +307,10 @@ async def write_copy(row: SheetRow, facts: FactsResult, llm: OpenRouterClient) -
         seo_title=truncate(squish(data.get("seo_title", "")), 70),
         seo_description=truncate(squish(data.get("seo_description", "")), 170),
     )
+    # An unpriced watch must not carry a price anywhere in its copy.
+    if row.price is None:
+        copy = strip_prices(copy)
+
     return copy, squish(data.get("image_alt", "")), cost
 
 
@@ -281,7 +325,11 @@ def fallback_copy(row: SheetRow, model_name: str | None) -> Copy:
             "Stocked, sized and warranted in store. Full specifications are being confirmed — "
             "ask at the counter or call ahead and we will confirm before you visit."
         ),
-        bullets=[f"Reference {row.model_number}", format_inr(row.price), "Sized and serviced in house"],
+        bullets=[
+            f"Reference {row.model_number}",
+            *( [format_inr(row.price)] if row.price else [] ),
+            "Sized and serviced in house",
+        ],
         seo_title=truncate(f"{name} {row.model_number}", 70),
         seo_description=truncate(
             f"{name}, reference {row.model_number}, at Prakash Watch Co. Authorised since 1976.", 170

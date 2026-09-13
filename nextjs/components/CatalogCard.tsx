@@ -127,8 +127,13 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
           {entry.tagline}
         </p>
 
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginTop: 6 }}>
-          <span style={{ fontSize: 17, letterSpacing: "0.01em" }}>{formatInr(entry.price.selling)}</span>
+        {/* What it costs, what it listed at, and what that saves — read as one
+            line, so the saving is next to the figure it applies to rather than
+            floating over the photograph. */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 17, letterSpacing: "0.01em" }}>
+            {entry.price.selling === null ? "Price on request" : formatInr(entry.price.selling)}
+          </span>
           {entry.price.mrp ? (
             <span
               className="mono"
@@ -137,7 +142,20 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
               {formatInr(entry.price.mrp)}
             </span>
           ) : null}
+          {entry.price.discountPct ? (
+            <span
+              className="mono"
+              style={{ fontSize: 10.5, letterSpacing: "0.14em", color: "var(--accent)" }}
+            >
+              −{entry.price.discountPct}%
+            </span>
+          ) : null}
         </div>
+        {entry.price.mrp && entry.price.selling && entry.price.mrp > entry.price.selling ? (
+          <span style={{ fontSize: 12, fontWeight: 300, color: "var(--muted)", marginTop: -4 }}>
+            You save {formatInr(entry.price.mrp - entry.price.selling)}
+          </span>
+        ) : null}
 
         <span className="mono" style={{ fontSize: 9.5, letterSpacing: "0.18em", color: "var(--faint)" }}>
           REF {entry.modelNumber.toUpperCase()}

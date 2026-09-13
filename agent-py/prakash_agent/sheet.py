@@ -23,7 +23,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from .models import SheetParseResult, SheetRow, SheetRowError
-from .util import parse_money, squish
+from .util import parse_count, parse_money, squish
 
 Canonical = str
 
@@ -42,6 +42,10 @@ ALIASES: dict[Canonical, tuple[str, ...]] = {
         # Indian stock lists head the discounted selling price "Amount". Read as a
         # unit price; a line total would misprice a multi-unit row.
         "amount", "netamount", "unitprice",
+    ),
+    "costPrice": (
+        "cost", "costprice", "purchaseprice", "purchaserate", "buyingprice", "landedcost",
+        "dealerprice", "wholesaleprice", "netcost", "basicprice",
     ),
     "mrp": ("mrp", "listprice", "retailprice", "marketprice", "maximumretailprice", "strikeprice"),
     "gender": ("gender", "for", "genderfor", "targetgender", "menwomen"),
@@ -195,10 +199,10 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
             continue
 
         # A tab that only quotes MRP is still usable: MRP becomes the shelf price.
+        # A tab with no price at all is usable too — a brand master is a list of
+        # what exists, not of what it costs. Those rows are researched and held
+        # unpriced; nothing without a price can be published.
         price_field = next((f for f in REQUIRED_ANY_PRICE if f in columns), None)
-        if price_field is None:
-            skipped.append({"sheet": grid.name, "reason": "no price or MRP column"})
-            continue
         mrp_is_price = price_field == "mrp"
 
         def read(row_index: int, field: Canonical) -> str:
@@ -210,7 +214,7 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
             # Tabs are usually named for the brand, covering sheets with no brand column.
             brand = squish(read(row_index, "brand")) or squish(grid.name)
             model_number = squish(read(row_index, "modelNumber"))
-            price_text = read(row_index, price_field)
+            price_text = read(row_index, price_field) if price_field else ""
 
             # A completely empty line is spacing, not an error.
             if not model_number and not price_text:
@@ -223,8 +227,10 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
             if not model_number:
                 problems.append("missing model number")
 
+            # Only complain about a price when the sheet claimed to have one: a
+            # column of blanks is a mistake, a missing column is a decision.
             price = parse_money(price_text)
-            if price is None:
+            if price is None and price_field is not None:
                 problems.append(f'unreadable price "{price_text}"' if price_text else "missing price")
 
             key = f"{brand.lower()}|{model_number.lower()}"
@@ -238,7 +244,7 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
                 errors.append(SheetRowError(row_number=row_index, sheet=grid.name, raw=raw, problems=problems))
                 continue
 
-            quantity = parse_money(read(row_index, "quantity"))
+            quantity = parse_count(read(row_index, "quantity"))
             product_urls = _extract_urls(read(row_index, "productUrl"))
 
             rows.append(
@@ -247,13 +253,14 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
                     sheet=grid.name,
                     brand=brand,
                     model_number=model_number,
-                    price=float(price),
+                    price=None if price is None else float(price),
                     # When MRP doubles as the price there is no discount to advertise.
                     mrp=None if mrp_is_price else parse_money(read(row_index, "mrp")),
+                    cost_price=parse_money(read(row_index, "costPrice")),
                     model_name=squish(read(row_index, "modelName")) or None,
                     gender=squish(read(row_index, "gender")) or None,
                     collection_hint=squish(read(row_index, "collectionHint")) or None,
-                    quantity=None if quantity is None else max(0, int(round(quantity))),
+                    quantity=quantity,
                     product_url=product_urls[0] if product_urls else None,
                     image_urls=_extract_urls(read(row_index, "imageUrls")),
                     notes=squish(read(row_index, "notes")) or None,

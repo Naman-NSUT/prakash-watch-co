@@ -92,7 +92,7 @@ class AgentConfig:
 
     concurrency: int = 3
     max_sources: int = 4
-    max_images: int = 5
+    max_images: int = 10
     min_image_width: int = 600
     image_mode: Literal["download", "reference"] = "download"
     #: Where photographs may come from.
@@ -102,7 +102,7 @@ class AgentConfig:
     #: 'prefer' is the default because several brands (every Casio domain, and
     #: titan.co.in) answer automated readers with 403, and a listing with no
     #: picture is worse than one with a retailer's picture of the right watch.
-    official_images: Literal["strict", "prefer", "off"] = "prefer"
+    official_images: Literal["strict", "prefer", "off"] = "off"
     #: Cut the watch off whatever it was photographed against.
     image_cutout: bool = True
     #: Backdrop applied to cutouts: "transparent", a preset name (studio-dark,
@@ -154,10 +154,10 @@ def load_config(**overrides: object) -> AgentConfig:
         india_only=_bool("AGENT_INDIA_ONLY", False),
         concurrency=_int("AGENT_CONCURRENCY", 3),
         max_sources=_int("AGENT_MAX_SOURCES", 4),
-        max_images=_int("AGENT_MAX_IMAGES", 5),
+        max_images=_int("AGENT_MAX_IMAGES", 10),
         min_image_width=_int("AGENT_MIN_IMAGE_WIDTH", 600),
         image_mode="reference" if os.getenv("AGENT_IMAGE_MODE") == "reference" else "download",
-        official_images=(os.getenv("AGENT_OFFICIAL_IMAGES") or "prefer"),  # type: ignore[arg-type]
+        official_images=(os.getenv("AGENT_OFFICIAL_IMAGES") or "off"),  # type: ignore[arg-type]
         image_cutout=_bool("AGENT_IMAGE_CUTOUT", True),
         image_background=os.getenv("AGENT_IMAGE_BACKGROUND") or "transparent",
         image_canvas=_int("AGENT_IMAGE_CANVAS", 1600),

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReviewForm from "@/components/admin/ReviewForm";
+import RerunPanel from "@/components/admin/RerunPanel";
 import { getProduct } from "@/lib/catalog";
 import { REVIEW_FLAG_EXPLANATIONS } from "@/agent/types";
 import { formatUsd } from "@/agent/format";
@@ -56,6 +57,20 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
             </span>
           </div>
         </div>
+
+        <section style={{ border: "1px solid var(--line)", background: "var(--card)", padding: 20, marginBottom: 26 }}>
+          <span className="ops-sublabel" style={{ marginTop: 0 }}>Research this watch again</span>
+          <p style={{ fontSize: 12.5, lineHeight: 1.6, fontWeight: 300, color: "var(--dim)", margin: "0 0 14px", maxWidth: 620 }}>
+            Runs the whole pipeline afresh — sources, specification, photographs and price. Anything you have
+            typed here is kept; anything the agent guessed is worked out again.
+          </p>
+          <RerunPanel
+            mode="one"
+            sku={product.sku}
+            label={product.title}
+            canSetReference={product.modelNumber.replace(/[^A-Za-z0-9]/g, "").length < 6}
+          />
+        </section>
 
         <ReviewForm product={product} />
       </div>

@@ -22,6 +22,36 @@ const fieldStyle: React.CSSProperties = {
   outline: "none",
 };
 
+
+/**
+ * The controlled vocabulary the sidebar filters on.
+ *
+ * Mirrors `lib/filters.ts` deliberately: an edit made here has to land on one of
+ * the values a shopper can actually filter by, or the correction would fix the
+ * spec sheet and quietly break the filter.
+ */
+const FACET_FIELD_LABELS: Record<string, string> = {
+  movement: "Movement",
+  caseMaterial: "Case material",
+  strap: "Strap",
+  waterResistance: "Water resistance",
+  caseSize: "Case size",
+};
+
+const FACET_LABELS: Record<string, Record<string, string>> = {
+  movement: {
+    automatic: "Automatic", quartz: "Quartz", solar: "Solar",
+    smart: "Smart / hybrid", "hand-wound": "Hand-wound", mechanical: "Mechanical",
+  },
+  caseMaterial: {
+    steel: "Stainless steel", resin: "Resin", titanium: "Titanium",
+    ceramic: "Ceramic", "gold-tone": "Gold tone", brass: "Brass",
+  },
+  strap: { bracelet: "Steel bracelet", leather: "Leather", resin: "Resin", fabric: "Fabric" },
+  waterResistance: { "30": "30 m", "50": "50 m", "100": "100 m", "200": "200 m+" },
+  caseSize: { "under-36": "Under 36 mm", "36-40": "36 – 40 mm", "40-44": "40 – 44 mm", "over-44": "Over 44 mm" },
+};
+
 export default function ReviewForm({ product }: { product: WatchProduct }) {
   const router = useRouter();
 
@@ -37,6 +67,20 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
   const [short, setShort] = useState(product.copy.short);
   const [long, setLong] = useState(product.copy.long);
   const [images, setImages] = useState(product.images);
+
+  // The specification sheet and the filterable values, both correctable by hand.
+  const [specs, setSpecs] = useState(
+    product.specs.map((spec) => ({ label: spec.label, value: spec.value, group: spec.group })),
+  );
+  const [facets, setFacets] = useState({
+    movement: product.facets.movement ?? "",
+    caseMaterial: product.facets.caseMaterial ?? "",
+    strap: product.facets.strap ?? "",
+    dialColour: product.facets.dialColour ?? "",
+    waterResistance: product.facets.waterResistance ?? "",
+    caseSize: product.facets.caseSize ?? "",
+  });
+  const [uploading, setUploading] = useState(false);
 
   const [busy, setBusy] = useState<null | "save" | "publish" | "unpublish" | "delete">(null);
   const [message, setMessage] = useState<{ text: string; bad: boolean } | null>(null);
@@ -56,7 +100,46 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
       price: { selling: sellingValue, mrp: mrpValue },
       copy: { tagline, short, long },
       imageOrder: images.map((image) => image.url),
+      specs: specs.filter((spec) => spec.label.trim() && spec.value.trim()),
+      // The readable label goes to the spec sheet, the code to the filters, so the
+      // two can never disagree about what this watch is.
+      facets: Object.fromEntries(
+        Object.entries(facets).map(([key, value]) => [key, value || null]),
+      ) as Record<string, string | null>,
+      attributes: {
+        movement: FACET_LABELS.movement[facets.movement] ?? null,
+        caseMaterial: FACET_LABELS.caseMaterial[facets.caseMaterial] ?? null,
+        strapMaterial: FACET_LABELS.strap[facets.strap] ?? null,
+        dialColour: facets.dialColour || null,
+        waterResistance: FACET_LABELS.waterResistance[facets.waterResistance] ?? null,
+      },
     };
+  }
+
+  /** Sends photographs the shop took itself, and adopts whatever comes back. */
+  async function uploadPhotos(files: File[]) {
+    setUploading(true);
+    setMessage(null);
+    try {
+      const form = new FormData();
+      for (const file of files.slice(0, 8)) form.append("photos", file);
+
+      const response = await fetch(`/api/admin/products/${product.sku}/photos`, { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) {
+        setMessage({ text: payload.errors?.[0] ?? "Those could not be added.", bad: true });
+        return;
+      }
+      setImages(payload.images);
+      setMessage({
+        text: payload.warnings?.length ? payload.warnings.join(" ") : "Photograph added.",
+        bad: Boolean(payload.warnings?.length),
+      });
+    } catch {
+      setMessage({ text: "Could not reach the server.", bad: true });
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function save(status?: "ready" | "needs_review", action: "save" | "publish" | "unpublish" = "save") {
@@ -114,7 +197,7 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
         <span className="kicker">Photographs — first is the shop front image</span>
         {images.length === 0 ? (
           <p style={{ fontSize: 13.5, fontWeight: 300, color: "var(--muted)", marginTop: 14 }}>
-            None kept. Add your own photographs to the sheet's Image URLs column and run this row again with “redo”.
+            None kept. Add your own below — a photograph taken at the counter beats a wrong one found online.
           </p>
         ) : (
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}>
@@ -152,6 +235,93 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
             ))}
           </div>
         )}
+
+        <label className="svc-file" style={{ marginTop: 18 }}>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            multiple
+            disabled={uploading || images.length >= 8}
+            onChange={(event) => {
+              const files = [...(event.target.files ?? [])];
+              event.target.value = "";
+              if (files.length) void uploadPhotos(files);
+            }}
+          />
+          <span className="mono">
+            {uploading ? "Uploading…" : images.length >= 8 ? "Eight is the limit" : "Add your own photograph"}
+          </span>
+        </label>
+      </section>
+
+      {/* Specification */}
+      <section>
+        <span className="kicker">Specification — corrected by hand</span>
+        <p style={{ fontSize: 12.5, fontWeight: 300, color: "var(--faint)", margin: "10px 0 0", maxWidth: 640, lineHeight: 1.6 }}>
+          These are the researched figures. Change any that are wrong; an edited line stops citing its source, because
+          it is now the shop&rsquo;s word rather than the page&rsquo;s.
+        </p>
+
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          {specs.map((spec, index) => (
+            <div key={index} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                value={spec.label}
+                placeholder="Movement"
+                onChange={(event) =>
+                  setSpecs((rows) => rows.map((r, i) => (i === index ? { ...r, label: event.target.value } : r)))
+                }
+                style={{ ...fieldStyle, flex: "0 0 190px", fontSize: 13 }}
+              />
+              <input
+                value={spec.value}
+                placeholder="Automatic, calibre 4R35"
+                onChange={(event) =>
+                  setSpecs((rows) => rows.map((r, i) => (i === index ? { ...r, value: event.target.value } : r)))
+                }
+                style={{ ...fieldStyle, flex: 1, fontSize: 13 }}
+              />
+              <MiniButton onClick={() => setSpecs((rows) => rows.filter((_, i) => i !== index))}>Remove</MiniButton>
+            </div>
+          ))}
+          <div>
+            <MiniButton onClick={() => setSpecs((rows) => [...rows, { label: "", value: "", group: "Specification" }])}>
+              Add a line
+            </MiniButton>
+          </div>
+        </div>
+      </section>
+
+      {/* Filters */}
+      <section>
+        <span className="kicker">How it files — what the shop filters find</span>
+        <p style={{ fontSize: 12.5, fontWeight: 300, color: "var(--faint)", margin: "10px 0 0", maxWidth: 640, lineHeight: 1.6 }}>
+          Chosen from the same list the sidebar offers, so a correction here cannot produce a value nothing filters on.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16, marginTop: 16 }}>
+          {(["movement", "caseMaterial", "strap", "waterResistance", "caseSize"] as const).map((key) => (
+            <Field key={key} label={FACET_FIELD_LABELS[key]}>
+              <select
+                value={facets[key]}
+                onChange={(event) => setFacets((f) => ({ ...f, [key]: event.target.value }))}
+                style={fieldStyle}
+              >
+                <option value="">— not set —</option>
+                {Object.entries(FACET_LABELS[key]).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </Field>
+          ))}
+          <Field label="Dial colour">
+            <input
+              value={facets.dialColour}
+              placeholder="blue"
+              onChange={(event) => setFacets((f) => ({ ...f, dialColour: event.target.value.toLowerCase() }))}
+              style={fieldStyle}
+            />
+          </Field>
+        </div>
       </section>
 
       {/* Details */}

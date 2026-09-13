@@ -170,6 +170,11 @@ export async function rebuildIndex(): Promise<CatalogEntry[]> {
           gender: value.gender,
           inStock: value.inStock,
           backdropId: value.backdropId,
+          // Carried across explicitly. Both have schema defaults, so omitting them
+          // does not fail — it silently writes an empty facet set, which blanks
+          // the sidebar filters for every watch the next time anyone saves an edit.
+          facets: value.facets,
+          tags: value.tags,
           image: value.images[0] ?? null,
           tagline: value.copy.tagline,
         }),
@@ -212,6 +217,53 @@ export const ProductPatchSchema = z.object({
     .optional(),
   /** Image URLs to keep, in display order. The first becomes the primary shot. */
   imageOrder: z.array(z.string()).optional(),
+  /** Backdrop to place the cut-out watch on. Null leaves it as photographed. */
+  backdropId: z.string().max(40).nullable().optional(),
+  /**
+   * The specification sheet, rewritten by hand.
+   *
+   * Research gets most of this right and occasionally gets one line wrong, which
+   * on a spec sheet is worse than leaving it blank — so the shop can correct any
+   * row. An edited row loses its source index: it is now the shop's word, not a
+   * citation, and the listing should not claim otherwise.
+   */
+  specs: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(60),
+        value: z.string().min(1).max(300),
+        group: z.string().max(40).default("Specification"),
+      }),
+    )
+    .max(60)
+    .optional(),
+  /** The readable attributes shown on the watch page. */
+  attributes: z
+    .object({
+      movement: z.string().max(80).nullable(),
+      caliber: z.string().max(80).nullable(),
+      caseMaterial: z.string().max(80).nullable(),
+      caseDiameterMm: z.number().min(0).max(100).nullable(),
+      crystal: z.string().max(80).nullable(),
+      dialColour: z.string().max(60).nullable(),
+      strapMaterial: z.string().max(80).nullable(),
+      waterResistance: z.string().max(60).nullable(),
+      warranty: z.string().max(120).nullable(),
+    })
+    .partial()
+    .optional(),
+  /** The controlled values the sidebar filters on. */
+  facets: z
+    .object({
+      movement: z.string().max(30).nullable(),
+      caseMaterial: z.string().max(30).nullable(),
+      strap: z.string().max(30).nullable(),
+      dialColour: z.string().max(30).nullable(),
+      waterResistance: z.string().max(10).nullable(),
+      caseSize: z.string().max(20).nullable(),
+    })
+    .partial()
+    .optional(),
 });
 
 export type ProductPatch = z.infer<typeof ProductPatchSchema>;
@@ -254,7 +306,53 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
       .filter((image): image is NonNullable<typeof image> => Boolean(image));
   }
 
+  if (patch.backdropId !== undefined) next.backdropId = patch.backdropId;
+
+  if (patch.specs) {
+    // sourceIndex is dropped deliberately: once a line has been edited by hand it
+    // is no longer what the cited page said, and the listing must not imply it is.
+    next.specs = patch.specs.map((spec) => ({
+      label: spec.label,
+      value: spec.value,
+      group: spec.group || "Specification",
+      sourceIndex: null,
+    }));
+  }
+
+  if (patch.attributes) next.attributes = { ...product.attributes, ...patch.attributes };
+
+  // Facets are set explicitly rather than re-derived here. The normalisation that
+  // turns "10 Bar (Swim)" into the `100` bucket lives in the agent's facets.py and
+  // is two hundred lines of hard-won rules; porting it to TypeScript would mean
+  // two copies that drift. So when the shop corrects a value by hand it picks
+  // from the same controlled vocabulary the filters use, and the admin form sends
+  // the readable label for the spec sheet alongside it.
+  if (patch.facets) next.facets = { ...product.facets, ...patch.facets };
+
   // Re-validate before writing so an edit cannot corrupt the artifact.
+  const validated = WatchProductSchema.parse(next);
+  await fs.writeFile(join(config.dataDir, `${sku}.json`), `${JSON.stringify(validated, null, 2)}\n`);
+  await rebuildIndex();
+  return validated;
+}
+
+/**
+ * Appends photographs the shop supplied itself.
+ *
+ * Goes through the same validate-then-write path as every other edit, so a
+ * malformed image record is rejected before it can reach the storefront rather
+ * than after.
+ */
+export async function addImages(sku: string, images: unknown[]): Promise<WatchProduct | null> {
+  const product = await getProduct(sku);
+  if (!product) return null;
+
+  const next = {
+    ...product,
+    images: [...product.images, ...images],
+    meta: { ...product.meta, updatedAt: new Date().toISOString() },
+  };
+
   const validated = WatchProductSchema.parse(next);
   await fs.writeFile(join(config.dataDir, `${sku}.json`), `${JSON.stringify(validated, null, 2)}\n`);
   await rebuildIndex();

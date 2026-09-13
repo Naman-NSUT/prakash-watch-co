@@ -42,6 +42,23 @@ def make_sku(brand: str, model_number: str) -> str:
     return base or f"watch-{sha256(brand + model_number)[:10]}"
 
 
+def parse_count(value: Any) -> int | None:
+    """Reads a quantity, where zero is a number and not an absence.
+
+    Distinct from parse_money on purpose: a price of nought is meaningless and is
+    rejected, but a quantity of nought is the shop saying "sold out", and reading
+    it as "no value" left delisted stock showing as available.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return max(0, int(round(value)))
+    if not isinstance(value, str):
+        return None
+    match = _NUMBER.search(value.replace(",", "").strip())
+    return max(0, int(round(float(match.group())))) if match else None
+
+
 def parse_money(value: Any) -> float | None:
     """Reads money the way Indian retail sheets write it: ₹12,999 · Rs. 12999/- · 12,999.00."""
     if isinstance(value, bool):
@@ -116,8 +133,14 @@ def format_usd(amount: float) -> str:
     return f"${amount:.4f}" if amount < 0.01 else f"${amount:.2f}"
 
 
-def format_inr(amount: float) -> str:
-    """Indian digit grouping: 1,23,456."""
+def format_inr(amount: float | None) -> str:
+    """Indian digit grouping: 1,23,456.
+
+    Accepts None because a watch ingested from a brand master has no price until
+    the shop sets one, and every caller would otherwise need the same guard.
+    """
+    if amount is None:
+        return "—"
     whole = int(round(amount))
     text = str(abs(whole))
     if len(text) > 3:

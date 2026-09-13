@@ -205,8 +205,11 @@ def collect_candidates(
     back to everything else only when that yields nothing, which is what happens
     for brands whose sites refuse us.
     """
+    # A sheet's own image column has no page behind it, but a storefront gallery
+    # does — and recording it stops the listing claiming "only the shop's images
+    # were used" when the brand's own photographs are what it is showing.
     candidates: list[dict] = [
-        {"url": url, "source_page": None, "manual": True, "rank": index}
+        {"url": url, "source_page": row.product_url, "manual": True, "rank": index}
         for index, url in enumerate(row.image_urls)
     ]
 
@@ -398,6 +401,9 @@ async def process_images(
 
     rejected: list[dict[str, str]] = []
     scored: list[dict] = []
+    # Anything that is at least a photograph of a watch, kept aside in case strict
+    # grading leaves us with nothing at all.
+    fallbacks: list[dict] = []
 
     for index, item in enumerate(gradable):
         grade = grades.get(index)
@@ -410,8 +416,18 @@ async def process_images(
         if not grade["is_watch"] or grade["shot_type"] not in PUBLISHABLE_KINDS:
             rejected.append({"url": item["url"], "reason": grade["reason"] or "not a usable product image"})
             continue
+
+        # A watch, but not confidently this one. Held back rather than discarded:
+        # if nothing better turns up, the shop would rather see the closest picture
+        # with a warning than an empty listing.
         if not item["manual"] and grade["matches_model"] < 0.45:
             rejected.append({"url": item["url"], "reason": grade["reason"] or "does not match the reference"})
+            fallbacks.append({
+                "item": item,
+                "score": grade["matches_model"] + grade["quality"],
+                "kind": grade["shot_type"] if grade["shot_type"] in SHOT_PRIORITY else "other",
+                "match": grade["matches_model"],
+            })
             continue
 
         # The decisive check: what the grader saw, against what the sources state.
@@ -420,6 +436,12 @@ async def process_images(
             conflict = contradicts(expected, grade)
             if conflict:
                 rejected.append({"url": item["url"], "reason": conflict})
+                fallbacks.append({
+                    "item": item,
+                    "score": grade["matches_model"] + grade["quality"] - 0.5,
+                    "kind": grade["shot_type"] if grade["shot_type"] in SHOT_PRIORITY else "other",
+                    "match": grade["matches_model"],
+                })
                 continue
 
         item["vision_background"] = grade["background"]
@@ -440,6 +462,17 @@ async def process_images(
 
     scored.sort(key=lambda entry: entry["score"], reverse=True)
     scored = scored[: config.max_images]
+
+    # Every watch should carry a picture. When strict grading rejected everything,
+    # publish the closest one found and flag the listing so a human confirms it
+    # before it goes live — an unverified photograph behind a warning is more use
+    # to the shop than a blank card, and the flag keeps it out of the shop window.
+    provisional = False
+    if not scored and fallbacks:
+        fallbacks.sort(key=lambda entry: entry["score"], reverse=True)
+        scored = [fallbacks[0]]
+        provisional = True
+        on_stage("images", "nothing confirmed — keeping the closest match for review")
 
     output_dir = Path(config.image_dir) / sku
     if config.image_mode == "download" and scored:
@@ -522,7 +555,8 @@ async def process_images(
 
     # Match a backdrop to the watch's own colour. Only meaningful once the watch
     # has been cut out — an uncut photograph carries its own background and would
-    # simply cover whatever we put behind it.
+    # simply cover whatever we put behind it. Taken from a published photograph,
+    # since that is the one the site will actually show.
     backdrop_id: str | None = None
     if images and images[0].has_alpha:
         try:
@@ -533,4 +567,10 @@ async def process_images(
             backdrop_id = None
 
     on_stage("images", f"{len(images)} kept, {len(rejected)} rejected")
-    return {"images": images, "cost_usd": cost, "rejected": rejected, "backdrop_id": backdrop_id}
+    return {
+        "images": images,
+        "cost_usd": cost,
+        "rejected": rejected,
+        "backdrop_id": backdrop_id,
+        "provisional": provisional and bool(images),
+    }

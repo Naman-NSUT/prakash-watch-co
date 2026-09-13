@@ -83,5 +83,8 @@ def console_reporter(event: dict[str, Any]) -> None:
         print(
             f"\n{BOLD.format('Done.')} {GREEN.format(str(event['ready']) + ' ready')} · "
             f"{YELLOW.format(str(event['needsReview']) + ' need review')} · "
-            f"{event['failed']} failed · {event['skipped']} skipped · {format_usd(event['costUsd'])}\n"
+            # Only shown when a sheet actually revised something already listed,
+            # so an ordinary run reads no differently.
+            + (f"{event['updated']} updated · " if event.get("updated") else "")
+            + f"{event['failed']} failed · {event['skipped']} skipped · {format_usd(event['costUsd'])}\n"
         )

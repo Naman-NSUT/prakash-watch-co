@@ -159,7 +159,11 @@ async def discover(brand: str, llm, http) -> BrandRecord | None:
     returns 403 is worse than useless — it would silently starve every listing
     for that brand of photographs.
     """
-    search = await llm.search(f"{brand} watches official website", 6)
+    # "India" in the query, because the shop sells Indian-market references and the
+    # Indian storefront lists them, prices them in rupees and is the one a customer
+    # will check. The seeded brands were all pinned to their .in or /in sites for
+    # that reason; a discovered brand should be held to the same standard.
+    search = await llm.search(f"{brand} watches official website India", 8)
     candidates = "\n".join(f"- {c['url']}" for c in search["citations"][:8]) or "(no results)"
 
     data, _cost = await llm.chat_json(
@@ -171,10 +175,20 @@ async def discover(brand: str, llm, http) -> BrandRecord | None:
                 "role": "system",
                 "content": (
                     "You identify a watch brand's own website. Retailers, marketplaces, fan sites and news "
-                    "outlets are never the answer. If none of the results is the brand's own site, return null."
+                    "outlets are never the answer. If none of the results is the brand's own site, return null.\n\n"
+                    "Prefer the brand's INDIAN storefront over its global one whenever both appear — a .in or "
+                    ".co.in domain, or an India path such as /in or /en-in. The shop sells Indian-market "
+                    "references, and the Indian site is the one that lists and prices them. Fall back to the "
+                    "global site only when the brand has no Indian storefront at all."
                 ),
             },
-            {"role": "user", "content": f"Brand: {brand}\n\nSearch results:\n{candidates}"},
+            {
+                "role": "user",
+                "content": (
+                    f"Brand: {brand}\n\nSearch results:\n{candidates}\n\n"
+                    "Which of these is the brand's own site, preferring its Indian storefront?"
+                ),
+            },
         ],
     )
 
@@ -224,3 +238,25 @@ async def ensure(brand: str, registry: BrandRegistry, llm, http, on_stage=None) 
         detail = ", ".join(record.domains) if record.domains else "none found"
         on_stage("brand", f"official site: {detail}{' (blocks bots)' if record.blocks_bots else ''}")
     return record
+
+
+# --- Why there is no site-search lookup here ------------------------------------
+#
+# Querying each brand's own search endpoint looks like the obvious way to find a
+# reference's official product page, and it was built and then removed. Two
+# findings, both checked directly:
+#
+#   seikowatches.co.in/robots.txt   User-agent: *
+#                                   Disallow: /search
+#
+# The brands ask crawlers to stay out of their search. Their /products/ pages are
+# not disallowed, so those are read as normal once a search engine surfaces them —
+# which is where every official Seiko photograph in this catalogue comes from.
+#
+# Casio is a separate case: casio.com serves robots.txt and a 13,000-URL sitemap
+# listing the exact product page, but every product URL answers 403 to any
+# server-side fetch, with a browser User-Agent too. That is a deliberate block,
+# not a header to work around.
+#
+# So official photography is taken where the brand permits it, and the shop's own
+# photographs (the sheet's Image URLs column) cover the rest.

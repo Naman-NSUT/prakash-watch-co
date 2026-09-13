@@ -227,8 +227,9 @@ export function applyFilters(
     if (!matchesQuery(entry, state.q)) return false;
     if (state.inStock && !entry.inStock) return false;
     if (state.onSale && !entry.price.discountPct) return false;
-    if (state.min !== null && entry.price.selling < state.min) return false;
-    if (state.max !== null && entry.price.selling > state.max) return false;
+    // An unpriced watch belongs in no price range at all.
+    if (state.min !== null && (entry.price.selling ?? -1) < state.min) return false;
+    if (state.max !== null && (entry.price.selling ?? Infinity) > state.max) return false;
 
     for (const [key, wanted] of Object.entries(state.selected)) {
       if (key === skipGroup || !wanted.length) continue;
@@ -285,9 +286,10 @@ export function sortEntries(entries: CatalogEntry[], sort: SortKey): CatalogEntr
   const sorted = [...entries];
   switch (sort) {
     case "price-asc":
-      return sorted.sort((a, b) => a.price.selling - b.price.selling);
+      // Unpriced pieces sort to the end either way rather than reading as free.
+      return sorted.sort((a, b) => (a.price.selling ?? Infinity) - (b.price.selling ?? Infinity));
     case "price-desc":
-      return sorted.sort((a, b) => b.price.selling - a.price.selling);
+      return sorted.sort((a, b) => (b.price.selling ?? -Infinity) - (a.price.selling ?? -Infinity));
     case "discount":
       return sorted.sort((a, b) => (b.price.discountPct ?? 0) - (a.price.discountPct ?? 0));
     case "name":

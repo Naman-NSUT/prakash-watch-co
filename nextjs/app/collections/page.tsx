@@ -11,6 +11,7 @@ import SearchBar from "@/components/shop/SearchBar";
 import SortSelect from "@/components/shop/SortSelect";
 import { getCatalogIndex, getBackdrops } from "@/lib/catalog";
 import { applyFilters, parseFilters, sortEntries } from "@/lib/filters";
+import { isPriced } from "@/agent/types";
 
 // Artifacts change whenever the agent runs or an edit is saved.
 export const dynamic = "force-dynamic";
@@ -30,13 +31,17 @@ export default async function CollectionsPage({
   const state = parseFilters(params);
 
   const [index, backdrops] = await Promise.all([getCatalogIndex(), getBackdrops()]);
+  // Priced as well as ready: a brand master can be ingested with no prices, and an
+  // unpriced watch has nothing to put on a card.
   const published = index.filter((entry) => entry.status === "ready");
 
   const matched = sortEntries(applyFilters(published, state), state.sort);
 
   // Bounds come from the whole catalogue, so the price field's placeholders stay
   // steady while filters narrow the results.
-  const prices = published.map((entry) => entry.price.selling);
+  // Bounds come from the priced watches only. A brand master carries no prices, so
+  // those list at "price on request" and simply sit outside any price range.
+  const prices = published.filter(isPriced).map((entry) => entry.price.selling);
   const bounds = {
     low: prices.length ? Math.floor(Math.min(...prices)) : 0,
     high: prices.length ? Math.ceil(Math.max(...prices)) : 0,

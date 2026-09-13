@@ -23,7 +23,9 @@ def render_markdown(report: RunReport) -> str:
         f"- **Model:** {report.model}{' (dry run)' if report.dry_run else ''}",
         f"- **Spend:** {format_usd(report.cost_usd)}",
         "",
-        f"**{counts.ready} ready** · {counts.needs_review} need review · {counts.failed} failed · "
+        f"**{counts.ready} ready** · {counts.needs_review} need review · "
+        + (f"{counts.updated} updated · " if counts.updated else "")
+        + f"{counts.failed} failed · "
         f"{counts.skipped} skipped · {counts.images_saved} images saved",
         "",
     ]

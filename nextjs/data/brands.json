@@ -1,5 +1,44 @@
 [
   {
+    "brand": "alba",
+    "domains": [
+      "alba-watches.co.in"
+    ],
+    "urls": [
+      "https://alba-watches.co.in/collections/all"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T14:44:47.105Z",
+    "note": "Discovered automatically. The .co.in domain and watch catalog/collections pages indicate it is the brand’s own Indian storefront."
+  },
+  {
+    "brand": "alexandre christie",
+    "domains": [
+      "alexandrechristie.in"
+    ],
+    "urls": [
+      "https://alexandrechristie.in/"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T18:14:02.973Z",
+    "note": "Discovered automatically. The .in domain matches the brand’s official Indian storefront."
+  },
+  {
+    "brand": "armani exchange",
+    "domains": [
+      "armaniexchange.in"
+    ],
+    "urls": [
+      "https://armaniexchange.in/collection/men-watches"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T22:20:58.847Z",
+    "note": "Discovered automatically. armaniexchange.in appears to be the brand’s own India storefront with dedicated watch collections."
+  },
+  {
     "brand": "boat",
     "domains": [
       "boat-lifestyle.com"
@@ -9,6 +48,32 @@
     "origin": "seed",
     "checkedAt": "",
     "note": "Shipped with the agent."
+  },
+  {
+    "brand": "britime",
+    "domains": [
+      "britime.in"
+    ],
+    "urls": [
+      "https://britime.in/collections/all-products"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T18:20:00.389Z",
+    "note": "Discovered automatically. The brand name matches the domain and it lists BRITIME products and collections under that site."
+  },
+  {
+    "brand": "calvin klein",
+    "domains": [
+      "calvinklein.com"
+    ],
+    "urls": [
+      "https://www.calvinklein.com/en/men/accessories/watches"
+    ],
+    "blocksBots": true,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T15:46:16.792Z",
+    "note": "Discovered automatically. calvinklein.com is Calvin Klein’s official domain and the watches pages are on the brand site (not a retailer). Refuses automated readers, so images fall back to other sources."
   },
   {
     "brand": "casio",
@@ -31,10 +96,19 @@
       "citizen.in"
     ],
     "urls": [],
-    "blocksBots": true,
-    "origin": "seed",
-    "checkedAt": "",
-    "note": "Shipped with the agent. Refuses automated readers."
+    "blocksBots": false,
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Shipped with the agent. Refuses automated readers. Verified 2026-09-13: accepts automated readers."
+  },
+  {
+    "brand": "cooper klein",
+    "domains": [],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Verified 2026-09-13. No official site exists for this brand anywhere. Photographs must come from the shop."
   },
   {
     "brand": "daniel wellington",
@@ -46,6 +120,32 @@
     "origin": "seed",
     "checkedAt": "",
     "note": "Shipped with the agent."
+  },
+  {
+    "brand": "diesel",
+    "domains": [
+      "dieselindia.com"
+    ],
+    "urls": [
+      "https://dieselindia.com/collection/watch-for-men"
+    ],
+    "blocksBots": false,
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Discovered automatically. dieselindia.com is the brand’s Indian storefront with watch collections and product pages priced/listed for India. Refuses automated readers, so images fall back to other sources. Verified 2026-09-13: accepts automated readers."
+  },
+  {
+    "brand": "emporio armani",
+    "domains": [
+      "armani.com"
+    ],
+    "urls": [
+      "https://www.armani.com/en-wx/emporio-armani/experience/watches"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T22:21:27.062Z",
+    "note": "Discovered automatically. This appears to be the official Emporio Armani section on the brand’s corporate site (armani.com), while the other results are retailers."
   },
   {
     "brand": "fastrack",
@@ -75,10 +175,10 @@
       "fossil.in"
     ],
     "urls": [],
-    "blocksBots": false,
-    "origin": "seed",
-    "checkedAt": "",
-    "note": "Shipped with the agent."
+    "blocksBots": true,
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Shipped with the agent. Verified 2026-09-13: refuses automated readers."
   },
   {
     "brand": "garmin",
@@ -90,6 +190,69 @@
     "origin": "seed",
     "checkedAt": "",
     "note": "Shipped with the agent."
+  },
+  {
+    "brand": "guess",
+    "domains": [
+      "guess.in"
+    ],
+    "urls": [
+      "https://guess.in/collection/watch"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T17:42:18.587Z",
+    "note": "Discovered automatically. guess.in is a brand-owned Guess India storefront and lists its watch collection directly."
+  },
+  {
+    "brand": "guess collection",
+    "domains": [
+      "guesswatches.com",
+      "gcwatches.com"
+    ],
+    "urls": [],
+    "blocksBots": false,
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Verified 2026-09-13. Gc is a separate watch line from Guess, not sold on guess.in. Corrected from guess.in, which was another brand entirely."
+  },
+  {
+    "brand": "just cavalli",
+    "domains": [
+      "justcavalliwatches.com"
+    ],
+    "urls": [
+      "https://justcavalliwatches.com/collections/view-all"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T22:19:01.146Z",
+    "note": "Discovered automatically. The site justcavalliwatches.com is an official brand-operated storefront, unlike retailers like Myntra or other brand sites like robertocavalli.com."
+  },
+  {
+    "brand": "kenneth cole",
+    "domains": [
+      "kennethcole.com"
+    ],
+    "urls": [
+      "https://www.kennethcole.com/collections/watches"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T22:01:15.018Z",
+    "note": "Discovered automatically. kennethcole.com is the brand’s official website and the watches section is listed on it."
+  },
+  {
+    "brand": "michael kors",
+    "domains": [
+      "michaelkors.global/in/en",
+      "michaelkors.global"
+    ],
+    "urls": [],
+    "blocksBots": true,
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Verified 2026-09-13. michaelkors.com is the US store; the Indian market is served from michaelkors.global/in/en. Refuses automated readers."
   },
   {
     "brand": "noise",
@@ -140,6 +303,19 @@
     "note": "Shipped with the agent. Refuses automated readers."
   },
   {
+    "brand": "spiky smart watch",
+    "domains": [
+      "spikyonline.com"
+    ],
+    "urls": [
+      "https://spikyonline.com/collections/smart-watches"
+    ],
+    "blocksBots": false,
+    "origin": "discovered",
+    "checkedAt": "2026-09-01T22:22:16.847Z",
+    "note": "Discovered automatically. spikyonline.com appears to be the brand’s direct-to-consumer store, including collections and product pages."
+  },
+  {
     "brand": "tag heuer",
     "domains": [
       "tagheuer.com/in"
@@ -153,14 +329,14 @@
   {
     "brand": "timex",
     "domains": [
-      "timexindia.com",
-      "timex.in"
+      "shop.timexindia.com",
+      "timexindia.com"
     ],
     "urls": [],
     "blocksBots": false,
-    "origin": "seed",
-    "checkedAt": "",
-    "note": "Shipped with the agent."
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Verified 2026-09-13. The storefront is on the shop. subdomain; timexindia.com alone is the brochure site."
   },
   {
     "brand": "tissot",
@@ -178,15 +354,25 @@
   {
     "brand": "titan",
     "domains": [
-      "titanworld.com",
       "titan.co.in"
     ],
+    "urls": [],
+    "blocksBots": true,
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Verified 2026-09-13. titanworld.com removed: it is Titan's Malaysian EXPORT store (titan-malaysia.myshopify.com, country AE, prices in USD), not its Indian site. Refuses automated readers."
+  },
+  {
+    "brand": "tommy hilfiger",
+    "domains": [
+      "usa.tommy.com"
+    ],
     "urls": [
-      "https://titanworld.com/"
+      "https://usa.tommy.com/en"
     ],
     "blocksBots": false,
-    "origin": "seed",
-    "checkedAt": "",
-    "note": "Shipped with the agent."
+    "origin": "verified",
+    "checkedAt": "2026-09-13T00:00:00.000Z",
+    "note": "Discovered automatically. This is an official Tommy Hilfiger storefront site (usa.tommy.com), while the others are news, retailer, or unrelated company pages. Refuses automated readers, so images fall back to other sources. Verified 2026-09-13: accepts automated readers."
   }
 ]
