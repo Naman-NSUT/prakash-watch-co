@@ -10,10 +10,128 @@
   --body: #a49b94;
   --muted: #8f8680;
   --dim: #6e6660;
-  --faint: #5c544f;
+  --faint: #665e59;
   --accent: oklch(0.72 0.14 34);
   --accent-soft: oklch(0.78 0.12 40);
+
+  /* Sunken surfaces — image tiles, log panes — and the two states that carry
+     meaning. Named rather than repeated by hand, because each theme has to be
+     able to move them: a near-black tile is invisible on a pale ground. */
+  --well: #100e0d;
+  --warn: #d8b98a;
+  --warn-line: #4a3f2c;
+  --warn-tint: rgba(216, 185, 138, 0.05);
+  --bad: #e0857a;
+  --bad-line: #4d2f2b;
+  /* Laid over a photograph so a badge stays readable whatever the picture is. */
+  --scrim: rgba(8, 8, 7, 0.82);
+  /* The brand plaque: pale in every theme, because a brand mark arrives in
+     one fixed colour and cannot invert with the page. */
+  --chip: #f6f2ee;
+  --chip-ink: #0e0d0c;
 }
+
+/* ---------------------------------------------------------------------------
+   Alternate palettes.
+
+   Each one redefines the same tokens and nothing else — no component knows which
+   is active. The default above stays the dark copper the shop has been using;
+   these are switched by data-theme on <html>.
+   --------------------------------------------------------------------------- */
+
+/* IVORY — warm paper. The light reading of the same house style: parchment
+   grounds, ink-brown text, and the copper darkened until it holds its own
+   against white. Closest to a printed catalogue. */
+html[data-theme="ivory"] {
+  --bg: #f7f4ef;
+  --panel: #fffdfa;
+  --card: #ffffff;
+  --card-hover: #f3eee6;
+  --line: #e6dfd4;
+  --line2: #efe9e0;
+  --border: #d5cbbc;
+  --text: #1c1713;
+  --body: #4f463d;
+  --muted: #6d6257;
+  --dim: #8b8073;
+  --faint: #9d9182;
+  --accent: oklch(0.52 0.13 34);
+  --accent-soft: oklch(0.58 0.12 40);
+  --well: #f0ebe2;
+  --warn: #7d5c1f;
+  --warn-line: #d8c69b;
+  --warn-tint: rgba(125, 92, 31, 0.07);
+  --bad: #9c3f35;
+  --bad-line: #e2bdb7;
+  --scrim: rgba(28, 23, 19, 0.55);
+  /* The brand plaque: pale in every theme, because a brand mark arrives in
+     one fixed colour and cannot invert with the page. */
+  --chip: #fffdfa;
+  --chip-ink: #1c1713;
+}
+
+/* PORCELAIN — cool gallery white. Neutral greys with a steel-blue accent, so
+   the watches carry all the colour on the page and nothing competes with the
+   photography. */
+html[data-theme="porcelain"] {
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --card: #ffffff;
+  --card-hover: #edf0f4;
+  --line: #dee4ea;
+  --line2: #e9edf2;
+  --border: #c7d0db;
+  --text: #101720;
+  --body: #454f5b;
+  --muted: #5f6b78;
+  --dim: #7e8a97;
+  --faint: #88939f;
+  --accent: oklch(0.50 0.10 245);
+  --accent-soft: oklch(0.58 0.09 240);
+  --well: #e7ecf2;
+  --warn: #7a5a14;
+  --warn-line: #d9c89a;
+  --warn-tint: rgba(122, 90, 20, 0.07);
+  --bad: #a03a33;
+  --bad-line: #e3bab6;
+  --scrim: rgba(16, 23, 32, 0.55);
+  /* The brand plaque: pale in every theme, because a brand mark arrives in
+     one fixed colour and cannot invert with the page. */
+  --chip: #ffffff;
+  --chip-ink: #101720;
+}
+
+/* DUSK — the middle reading. Neither near-black nor white: cool slate surfaces
+   lifted well above the background, with a warm brass accent across them. A lit
+   display case in a dim room, which is what a watch shop actually looks like. */
+html[data-theme="dusk"] {
+  --bg: #1a1e24;
+  --panel: #222831;
+  --card: #2a313b;
+  --card-hover: #333b47;
+  --line: #39414d;
+  --line2: #2f3742;
+  --border: #4a5361;
+  --text: #f1f3f6;
+  --body: #b8c0ca;
+  --muted: #9aa3ae;
+  --dim: #7c8591;
+  --faint: #727b87;
+  --accent: oklch(0.76 0.11 78);
+  --accent-soft: oklch(0.82 0.09 82);
+  --well: #161a20;
+  --warn: #e0c48f;
+  --warn-line: #5a4c30;
+  --warn-tint: rgba(224, 196, 143, 0.06);
+  --bad: #e58c81;
+  --bad-line: #5a332e;
+  --scrim: rgba(10, 13, 17, 0.78);
+  /* The brand plaque: pale in every theme, because a brand mark arrives in
+     one fixed colour and cannot invert with the page. */
+  --chip: #f1f3f6;
+  --chip-ink: #1a1e24;
+}
+
 * { box-sizing: border-box; }
 html { background: var(--bg); scroll-behavior: smooth; }
 body {
@@ -47,7 +165,7 @@ a:hover { color: var(--accent-soft); }
 .btn:hover { transform: translateY(-2px); }
 .btn-solid { background: var(--text); color: var(--bg); }
 .btn-solid:hover { color: var(--bg); background: var(--accent-soft); }
-.btn-ghost { border: 1px solid var(--border); color: #cdc5be; }
+.btn-ghost { border: 1px solid var(--border); color: var(--body); }
 
 .row:hover { background: var(--card); padding-left: 22px !important; }
 .hover-card { transition: background-color 0.45s; }
@@ -80,7 +198,7 @@ a:hover { color: var(--accent-soft); }
 .offer-kind { font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
 .offer-soon {
   font-size: 8.5px; letter-spacing: 0.16em; text-transform: uppercase;
-  color: #12100f; background: var(--accent); padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  color: var(--well); background: var(--accent); padding: 4px 9px; border-radius: 999px; white-space: nowrap;
 }
 .offer-headline { margin: 0; font-size: clamp(26px, 3vw, 36px); line-height: 1.05; color: var(--accent); }
 .offer-title { margin: 10px 0 0; font-size: 20px; line-height: 1.25; }
@@ -145,7 +263,7 @@ a:hover { color: var(--accent-soft); }
   transition: border-color 0.3s;
 }
 .svc-input::placeholder { color: var(--faint); }
-.svc-input:hover { border-color: #3a3431; }
+.svc-input:hover { border-color: var(--border); }
 .svc-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
 textarea.svc-input { resize: vertical; line-height: 1.65; }
 
@@ -159,7 +277,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   font-size: 13.5px; font-weight: 300; color: var(--body); cursor: pointer;
   transition: border-color 0.3s, color 0.3s;
 }
-.svc-kind:hover { border-color: #3a3431; color: var(--text); }
+.svc-kind:hover { border-color: var(--border); color: var(--text); }
 .svc-kind:has(input:checked) { border-color: var(--accent); color: var(--text); }
 .svc-kind:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -298,7 +416,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .brand-chip:hover .brand-disc,
 .brand-chip:focus-visible .brand-disc {
   transform: translateY(-6px);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 14px 34px var(--scrim);
 }
 .brand-chip:hover .brand-name,
 .brand-chip:focus-visible .brand-name { color: var(--accent-soft); }
@@ -420,8 +538,8 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
 }
 .ops-chip[data-tone="good"] { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 45%, transparent); }
-.ops-chip[data-tone="warn"] { color: #d8b98a; border-color: #4a3f2c; }
-.ops-chip[data-tone="bad"]  { color: #e0857a; border-color: #4d2f2b; }
+.ops-chip[data-tone="warn"] { color: var(--warn); border-color: var(--warn-line); }
+.ops-chip[data-tone="bad"]  { color: var(--bad); border-color: var(--bad-line); }
 .ops-chip[data-tone="mute"] { color: var(--dim); }
 
 .ops-field {
@@ -434,7 +552,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 10px 16px; border: 1px solid var(--border); background: transparent;
-  color: #cdc5be; font-family: var(--font-mono), monospace; font-size: 10px;
+  color: var(--body); font-family: var(--font-mono), monospace; font-size: 10px;
   letter-spacing: .16em; text-transform: uppercase; cursor: pointer;
   transition: border-color .18s ease, color .18s ease, background-color .18s ease;
 }
@@ -463,7 +581,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-filter[data-on="true"] .mono { color: var(--accent); }
 .ops-filter:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.ops-error { margin: 0 0 var(--ops-3); font-size: 12.5px; color: #e0857a; }
+.ops-error { margin: 0 0 var(--ops-3); font-size: 12.5px; color: var(--bad); }
 .ops-empty { font-size: 13px; font-weight: 300; color: var(--dim); padding: var(--ops-5) 0; }
 .ops-foot-note { margin-top: var(--ops-5); font-size: 11.5px; line-height: 1.7; font-weight: 300; color: var(--faint); max-width: 760px; }
 
@@ -485,7 +603,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-ticket-who .mono, .ops-ticket-what .mono { font-size: 9.5px; letter-spacing: .1em; color: var(--faint); }
 .ops-ticket-who b, .ops-ticket-what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ops-ticket-age { justify-self: end; font-size: 10px; color: var(--faint); }
-.ops-overdue { color: #e0857a; font-weight: 400; }
+.ops-overdue { color: var(--bad); font-weight: 400; }
 
 .ops-pill {
   justify-self: start; padding: 4px 10px; border-radius: 999px;
@@ -494,12 +612,12 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 }
 .ops-pill-received   { color: var(--body);  border-color: var(--border); }
 .ops-pill-assessed,
-.ops-pill-quoted     { color: #d8b98a; border-color: #4a3f2c; }
+.ops-pill-quoted     { color: var(--warn); border-color: var(--warn-line); }
 .ops-pill-approved,
 .ops-pill-in-progress{ color: var(--accent); border-color: color-mix(in oklab, var(--accent) 45%, transparent); }
-.ops-pill-ready      { color: #12100f; background: var(--accent); border-color: var(--accent); }
+.ops-pill-ready      { color: var(--well); background: var(--accent); border-color: var(--accent); }
 .ops-pill-collected  { color: var(--faint); }
-.ops-pill-declined   { color: #e0857a; border-color: #4d2f2b; }
+.ops-pill-declined   { color: var(--bad); border-color: var(--bad-line); }
 
 .ops-ticket-body { padding: 0 var(--ops-3) var(--ops-4); border-top: 1px solid var(--line); }
 .ops-ticket-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--ops-5); padding-top: var(--ops-4); }
@@ -557,7 +675,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-offer-dates { font-size: 9.5px; letter-spacing: .1em; color: var(--faint); margin-top: 4px; }
 .ops-offer-foot { display: flex; gap: 6px; flex-wrap: wrap; padding-top: var(--ops-2); border-top: 1px solid var(--line2); }
 .ops-offer-foot .ops-btn { padding: 6px 11px; font-size: 9px; }
-.ops-danger:hover:not(:disabled) { border-color: #6b3a34 !important; color: #e0857a !important; }
+.ops-danger:hover:not(:disabled) { border-color: #6b3a34 !important; color: var(--bad) !important; }
 
 @media (max-width: 900px) {
   .ops { grid-template-columns: minmax(0, 1fr); }
@@ -622,8 +740,8 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-price-mrp { font-size: 10px; color: var(--faint); }
 .ops-price-mrp b { color: var(--accent); font-weight: 500; }
 
-.ops-verdict-mrp-moved { color: #d8b98a; border-color: #4a3f2c; }
-.ops-verdict-undercut  { color: #e0857a; border-color: #4d2f2b; }
+.ops-verdict-mrp-moved { color: var(--warn); border-color: var(--warn-line); }
+.ops-verdict-undercut  { color: var(--bad); border-color: var(--bad-line); }
 .ops-verdict-keenest   { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 45%, transparent); }
 .ops-verdict-unchanged { color: var(--dim); }
 .ops-verdict-no-data   { color: var(--faint); }
@@ -658,4 +776,67 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-ref-field input:focus { border-color: var(--accent); }
 .ops-ref-field > em {
   font-style: normal; font-size: 11.5px; line-height: 1.6; font-weight: 300; color: var(--dim);
+}
+
+/* GRAPHITE — cool charcoal. A true neutral grey rather than a tinted black:
+   surfaces step up in even increments so panels read as stacked card stock, and
+   the accent is cool too, which keeps the warm metals in the photography as the
+   only warm thing on the page. */
+html[data-theme="graphite"] {
+  --bg: #1f2122;
+  --panel: #272a2b;
+  --card: #2f3233;
+  --card-hover: #383c3d;
+  --line: #3c4041;
+  --line2: #333738;
+  --border: #4d5253;
+  --text: #eff1f1;
+  --body: #b7bdbe;
+  --muted: #9aa0a1;
+  --dim: #7e8586;
+  --faint: #767d7e;
+  --accent: oklch(0.74 0.08 205);
+  --accent-soft: oklch(0.80 0.07 200);
+  --well: #191b1c;
+  --warn: #ddc08c;
+  --warn-line: #55492f;
+  --warn-tint: rgba(221, 192, 140, 0.06);
+  --bad: #e28b80;
+  --bad-line: #56322d;
+  --scrim: rgba(12, 14, 14, 0.78);
+  /* The brand plaque: pale in every theme, because a brand mark arrives in
+     one fixed colour and cannot invert with the page. */
+  --chip: #eff1f1;
+  --chip-ink: #1f2122;
+}
+
+/* LINEN — off-white and beige. Warmer and softer than Ivory: an unbleached,
+   sandy ground with an olive-bronze accent, so the page reads as cloth rather
+   than paper. The quietest of the six, and the kindest to long reading. */
+html[data-theme="linen"] {
+  --bg: #f1ece2;
+  --panel: #faf6ee;
+  --card: #fdfbf6;
+  --card-hover: #efe9dd;
+  --line: #e1d8c9;
+  --line2: #eae3d7;
+  --border: #cdc2ae;
+  --text: #221e17;
+  --body: #544b3f;
+  --muted: #706557;
+  --dim: #8d8274;
+  --faint: #998e80;
+  --accent: oklch(0.47 0.09 88);
+  --accent-soft: oklch(0.54 0.09 92);
+  --well: #ece5d8;
+  --warn: #7a5c1c;
+  --warn-line: #d6c498;
+  --warn-tint: rgba(122, 92, 28, 0.07);
+  --bad: #9a3d33;
+  --bad-line: #e0b9b3;
+  --scrim: rgba(34, 30, 23, 0.55);
+  /* The brand plaque: pale in every theme, because a brand mark arrives in
+     one fixed colour and cannot invert with the page. */
+  --chip: #fdfbf6;
+  --chip-ink: #221e17;
 }

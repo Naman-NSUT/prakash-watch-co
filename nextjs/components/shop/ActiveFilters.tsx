@@ -43,7 +43,7 @@ export default function ActiveFilters({ state }: { state: FilterState }) {
             borderRadius: 999,
             fontSize: 9.5,
             letterSpacing: "0.12em",
-            color: "#cdc5be",
+            color: "var(--body)",
             textTransform: "uppercase",
           }}
         >

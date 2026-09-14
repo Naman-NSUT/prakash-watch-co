@@ -142,7 +142,7 @@ export default function BillWriter({ stock }: { stock: Sellable[] }) {
                         <span style={{ color: "var(--text)" }}>{item.title}</span>
                         <span className="mono" style={{ display: "block", fontSize: 9.5, color: "var(--faint)", marginTop: 2 }}>
                           {item.modelNumber}
-                          {cut > 0 && <span style={{ color: "#d8b98a" }}> · {inr(cut)} off list</span>}
+                          {cut > 0 && <span style={{ color: "var(--warn)" }}> · {inr(cut)} off list</span>}
                         </span>
                       </td>
                       <td>
@@ -194,7 +194,7 @@ export default function BillWriter({ stock }: { stock: Sellable[] }) {
         </h2>
 
         <Row label="List price" value={inr(totals.list)} />
-        {totals.discount > 0 && <Row label="Discount" value={`− ${inr(totals.discount)}`} tone="#d8b98a" />}
+        {totals.discount > 0 && <Row label="Discount" value={`− ${inr(totals.discount)}`} tone="var(--warn)" />}
         <Row label="Before tax" value={inr(totals.taxable)} />
         <Row label={`GST ${gstRate}%`} value={inr(totals.gst)} />
 
@@ -227,7 +227,7 @@ export default function BillWriter({ stock }: { stock: Sellable[] }) {
         {errors.length > 0 && (
           <ul style={{ listStyle: "none", margin: "14px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             {errors.map((error) => (
-              <li key={error} className="mono" style={{ fontSize: 10.5, color: "#e0857a", lineHeight: 1.5 }}>{error}</li>
+              <li key={error} className="mono" style={{ fontSize: 10.5, color: "var(--bad)", lineHeight: 1.5 }}>{error}</li>
             ))}
           </ul>
         )}

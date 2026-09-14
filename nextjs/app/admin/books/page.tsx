@@ -81,7 +81,7 @@ export default async function BooksPage({ searchParams }: { searchParams: Promis
       </nav>
 
       {pnl.costMissing && (
-        <p className="ops-panel" style={{ margin: "0 0 16px", padding: "12px 16px", fontSize: 12.5, fontWeight: 300, color: "#d8b98a", borderColor: "#4a3f2c", lineHeight: 1.7 }}>
+        <p className="ops-panel" style={{ margin: "0 0 16px", padding: "12px 16px", fontSize: 12.5, fontWeight: 300, color: "var(--warn)", borderColor: "var(--warn-line)", lineHeight: 1.7 }}>
           No cost prices are recorded, so cost of goods sold is nil and gross profit equals revenue — which is not true.
           Add a cost column to the stock sheet (<span className="mono">Cost</span>, <span className="mono">Purchase Price</span> or
           <span className="mono"> Dealer Price</span> are all recognised) and the margin, stock valuation and balance sheet become real.
@@ -190,7 +190,7 @@ function Sheet({ sheet }: { sheet: Awaited<ReturnType<typeof balanceSheet>> }) {
         <Group title="Capital" rows={sheet.equity} total={sheet.totalEquity} />
         <Total label="Liabilities + capital" value={sheet.totalLiabilities + sheet.totalEquity} strong />
         <p className="mono" style={{ marginTop: 14, fontSize: 9.5, letterSpacing: ".14em", textTransform: "uppercase",
-          color: sheet.balanced ? "var(--accent)" : "#e0857a" }}>
+          color: sheet.balanced ? "var(--accent)" : "var(--bad)" }}>
           {sheet.balanced ? "Balanced" : `Out by ${money(Math.abs(sheet.difference))}`}
         </p>
       </div>
@@ -254,7 +254,7 @@ function Stock({ stock }: { stock: Awaited<ReturnType<typeof stockValuation>> })
                 <td style={{ color: "var(--text)" }}>{row.title}</td>
                 <td style={{ fontSize: 12 }}>{row.brand}</td>
                 <td className="ops-num">{row.units}</td>
-                <td className="ops-num" style={{ color: row.cost ? "var(--body)" : "#d8b98a" }}>{row.cost ? money(row.cost) : "not recorded"}</td>
+                <td className="ops-num" style={{ color: row.cost ? "var(--body)" : "var(--warn)" }}>{row.cost ? money(row.cost) : "not recorded"}</td>
                 <td className="ops-num">{money(row.retail)}</td>
                 <td className="ops-num" style={{ color: "var(--text)" }}>{row.cost ? money(row.cost * row.units) : "—"}</td>
               </tr>
@@ -330,7 +330,7 @@ function Audit({ entries }: { entries: Awaited<ReturnType<typeof readJournal>> }
               <tr key={entry.id}>
                 <td className="mono" style={{ fontSize: 10, color: "var(--text)" }}>{entry.voucherNo}</td>
                 <td className="mono" style={{ fontSize: 10.5 }}>{entry.date}</td>
-                <td className="mono" style={{ fontSize: 10, color: entry.date < entry.createdAt.slice(0, 10) ? "#d8b98a" : "var(--dim)" }}>
+                <td className="mono" style={{ fontSize: 10, color: entry.date < entry.createdAt.slice(0, 10) ? "var(--warn)" : "var(--dim)" }}>
                   {entry.createdAt.slice(0, 10)}
                 </td>
                 <td><span className="ops-chip" data-tone="mute">{entry.type}</span></td>

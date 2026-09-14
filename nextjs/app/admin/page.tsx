@@ -174,7 +174,7 @@ function Attention({ href, count, label, hint }: { href: string; count: number; 
   return (
     <li>
       <Link href={href} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-        <span style={{ color: "#d8b98a", marginTop: 1 }}>{Icons.alert}</span>
+        <span style={{ color: "var(--warn)", marginTop: 1 }}>{Icons.alert}</span>
         <span>
           <span style={{ fontSize: 13, color: "var(--text)" }}>
             <span className="mono">{count}</span> {label}

@@ -25,7 +25,7 @@ const money = (n: number) => formatInr(n);
 const plain = (n: number) => new Intl.NumberFormat("en-IN").format(Math.round(n));
 
 /** Distinguishable without relying on hue alone — every band is labelled too. */
-export const SERIES = ["var(--accent)", "#8a6a52", "#5f6f72", "#7a6f8a", "#6f7a5f", "#8a7a5f"];
+export const SERIES = ["var(--accent)", "var(--warn-line)", "#5f6f72", "#7a6f8a", "#6f7a5f", "#8a7a5f"];
 
 function DataTable({ rows, unit }: { rows: Datum[]; unit: "money" | "count" }) {
   const total = rows.reduce((sum, row) => sum + row.value, 0);
@@ -86,7 +86,7 @@ export function RankedBars({ rows, unit = "money", max }: { rows: Datum[]; unit?
             </div>
             {row.compare !== undefined && (
               <div style={{ height: 3, background: "var(--line)", marginTop: 2 }} title={`Sold ${plain(row.compare)}`}>
-                <div style={{ height: "100%", width: `${(row.compare / peak) * 100}%`, background: "#8a6a52" }} />
+                <div style={{ height: "100%", width: `${(row.compare / peak) * 100}%`, background: "var(--warn-line)" }} />
               </div>
             )}
           </li>

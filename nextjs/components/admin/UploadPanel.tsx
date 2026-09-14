@@ -268,8 +268,8 @@ export default function UploadPanel() {
   const toneColour: Record<LogLine["tone"], string> = {
     plain: "var(--body)",
     good: "var(--accent)",
-    warn: "#d8b98a",
-    bad: "#e0857a",
+    warn: "var(--warn)",
+    bad: "var(--bad)",
     dim: "var(--faint)",
   };
 
@@ -497,7 +497,7 @@ export default function UploadPanel() {
                   margin: "10px 0 0",
                   fontSize: 13.5,
                   lineHeight: 1.6,
-                  color: plan.balanceUsd < plan.estimatedCostUsd ? "#e0857a" : "var(--muted)",
+                  color: plan.balanceUsd < plan.estimatedCostUsd ? "var(--bad)" : "var(--muted)",
                 }}
               >
                 Balance ${plan.balanceUsd.toFixed(2)}.{" "}
@@ -533,7 +533,7 @@ export default function UploadPanel() {
                           <td style={{ padding: "6px 12px 6px 0", color: "var(--text)" }}>{b.brand}</td>
                           <td style={{ padding: "6px 12px" }}>{b.covered + b.uncovered}</td>
                           <td style={{ padding: "6px 12px", color: "var(--accent)" }}>{b.covered}</td>
-                          <td style={{ padding: "6px 12px", color: b.uncovered ? "#d8b98a" : undefined }}>
+                          <td style={{ padding: "6px 12px", color: b.uncovered ? "var(--warn)" : undefined }}>
                             {b.uncovered}
                           </td>
                           <td style={{ padding: "6px 0 6px 12px", color: "var(--faint)" }}>
@@ -605,11 +605,11 @@ export default function UploadPanel() {
           <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.14em", color: "var(--accent)" }}>
             {report.counts.ready} LISTED
           </span>
-          <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.14em", color: "#d8b98a" }}>
+          <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.14em", color: "var(--warn)" }}>
             {report.counts.needsReview} NEED REVIEW
           </span>
           {report.counts.failed > 0 && (
-            <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.14em", color: "#e0857a" }}>
+            <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.14em", color: "var(--bad)" }}>
               {report.counts.failed} FAILED
             </span>
           )}
@@ -652,7 +652,7 @@ function Toggle({
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        style={{ accentColor: "#c98a5e", width: 14, height: 14 }}
+        style={{ accentColor: "var(--accent-soft)", width: 14, height: 14 }}
       />
       {label}
     </label>

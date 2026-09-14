@@ -14,7 +14,7 @@
  * which would silently eat this file.
  */
 import "server-only";
-import { promises as fs } from "node:fs";
+import { existsSync, promises as fs } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { getCatalogIndex, PUBLISHED_STATUS } from "./catalog";
@@ -85,6 +85,28 @@ async function readNotes(): Promise<Map<string, BrandNote>> {
   }
 }
 
+/**
+ * A logo file the shop has dropped in, or null.
+ *
+ * Looked up on disk rather than configured, so adding a brand mark is copying a
+ * file into public/brands and nothing else — no JSON to edit, no deploy step to
+ * remember. SVG first: a wordmark set in vector stays crisp on the disc at any
+ * size, where a PNG at 110px wide is already soft on a retina screen.
+ */
+const LOGO_EXTENSIONS = [".svg", ".png", ".webp"] as const;
+
+function findLogo(slug: string): string | null {
+  for (const extension of LOGO_EXTENSIONS) {
+    const relative = `brands/${slug}${extension}`;
+    try {
+      if (existsSync(join(process.cwd(), "public", relative))) return `/${relative}`;
+    } catch {
+      // An unreadable public directory simply means no logo.
+    }
+  }
+  return null;
+}
+
 function summarise(brand: string, entries: CatalogEntry[], note: BrandNote | undefined): BrandSummary {
   const inStock = entries.filter((entry) => entry.inStock);
   const reduced = entries.filter((entry) => (entry.price.discountPct ?? 0) > 0);
@@ -107,7 +129,8 @@ function summarise(brand: string, entries: CatalogEntry[], note: BrandNote | und
     tagline: note?.tagline ?? null,
     blurb: note?.blurb ?? null,
     since: note?.since ?? null,
-    logo: note?.logo ?? null,
+    // A file on disk wins; the note's URL remains available for a hosted one.
+    logo: findLogo(brandSlug(brand)) ?? note?.logo ?? null,
     // A shop-set badge wins; otherwise the only claim made is one the prices prove.
     badge: note?.badge ?? (reduced.length > 0 ? "Reduced" : null),
     count: entries.length,

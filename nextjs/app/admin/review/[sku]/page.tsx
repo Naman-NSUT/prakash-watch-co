@@ -89,7 +89,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 13 }}>
               {product.review.flags.map((flag) => (
                 <li key={flag}>
-                  <div className="mono" style={{ fontSize: 9, letterSpacing: "0.14em", color: "#d8b98a", textTransform: "uppercase" }}>
+                  <div className="mono" style={{ fontSize: 9, letterSpacing: "0.14em", color: "var(--warn)", textTransform: "uppercase" }}>
                     {flag.replace(/-/g, " ")}
                   </div>
                   <div style={{ fontSize: 12.5, lineHeight: 1.6, fontWeight: 300, color: "var(--muted)", marginTop: 4 }}>

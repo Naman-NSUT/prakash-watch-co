@@ -30,7 +30,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {bill.demo && (
-        <p className="ops-panel" style={{ maxWidth: 780, margin: "0 0 12px", padding: "10px 16px", fontSize: 12, fontWeight: 300, color: "#d8b98a", borderColor: "#4a3f2c" }}>
+        <p className="ops-panel" style={{ maxWidth: 780, margin: "0 0 12px", padding: "10px 16px", fontSize: 12, fontWeight: 300, color: "var(--warn)", borderColor: "var(--warn-line)" }}>
           Sample invoice — generated to demonstrate the reports. Not a real sale.
         </p>
       )}

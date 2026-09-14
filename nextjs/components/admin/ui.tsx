@@ -62,7 +62,7 @@ export function Stat({
   delta?: { pct: number; label: string } | null;
   tone?: "plain" | "accent" | "warn";
 }) {
-  const colour = tone === "accent" ? "var(--accent-soft)" : tone === "warn" ? "#d8b98a" : "var(--text)";
+  const colour = tone === "accent" ? "var(--accent-soft)" : tone === "warn" ? "var(--warn)" : "var(--text)";
   const rising = (delta?.pct ?? 0) >= 0;
 
   return (
@@ -71,7 +71,7 @@ export function Stat({
       <div className="mono" style={{ fontSize: 25, marginTop: 10, color: colour, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{value}</div>
       {sub && <div style={{ fontSize: 12, fontWeight: 300, color: "var(--dim)", marginTop: 6 }}>{sub}</div>}
       {delta && (
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 11.5, fontWeight: 300, color: rising ? "var(--accent)" : "#e0857a" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 11.5, fontWeight: 300, color: rising ? "var(--accent)" : "var(--bad)" }}>
           {rising ? Icons.up : Icons.down}
           <span>{Math.abs(delta.pct).toFixed(0)}% {rising ? "up" : "down"} {delta.label}</span>
         </div>

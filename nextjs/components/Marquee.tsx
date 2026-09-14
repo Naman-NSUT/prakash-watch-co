@@ -7,7 +7,7 @@ function Strip() {
   return (
     <div className="serif" style={{
       display: "flex", alignItems: "center", gap: 54, paddingRight: 54,
-      fontSize: 34, color: "#6b625c", whiteSpace: "nowrap",
+      fontSize: 34, color: "var(--dim)", whiteSpace: "nowrap",
     }}>
       {brands.map((b) => (
         <span key={b} style={{ display: "flex", alignItems: "center", gap: 54 }}>

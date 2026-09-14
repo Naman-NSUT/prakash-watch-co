@@ -32,7 +32,7 @@ export default function Letterhead({
         <div style={{ fontSize: 11, fontWeight: 300, color: "var(--dim)", marginTop: 7, lineHeight: 1.7 }}>
           {[firm.address, firm.phone, firm.email].filter(Boolean).join(" · ")}
           {registrations.length > 0 ? <><br />{registrations.join(" · ")}</> : (
-            <><br /><span style={{ color: "#d8b98a" }}>GSTIN and PAN not set — fill them in data/firm.json before filing</span></>
+            <><br /><span style={{ color: "var(--warn)" }}>GSTIN and PAN not set — fill them in data/firm.json before filing</span></>
           )}
         </div>
       </div>
@@ -45,7 +45,7 @@ export default function Letterhead({
         <div className="mono" style={{ fontSize: 9, color: "var(--dim)", marginTop: 5 }}>
           Generated {new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
         </div>
-        {note && <div className="mono" style={{ fontSize: 8.5, color: "#d8b98a", marginTop: 4 }}>{note}</div>}
+        {note && <div className="mono" style={{ fontSize: 8.5, color: "var(--warn)", marginTop: 4 }}>{note}</div>}
       </div>
     </header>
   );

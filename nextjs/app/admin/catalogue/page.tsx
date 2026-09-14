@@ -79,7 +79,7 @@ export default async function CataloguePage({
               {ordered.map((product) => (
                 <tr key={product.sku}>
                   <td>
-                    <span style={{ position: "relative", display: "block", width: 34, height: 34, background: "#100e0d", border: "1px solid var(--line)" }}>
+                    <span style={{ position: "relative", display: "block", width: 34, height: 34, background: "var(--well)", border: "1px solid var(--line)" }}>
                       {product.images[0] && (
                         <Image src={product.images[0].url} alt="" fill sizes="34px" style={{ objectFit: "contain", padding: 2 }} />
                       )}
@@ -105,7 +105,7 @@ export default async function CataloguePage({
                       ? <span style={{ color: "var(--faint)" }}>not priced</span>
                       : formatInr(product.price.selling)}
                   </td>
-                  <td className="ops-num" style={{ color: product.images.length ? "var(--body)" : "#e0857a" }}>{product.images.length}</td>
+                  <td className="ops-num" style={{ color: product.images.length ? "var(--body)" : "var(--bad)" }}>{product.images.length}</td>
                   <td className="ops-num">{product.specs.length}</td>
                   <td className="ops-num" style={{ color: product.confidence.overall > 0.7 ? "var(--accent)" : "var(--dim)" }}>
                     {(product.confidence.overall * 100).toFixed(0)}%

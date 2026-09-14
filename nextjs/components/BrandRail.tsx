@@ -8,10 +8,11 @@ import type { BrandSummary } from "@/lib/brands";
 /**
  * The house rail: every brand the shop carries, as a wordmark you can walk along.
  *
- * A light chip on a dark page, because a brand rail is a navigation affordance
- * before it is decoration — it has to be the first thing the eye finds. The
- * treatment follows `.btn-solid`, which already inverts to the warm off-white,
- * so the rail reads as part of the house rather than a borrowed component.
+ * A pale chip whatever the palette, because a brand rail is a navigation
+ * affordance before it is decoration — it has to be the first thing the eye
+ * finds. The disc deliberately does NOT follow the theme: a brand supplies its
+ * mark in one fixed colour, almost always dark, so a disc that inverted with the
+ * page would swallow the logo on every light palette.
  *
  * Wordmarks are set in type unless the shop supplies a logo file. That is a
  * deliberate default: a brand's real logo, well reproduced, is better than type —
@@ -176,7 +177,7 @@ function BrandChip({ brand }: { brand: BrandSummary }) {
             width: 148,
             height: 148,
             borderRadius: "50%",
-            background: "var(--text)",
+            background: "var(--chip)",
             padding: brand.logo ? 30 : 18,
             overflow: "hidden",
           }}
@@ -190,7 +191,7 @@ function BrandChip({ brand }: { brand: BrandSummary }) {
                 fontWeight: 500,
                 letterSpacing: brand.name.length > 8 ? "0.06em" : "0.1em",
                 lineHeight: 1.1,
-                color: "var(--bg)",
+                color: "var(--chip-ink)",
                 textTransform: "uppercase",
                 wordBreak: "break-word",
               }}
@@ -211,7 +212,7 @@ function BrandChip({ brand }: { brand: BrandSummary }) {
               padding: "4px 10px",
               borderRadius: 999,
               background: "var(--accent)",
-              color: "#12100f",
+              color: "var(--well)",
               fontSize: 8.5,
               fontWeight: 500,
               letterSpacing: "0.16em",

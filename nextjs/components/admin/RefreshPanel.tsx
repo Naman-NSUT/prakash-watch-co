@@ -147,7 +147,7 @@ export default function RefreshPanel({ total }: { total: number }) {
           {rows.map((row, index) => (
             <div key={`${row.sku}-${index}`}>
               {row.status === "unreachable" ? (
-                <span style={{ color: "#d8b98a" }}>! {row.sku} — its source page could not be read</span>
+                <span style={{ color: "var(--warn)" }}>! {row.sku} — its source page could not be read</span>
               ) : (
                 <>
                   <span style={{ color: "var(--accent)" }}>{row.sku}</span>{" "}

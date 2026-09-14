@@ -13,7 +13,7 @@ export default function Hero() {
       <div style={{ position: "relative", zIndex: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 34 }}>
           <span style={{ width: 54, height: 1, background: "var(--accent)" }} />
-          <span className="kicker" style={{ color: "#a89f98" }}>Delhi NCR · Four Boutiques</span>
+          <span className="kicker" style={{ color: "var(--body)" }}>Delhi NCR · Four Boutiques</span>
         </div>
         <h1 className="serif" style={{ margin: 0, fontSize: "clamp(56px, 9.2vw, 158px)", lineHeight: 0.85, letterSpacing: "-0.025em" }}>
           Time,<br /><span className="italic-accent">kept</span> well.

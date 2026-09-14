@@ -26,13 +26,13 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
         style={{
           position: "relative",
           aspectRatio: "1 / 1",
-          background: "#100e0d",
+          background: "var(--well)",
           // The CSS wash renders instantly; the generated image layers over it.
           backgroundImage: usesBackdrop
             ? backdrop!.css
             : entry.image
               ? undefined
-              : "repeating-linear-gradient(135deg, #191614 0 2px, #100e0d 2px 9px)",
+              : "repeating-linear-gradient(135deg, var(--card-hover) 0 2px, var(--well) 2px 9px)",
           borderBottom: "1px solid var(--line)",
           overflow: "hidden",
         }}
@@ -86,7 +86,7 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
               fontSize: 9.5,
               letterSpacing: "0.2em",
               color: "var(--dim)",
-              background: "rgba(8,8,7,0.82)",
+              background: "var(--scrim)",
               border: "1px solid var(--border)",
             }}
           >
@@ -105,7 +105,7 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
               fontSize: 9.5,
               letterSpacing: "0.18em",
               color: "var(--accent)",
-              background: "rgba(8,8,7,0.82)",
+              background: "var(--scrim)",
               border: "1px solid var(--border)",
             }}
           >

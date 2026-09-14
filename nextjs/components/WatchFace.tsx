@@ -20,35 +20,35 @@ export default function WatchFace() {
   return (
     <div style={{
       position: "relative", width: 380, height: 380, borderRadius: 999,
-      background: "radial-gradient(circle at 34% 28%, #23201e, #0d0c0b 72%)", border: "1px solid #302b28",
+      background: "radial-gradient(circle at 34% 28%, var(--line), var(--panel) 72%)", border: "1px solid var(--border)",
       boxShadow: "0 60px 120px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)",
     }}>
-      <div style={{ position: "absolute", inset: 26, borderRadius: 999, border: "1px solid #221f1d", background: "radial-gradient(circle at 50% 40%, #131110, #0a0908)" }}>
+      <div style={{ position: "absolute", inset: 26, borderRadius: 999, border: "1px solid var(--line)", background: "radial-gradient(circle at 50% 40%, var(--well), var(--bg))" }}>
         {ticks.map((deg) => (
           <div key={deg} style={{ position: "absolute", inset: 0, transform: `rotate(${deg}deg)` }}>
             <div style={{
               position: "absolute", top: deg % 90 === 0 ? 12 : 14, left: "50%",
               width: deg % 90 === 0 ? 2 : 1, height: deg === 0 ? 14 : deg % 90 === 0 ? 11 : 8,
               marginLeft: deg % 90 === 0 ? -1 : -0.5,
-              background: deg === 0 ? "var(--accent)" : deg % 90 === 0 ? "#6f6660" : "#4a4340",
+              background: deg === 0 ? "var(--accent)" : deg % 90 === 0 ? "var(--dim)" : "var(--faint)",
             }} />
           </div>
         ))}
         <div style={{
           position: "absolute", top: "50%", left: "50%", width: 90, height: 26, margin: "-13px 0 0 -45px",
-          border: "1px solid #2a2624", borderRadius: 3, transform: "translateX(58px)",
+          border: "1px solid var(--border)", borderRadius: 3, transform: "translateX(58px)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <span className="mono" style={{ fontSize: 11, letterSpacing: "0.16em", color: "var(--muted)" }}>IST</span>
         </div>
         {d && (
           <>
-            {hand(6, 78, 43200, d.h, "linear-gradient(180deg, #f2ede8, #9c948e)")}
-            {hand(4, 116, 3600, d.m, "linear-gradient(180deg, #f2ede8, #9c948e)")}
+            {hand(6, 78, 43200, d.h, "linear-gradient(180deg, var(--text), var(--muted))")}
+            {hand(4, 116, 3600, d.m, "linear-gradient(180deg, var(--text), var(--muted))")}
             {hand(1, 140, 60, d.s, "var(--accent)", -22)}
           </>
         )}
-        <div style={{ position: "absolute", top: "50%", left: "50%", width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: 999, background: "#f2ede8" }} />
+        <div style={{ position: "absolute", top: "50%", left: "50%", width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: 999, background: "var(--text)" }} />
       </div>
     </div>
   );

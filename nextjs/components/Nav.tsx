@@ -75,7 +75,7 @@ export default function Nav() {
           className="nav-links"
           style={{
             display: "flex", gap: 38, alignItems: "center", fontSize: 13.5, letterSpacing: "0.13em",
-            textTransform: "uppercase", color: "#cdc5be",
+            textTransform: "uppercase", color: "var(--body)",
           }}
         >
           {LINKS.map((link) => (

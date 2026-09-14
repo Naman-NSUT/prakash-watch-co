@@ -71,7 +71,7 @@ export default async function PrintBooksPage({
       </div>
 
       {hasDemo && (
-        <p className="ops-noprint ops-panel" style={{ margin: "0 0 20px", padding: "12px 16px", fontSize: 12.5, fontWeight: 300, color: "#d8b98a", borderColor: "#4a3f2c" }}>
+        <p className="ops-noprint ops-panel" style={{ margin: "0 0 20px", padding: "12px 16px", fontSize: 12.5, fontWeight: 300, color: "var(--warn)", borderColor: "var(--warn-line)" }}>
           These statements include demo data and invented cost prices. Every printed page carries a warning to that
           effect. Run <span className="mono">npm run demo:purge</span> before producing anything for filing.
         </p>
@@ -158,7 +158,7 @@ export default async function PrintBooksPage({
                   </tbody>
                 </table>
                 {stock.uncosted > 0 && (
-                  <p style={{ fontSize: 10.5, color: "#d8b98a", marginTop: 10 }}>
+                  <p style={{ fontSize: 10.5, color: "var(--warn)", marginTop: 10 }}>
                     {stock.uncosted} reference(s) carry no cost price and are excluded from the valuation above.
                   </p>
                 )}

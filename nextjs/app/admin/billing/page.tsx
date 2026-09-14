@@ -26,7 +26,7 @@ export default async function BillingPage() {
       />
 
       {demoCount > 0 && (
-        <p className="ops-panel" style={{ margin: "0 0 16px", padding: "12px 16px", fontSize: 12.5, fontWeight: 300, color: "#d8b98a", borderColor: "#4a3f2c" }}>
+        <p className="ops-panel" style={{ margin: "0 0 16px", padding: "12px 16px", fontSize: 12.5, fontWeight: 300, color: "var(--warn)", borderColor: "var(--warn-line)" }}>
           {demoCount} of these are sample bills, marked <span className="ops-chip" data-tone="warn" style={{ fontSize: 8 }}>demo</span> below.
           They carry revenue for the charts but never touched stock. Remove them with <code className="mono">npm run demo:purge</code>.
         </p>

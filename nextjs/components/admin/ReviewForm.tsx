@@ -208,7 +208,7 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
                     position: "relative",
                     width: 132,
                     height: 132,
-                    background: "#100e0d",
+                    background: "var(--well)",
                     border: `1px solid ${index === 0 ? "var(--accent)" : "var(--line)"}`,
                   }}
                 >
@@ -364,7 +364,7 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
             className="mono"
             style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 10, letterSpacing: "0.14em", color: "var(--body)", textTransform: "uppercase", paddingTop: 11 }}
           >
-            <input type="checkbox" checked={inStock} onChange={(event) => setInStock(event.target.checked)} style={{ accentColor: "#c98a5e", width: 14, height: 14 }} />
+            <input type="checkbox" checked={inStock} onChange={(event) => setInStock(event.target.checked)} style={{ accentColor: "var(--accent-soft)", width: 14, height: 14 }} />
             In stock
           </label>
         </Field>
@@ -384,7 +384,7 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
       </section>
 
       {message && (
-        <p className="mono" style={{ margin: 0, fontSize: 11, letterSpacing: "0.08em", color: message.bad ? "#e0857a" : "var(--accent)" }}>
+        <p className="mono" style={{ margin: 0, fontSize: 11, letterSpacing: "0.08em", color: message.bad ? "var(--bad)" : "var(--accent)" }}>
           {message.text}
         </p>
       )}

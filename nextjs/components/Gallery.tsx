@@ -21,8 +21,8 @@ export default function Gallery({
         style={{
           aspectRatio: "1 / 1",
           border: "1px solid var(--border)",
-          backgroundColor: "#100e0d",
-          backgroundImage: "repeating-linear-gradient(135deg, #191614 0 2px, #100e0d 2px 9px)",
+          backgroundColor: "var(--well)",
+          backgroundImage: "repeating-linear-gradient(135deg, var(--card-hover) 0 2px, var(--well) 2px 9px)",
           display: "flex",
           alignItems: "flex-end",
           padding: 18,
@@ -42,7 +42,7 @@ export default function Gallery({
           position: "relative",
           aspectRatio: "1 / 1",
           border: "1px solid var(--line)",
-          background: "#100e0d",
+          background: "var(--well)",
           // Cut-out watches sit on the backdrop matched to their colour.
           backgroundImage: backdrop && current.hasAlpha ? backdrop.css : undefined,
           overflow: "hidden",
@@ -80,7 +80,7 @@ export default function Gallery({
                 height: 78,
                 padding: 0,
                 cursor: "pointer",
-                background: "#100e0d",
+                background: "var(--well)",
                 border: `1px solid ${index === active ? "var(--accent)" : "var(--line)"}`,
                 transition: "border-color .35s",
               }}

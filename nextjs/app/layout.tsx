@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const serif = Instrument_Serif({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-serif" });
 const sans = Jost({ weight: ["300", "400", "500"], subsets: ["latin"], variable: "--font-sans" });
@@ -17,7 +18,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // formatting follows the reader's expectations rather than America's.
   return (
     <html lang="en-IN" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <head>
+        {/*
+          The saved palette is applied before the first paint. Left to the React
+          tree it would paint the default and then correct itself, which on a
+          light theme is a full-screen flash of near-black on every page load.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('pwc-theme');if(t&&t!=='copper'){document.documentElement.dataset.theme=t}}catch(e){}})()`,
+          }}
+        />
+      </head>
+      <body>
+        {children}
+        <ThemeToggle />
+      </body>
     </html>
   );
 }

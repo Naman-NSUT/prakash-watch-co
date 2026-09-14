@@ -84,9 +84,9 @@ export default function Collection({ families }: { families: CollectionSummary[]
       <div ref={peek} style={{
         position: "fixed", top: 0, left: 0, zIndex: 40, width: 300, height: 380, margin: "-190px 0 0 -150px",
         pointerEvents: "none", opacity: hover === null ? 0 : 1, transform: hover === null ? "scale(0.9)" : "scale(1)",
-        transition: "opacity .35s, transform .5s cubic-bezier(.2,.8,.2,1)", border: "1px solid #2a2624",
-        backgroundColor: "#100e0d",
-        backgroundImage: active?.image ? undefined : "repeating-linear-gradient(135deg, #191614 0 2px, #100e0d 2px 9px)",
+        transition: "opacity .35s, transform .5s cubic-bezier(.2,.8,.2,1)", border: "1px solid var(--border)",
+        backgroundColor: "var(--well)",
+        backgroundImage: active?.image ? undefined : "repeating-linear-gradient(135deg, var(--card-hover) 0 2px, var(--well) 2px 9px)",
         display: "flex", alignItems: "flex-end", padding: 18, overflow: "hidden",
       }}>
         {active?.image && (

@@ -52,7 +52,7 @@ export default function StockCell({ sku, quantity }: { sku: string; quantity: nu
         style={{ width: 62, padding: "5px 7px", textAlign: "center" }}
       />
       <span className="mono" aria-live="polite" style={{ fontSize: 9, width: 30,
-        color: state === "error" ? "#e0857a" : state === "saved" ? "var(--accent)" : "var(--faint)" }}>
+        color: state === "error" ? "var(--bad)" : state === "saved" ? "var(--accent)" : "var(--faint)" }}>
         {state === "saving" ? "…" : state === "saved" ? "ok" : state === "error" ? "!" : ""}
       </span>
     </span>

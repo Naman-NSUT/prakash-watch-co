@@ -107,7 +107,7 @@ export default function FilterSidebar({
                   <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                     <span className="facet-box" aria-hidden>
                       {option.selected && (
-                        <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="#0b0a09" strokeWidth="2.4">
+                        <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="var(--panel)" strokeWidth="2.4">
                           <path d="M2 6.5L4.8 9 10 3.5" />
                         </svg>
                       )}
@@ -156,7 +156,7 @@ function Toggle({ href, label, selected }: { href: string; label: string; select
       <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span className="facet-box" aria-hidden>
           {selected && (
-            <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="#0b0a09" strokeWidth="2.4">
+            <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="var(--panel)" strokeWidth="2.4">
               <path d="M2 6.5L4.8 9 10 3.5" />
             </svg>
           )}
