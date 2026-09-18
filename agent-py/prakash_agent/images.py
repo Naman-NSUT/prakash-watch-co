@@ -29,6 +29,33 @@ MAX_DOWNLOADS = 14
 MAX_GRADED = 8
 OUTPUT_WIDTH = 1600
 
+#: No photograph is ever decoded larger than this on its long side.
+#:
+#: Output is 1,600 px, so anything bigger only costs memory: a 4,000 px source
+#: needs 48 MB to hold, and orientation-correcting it and cutting the watch out
+#: each make further copies. Measured on the $7 plan's 512 MB, one watch's worth
+#: of large photographs was enough to get the whole service killed — taking the
+#: public shop down with it, not just the research. A little above the output
+#: size so the final resize still has pixels to work with.
+WORKING_EDGE = 2000
+
+
+def open_bounded(data: bytes, edge: int = WORKING_EDGE) -> Image.Image:
+    """Decodes a photograph at no more than `edge` pixels on its long side.
+
+    JPEG — most product photography — is decoded straight to a smaller scale,
+    so the full-size image is never held at all. Other formats are decoded and
+    then reduced at once, before anything makes a copy. Orientation is corrected
+    last, on the small version.
+    """
+    image = Image.open(BytesIO(data))
+    image.draft(image.mode, (edge, edge))
+    image.load()
+    if max(image.size) > edge:
+        image.thumbnail((edge, edge), Image.Resampling.LANCZOS)
+    return ImageOps.exif_transpose(image)
+
+
 GRADE_SCHEMA = {
     "name": "image_grades",
     "schema": {
@@ -258,8 +285,13 @@ async def _download(candidates: list[dict], config: AgentConfig, http: HttpClien
 
         try:
             with Image.open(BytesIO(data)) as image:
-                image.load()
+                # From the header, before decoding: the real dimensions, which a
+                # bounded decode would report smaller.
                 width, height = image.size
+                # Still decoded, so a truncated file is caught — but at a fraction
+                # of full size.
+                image.draft(image.mode, (WORKING_EDGE, WORKING_EDGE))
+                image.load()
                 if not width or not height:
                     continue
                 if (image.format or "").upper() not in ("JPEG", "PNG", "WEBP", "AVIF", "GIF", "TIFF", "MPO"):
@@ -324,8 +356,7 @@ async def _grade(
     parts: list[dict] = [{"type": "text", "text": header}]
     for index, item in enumerate(images):
         try:
-            with Image.open(BytesIO(item["bytes"])) as image:
-                preview = ImageOps.exif_transpose(image)
+            with open_bounded(item["bytes"], 1024) as preview:
                 preview.thumbnail((512, 512), Image.Resampling.LANCZOS)
                 buffer = BytesIO()
                 preview.convert("RGB").save(buffer, format="JPEG", quality=70)
@@ -505,8 +536,7 @@ async def process_images(
             continue
 
         try:
-            with Image.open(BytesIO(item["bytes"])) as raw:
-                oriented = ImageOps.exif_transpose(raw)
+            with open_bounded(item["bytes"]) as oriented:
 
                 # Lift the watch off whatever it was shot against, so the backdrop
                 # stays the shop's decision rather than the photographer's.

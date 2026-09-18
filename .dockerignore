@@ -1,0 +1,38 @@
+# What the image must never contain.
+#
+# Render builds from the GitHub checkout, which already lacks all of this — but a
+# `docker build` on the shop's own machine would sweep up everything in the
+# working tree: customer repair tickets, bills, the accounts, 569 MB of
+# photographs and the .env holding the OpenRouter key. Baked into an image, any
+# of those would travel with every copy of it.
+
+# Secrets.
+.env
+.env.*
+**/.env
+**/.env.*
+
+# The shop's data. It lives on the mounted disk, never in the image. The two
+# configuration files that ship with the code are let back in below.
+nextjs/data/
+!nextjs/data/backdrops.json
+!nextjs/data/brands.json
+runs/
+*.xlsx
+*.xls
+
+# Rebuilt inside the image, and the wrong platform if copied from here.
+**/node_modules
+nextjs/.next
+.venv
+**/__pycache__
+**/*.pyc
+.agent-cache
+
+# Not needed to run.
+.git
+.github
+**/.DS_Store
+**/*.log
+nextjs/tsconfig.tsbuildinfo
+nextjs/.impeccable

@@ -10,13 +10,15 @@
  * One file for all of them: a shop runs a handful at a time, and keeping them in
  * a single list makes ordering them trivial.
  */
+import { isRemote, remoteJson } from "./remote";
 import "server-only";
+import { dataRoot } from "@/agent/config";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { OfferSchema, isLive, type Offer, type OfferDraft } from "./offers.shared";
 
-const FILE = join(process.cwd(), "data", "offers.json");
+const FILE = join(dataRoot(), "offers.json");
 
 // Vocabulary and shape live in offers.shared so the stock room's offer desk — a
 // client component, which cannot import anything server-only — shares them.
@@ -40,7 +42,7 @@ async function readAll(): Promise<Offer[]> {
 }
 
 async function writeAll(offers: Offer[]): Promise<void> {
-  await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
+  await fs.mkdir(dataRoot(), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(offers, null, 2) + "\n", "utf8");
 }
 
@@ -53,6 +55,11 @@ export async function listOffers(): Promise<Offer[]> {
 
 /** What the public page shows. */
 export async function liveOffers(): Promise<Offer[]> {
+  if (isRemote()) {
+    // The back end has already chosen which offers are live today.
+    const parsed = z.array(OfferSchema).safeParse(await remoteJson<unknown>("/api/public/offers"));
+    return parsed.success ? parsed.data : [];
+  }
   const today = new Date().toISOString().slice(0, 10);
   return (await readAll()).filter((offer) => isLive(offer, today)).sort(byOrder);
 }

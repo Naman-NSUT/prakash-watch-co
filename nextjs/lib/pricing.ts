@@ -10,11 +10,12 @@
  * touch it — the most this can do is say what others are asking.
  */
 import "server-only";
+import { dataRoot } from "@/agent/config";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { ReportSchema, type PriceReport } from "./pricing.shared";
 
-const FILE = join(process.cwd(), "data", "price-watch.json");
+const FILE = join(dataRoot(), "price-watch.json");
 
 // Shape and labels live in pricing.shared so the price desk — a client component,
 // which cannot import anything server-only — shares them.

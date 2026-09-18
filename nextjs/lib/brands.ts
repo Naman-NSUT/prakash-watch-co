@@ -14,10 +14,12 @@
  * which would silently eat this file.
  */
 import "server-only";
+import { dataRoot } from "@/agent/config";
 import { existsSync, promises as fs } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { getCatalogIndex, PUBLISHED_STATUS } from "./catalog";
+import { isRemote, remoteJson } from "./remote";
 import type { CatalogEntry } from "@/agent/types";
 
 /** Editable per-brand copy. Everything optional — the catalogue supplies the rest. */
@@ -73,16 +75,22 @@ export function brandSlug(brand: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-async function readNotes(): Promise<Map<string, BrandNote>> {
+/** The shop's notes on each brand, as stored — also what the shop front is sent. */
+export async function readBrandNotes(): Promise<BrandNote[]> {
   try {
-    const raw = JSON.parse(await fs.readFile(join(process.cwd(), "data", "brand-notes.json"), "utf8"));
+    const raw = isRemote()
+      ? await remoteJson<unknown>("/api/public/brand-notes")
+      : JSON.parse(await fs.readFile(join(dataRoot(), "brand-notes.json"), "utf8"));
     const parsed = z.array(BrandNoteSchema).safeParse(raw);
-    if (!parsed.success) return new Map();
-    return new Map(parsed.data.map((note) => [note.slug, note]));
+    return parsed.success ? parsed.data : [];
   } catch {
     // No file, or a broken one. Brands still render from the catalogue alone.
-    return new Map();
+    return [];
   }
+}
+
+async function readNotes(): Promise<Map<string, BrandNote>> {
+  return new Map((await readBrandNotes()).map((note) => [note.slug, note]));
 }
 
 /**

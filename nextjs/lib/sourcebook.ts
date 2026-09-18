@@ -10,12 +10,13 @@
  * has to remain answerable afterwards.
  */
 import "server-only";
+import { dataRoot } from "@/agent/config";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { ModelRecord, PublisherTally } from "./sourcebook.shared";
 
-const FILE = join(process.cwd(), "data", "model-sources.jsonl");
+const FILE = join(dataRoot(), "model-sources.jsonl");
 
 const SourceSchema = z.object({
   url: z.string(),

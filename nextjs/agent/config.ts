@@ -127,6 +127,18 @@ function bool(value: string | undefined, fallback: boolean): boolean {
  * Builds a config from environment variables plus explicit overrides.
  * Overrides always win, which is how the CLI applies its flags.
  */
+/**
+ * Where the shop's data actually lives.
+ *
+ * PWC_DATA_ROOT *is* the data directory — a disk mounted at /data holds
+ * /data/catalog and /data/media. On a server it must point outside the checkout:
+ * a deploy replaces the code directory, and everything written there — every
+ * repair ticket, bill and photograph — would go with it.
+ */
+export function dataRoot(root: string = process.cwd()): string {
+  return process.env.PWC_DATA_ROOT || `${root}/data`;
+}
+
 export function loadConfig(
   overrides: Partial<AgentConfig> = {},
   env: NodeJS.ProcessEnv = process.env,
@@ -159,12 +171,12 @@ export function loadConfig(
     dryRun: false,
     force: false,
 
-    dataDir: `${root}/data/catalog`,
+    dataDir: `${dataRoot(root)}/catalog`,
     // Outside public/: `next start` snapshots public/ at boot, so images the
     // agent writes afterwards would 404 until a restart. Served by /media.
-    imageDir: `${root}/data/media`,
+    imageDir: `${dataRoot(root)}/media`,
     cacheDir: `${root}/.agent-cache`,
-    reportDir: `${root}/data/runs`,
+    reportDir: `${dataRoot(root)}/runs`,
     imageUrlBase: "/media",
 
     budgetUsd: num(env.AGENT_BUDGET_USD, 0),

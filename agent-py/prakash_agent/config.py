@@ -17,6 +17,17 @@ from dotenv import load_dotenv
 REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
+
+def _data_root() -> Path:
+    """Where the shop's data actually lives.
+
+    On a server this is a mounted disk. It must not default to somewhere inside
+    the checkout, because a deploy replaces that directory and would take every
+    repair ticket, bill and photograph with it.
+    """
+    root = os.getenv("PWC_DATA_ROOT")
+    return Path(root) if root else (REPO_ROOT / "nextjs" / "data")
+
 CollectionId = Literal[
     "swiss-automatic",
     "dress-quartz",
@@ -123,15 +134,16 @@ class AgentConfig:
     dry_run: bool = False
     force: bool = False
 
-    data_dir: Path = field(default_factory=lambda: REPO_ROOT / "nextjs" / "data" / "catalog")
+    data_dir: Path = field(default_factory=lambda: _data_root() / "catalog")
     #: Outside public/, because `next start` snapshots public/ at boot and would
     #: 404 anything the agent wrote afterwards. Served by the /media route instead.
-    image_dir: Path = field(default_factory=lambda: REPO_ROOT / "nextjs" / "data" / "media")
-    cache_dir: Path = field(default_factory=lambda: REPO_ROOT / ".agent-cache")
-    report_dir: Path = field(default_factory=lambda: REPO_ROOT / "nextjs" / "data" / "runs")
+    image_dir: Path = field(default_factory=lambda: _data_root() / "media")
+    cache_dir: Path = field(default_factory=lambda: Path(os.getenv("AGENT_CACHE_DIR") or (REPO_ROOT / ".agent-cache")))
+    report_dir: Path = field(default_factory=lambda: _data_root() / "runs")
     #: The brand memory base: official sites, learned once and reused.
-    brands_path: Path = field(default_factory=lambda: REPO_ROOT / "nextjs" / "data" / "brands.json")
-    upload_dir: Path = field(default_factory=lambda: REPO_ROOT / "nextjs" / "data" / "uploads")
+    # Written whenever a new brand's site is discovered, so it is data, not code.
+    brands_path: Path = field(default_factory=lambda: _data_root() / "brands.json")
+    upload_dir: Path = field(default_factory=lambda: _data_root() / "uploads")
     image_url_base: str = "/media"
 
     budget_usd: float = 0.0

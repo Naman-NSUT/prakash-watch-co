@@ -14,7 +14,10 @@ export const metadata: Metadata = {
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
   // Only ever redirect within this site.
-  const destination = next?.startsWith("/") && !next.startsWith("//") ? next : "/admin";
+  // Only somewhere on this site. "//evil.com" is protocol-relative, and browsers
+  // read "/\\evil.com" the same way, so both a second slash and any backslash
+  // are refused — otherwise signing in could hand the session to another origin.
+  const destination = next && /^\/(?![\/\\])/.test(next) && !next.includes("\\") ? next : "/admin";
 
   if (await isAuthenticated()) redirect(destination);
 

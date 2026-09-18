@@ -12,7 +12,8 @@
  */
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { join, normalize } from "node:path";
+import { join, normalize, sep } from "node:path";
+import { isAuthenticated } from "@/lib/auth";
 import { Readable } from "node:stream";
 import { loadConfig } from "@/agent/config";
 
@@ -45,8 +46,18 @@ export async function GET(
   const contentType = CONTENT_TYPES[extension];
   if (!contentType) return new Response("Not found", { status: 404 });
 
+  // Photographs customers attach to repair tickets are the shop's to see, not
+  // the public's. The middleware refuses these first; this is the second check,
+  // so a matcher that drifts out of date cannot quietly publish them.
+  if (relative === "repairs" || relative.startsWith(`repairs${sep}`)) {
+    if (!(await isAuthenticated())) return new Response("Not found", { status: 404 });
+  }
+
   const absolute = join(ROOT, relative);
-  if (!absolute.startsWith(ROOT)) return new Response("Not found", { status: 404 });
+  // With the separator, so a sibling such as "media-old" cannot pass as "media".
+  if (absolute !== ROOT && !absolute.startsWith(ROOT + sep)) {
+    return new Response("Not found", { status: 404 });
+  }
 
   let size: number;
   try {

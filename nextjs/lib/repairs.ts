@@ -11,13 +11,14 @@
  * One JSON file per ticket, like bills. A shop takes in a few a day.
  */
 import "server-only";
+import { dataRoot } from "@/agent/config";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { financialYear } from "./firm";
 import { SERVICE_KINDS, STATUSES, isClosed, type Status } from "./repairs.shared";
 
-const DIR = join(process.cwd(), "data", "repairs");
+const DIR = join(dataRoot(), "repairs");
 
 // The vocabulary lives in repairs.shared so the public form — a client component,
 // which cannot import anything marked server-only — can label the same values.

@@ -10,21 +10,12 @@
  * real identity provider.
  */
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-
-const COOKIE_NAME = "pwc_admin";
-const MAX_AGE_SECONDS = 60 * 60 * 12;
+import { COOKIE_NAME, MAX_AGE_SECONDS, issueToken, verifyToken } from "./session";
 
 export function isConfigured(): boolean {
   return Boolean(process.env.ADMIN_PASSWORD);
-}
-
-/** Deterministic token for the configured password. */
-function expectedToken(): string {
-  const password = process.env.ADMIN_PASSWORD ?? "";
-  const secret = process.env.ADMIN_SECRET ?? password;
-  return createHmac("sha256", secret).update(`pwc-admin-v1:${password}`).digest("hex");
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -43,14 +34,13 @@ export function checkPassword(candidate: string): boolean {
 export async function isAuthenticated(): Promise<boolean> {
   if (!isConfigured()) return false;
   const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
-  if (!token) return false;
-  return safeEqual(token, expectedToken());
+  // Same check the middleware makes, so the two can never disagree.
+  return verifyToken(store.get(COOKIE_NAME)?.value);
 }
 
 export async function signIn(): Promise<void> {
   const store = await cookies();
-  store.set(COOKIE_NAME, expectedToken(), {
+  store.set(COOKIE_NAME, await issueToken(), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

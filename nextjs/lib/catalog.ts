@@ -19,6 +19,7 @@ import {
   type WatchProduct,
 } from "@/agent/types";
 import type { RunReport } from "@/agent/types";
+import { isRemote, mediaUrl, remoteJson } from "./remote";
 
 const config = loadConfig();
 
@@ -50,6 +51,12 @@ export async function getAllProducts(): Promise<WatchProduct[]> {
 export async function getProduct(sku: string): Promise<WatchProduct | null> {
   // Guard against path traversal via the URL segment.
   if (!/^[a-z0-9-]+$/i.test(sku)) return null;
+  if (isRemote()) {
+    const remote = await remoteJson<unknown>(`/api/public/product/${sku}`);
+    if (!remote) return null;
+    const parsed = WatchProductSchema.safeParse(remote);
+    return parsed.success ? withRemoteMedia(parsed.data) : null;
+  }
   try {
     const raw = await fs.readFile(join(config.dataDir, `${sku}.json`), "utf8");
     const parsed = WatchProductSchema.safeParse(JSON.parse(raw));
@@ -75,23 +82,47 @@ export interface CollectionSummary {
 
 /** The six families the homepage renders, with live counts and a real photograph. */
 export async function getCollectionSummaries(): Promise<CollectionSummary[]> {
-  const products = await getPublishedProducts();
+  // From the index, not the products. This runs on every home-page request and
+  // needs only each watch's family and first photograph — both already in the
+  // index. Reading the products instead meant opening all 1,899 files, 20 MB,
+  // for every visitor; served from another host it would not finish at all.
+  const listed = (await getCatalogIndex()).filter((entry) => entry.status === PUBLISHED_STATUS);
 
   return (Object.keys(COLLECTION_META) as CollectionId[]).map((id) => {
-    const inFamily = products.filter((product) => product.collection === id);
-    const withImage = inFamily.find((product) => product.images.length > 0);
+    const inFamily = listed.filter((entry) => entry.collection === id);
+    const withImage = inFamily.find((entry) => entry.image);
     return {
       id,
       ...COLLECTION_META[id],
       count: inFamily.length,
-      image: withImage?.images[0]?.url ?? null,
+      image: withImage?.image?.url ?? null,
     };
   });
 }
 
 export async function getCatalogIndex(): Promise<CatalogEntry[]> {
+  if (isRemote()) {
+    const entries = (await remoteJson<CatalogEntry[] | null>("/api/public/catalog")) ?? [];
+    return entries.map((entry) =>
+      entry.image ? { ...entry, image: { ...entry.image, url: mediaUrl(entry.image.url) } } : entry,
+    );
+  }
   try {
     return JSON.parse(await fs.readFile(join(config.dataDir, "index.json"), "utf8")) as CatalogEntry[];
+  } catch {
+    return [];
+  }
+}
+
+/** The backdrop library as a list — the shape it is stored and sent in. */
+export async function readBackdropList(): Promise<Backdrop[]> {
+  try {
+    const raw = isRemote()
+      ? await remoteJson<unknown>("/api/public/backdrops")
+      : JSON.parse(await fs.readFile(join(config.dataDir, "..", "backdrops.json"), "utf8"));
+    const parsed = z.array(BackdropSchema).safeParse(raw);
+    if (!parsed.success) return [];
+    return parsed.data.map((backdrop) => ({ ...backdrop, url: mediaUrl(backdrop.url) }));
   } catch {
     return [];
   }
@@ -105,14 +136,12 @@ export async function getCatalogIndex(): Promise<CatalogEntry[]> {
  * reprocessing every photograph.
  */
 export async function getBackdrops(): Promise<Map<string, Backdrop>> {
-  try {
-    const raw = JSON.parse(await fs.readFile(join(config.dataDir, "..", "backdrops.json"), "utf8"));
-    const parsed = z.array(BackdropSchema).safeParse(raw);
-    if (!parsed.success) return new Map();
-    return new Map(parsed.data.map((backdrop) => [backdrop.id, backdrop]));
-  } catch {
-    return new Map();
-  }
+  return new Map((await readBackdropList()).map((backdrop) => [backdrop.id, backdrop]));
+}
+
+/** A listing read from the back end, with its photographs pointed at the back end. */
+function withRemoteMedia(product: WatchProduct): WatchProduct {
+  return { ...product, images: product.images.map((image) => ({ ...image, url: mediaUrl(image.url) })) };
 }
 
 /** Ingestion run reports, newest first. */

@@ -1,0 +1,85 @@
+# Render blueprint — the shop's back end.
+#
+# One container runs the admin panel, the APIs, the photographs and the research
+# agent, on one persistent disk. The public shop front runs on Vercel and reads
+# from here (see DEPLOY.md).
+#
+# Apply it from the Render dashboard: New → Blueprint → pick this repository.
+
+services:
+  - type: web
+    name: prakash-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+
+    # 0.5 CPU / 512 MB — the $7 plan. Measured under a hard 512 MB cap with the
+    # full 1,899-listing catalogue: 142 MB idle, about 230 MB under page traffic.
+    # Processing one watch's photographs adds about 180 MB more, so a sheet run
+    # peaks near 410 MB. That only fits one watch at a time — hence
+    # AGENT_CONCURRENCY 1 below — and only because photographs are decoded at no
+    # more than 2,000 px; at full size the same work needed 130 MB more and the
+    # container was killed, taking the shop down with it. For faster runs, move to
+    # 1c-2g and raise AGENT_CONCURRENCY to 3.
+    plan: 0.5c-512mb
+
+    # The closest Render region to Delhi.
+    region: singapore
+
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+
+    # Everything the shop writes lives here: 1,899 listings, 569 MB of
+    # photographs, repair tickets, bills, the stock ledger and the journal.
+    # Render snapshots it daily and keeps seven days. It can be grown later but
+    # never shrunk, so it starts with room rather than exactly what is needed:
+    # the data is 614 MB today, plus the agent's cache of shop catalogues.
+    disk:
+      name: shop-data
+      mountPath: /app/data
+      sizeGB: 2
+
+    envVars:
+      # --- Admin panel ---------------------------------------------------
+      # Set by hand in the dashboard. Never committed.
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Signs the admin session cookie. Generated once; rotating it signs
+      # everyone out.
+      - key: ADMIN_SECRET
+        generateValue: true
+
+      # --- Research agent ------------------------------------------------
+      # Shared secret between the site and the agent inside this container.
+      - key: AGENT_SERVICE_TOKEN
+        generateValue: true
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-5.4-mini
+      - key: OPENROUTER_VISION_MODEL
+        value: openai/gpt-5.4-mini
+      - key: OPENROUTER_SEARCH_MODEL
+        value: openai/gpt-5.4-nano
+      # One watch at a time on 512 MB. Each researched watch holds several decoded
+      # photographs in memory at once; three together can exhaust the plan.
+      - key: AGENT_CONCURRENCY
+        value: "1"
+      - key: AGENT_MAX_SOURCES
+        value: "4"
+      - key: AGENT_MAX_IMAGES
+        value: "10"
+      - key: AGENT_MIN_IMAGE_WIDTH
+        value: "600"
+      - key: AGENT_IMAGE_MODE
+        value: download
+      - key: AGENT_RESPECT_ROBOTS
+        value: "1"
+      # A hard ceiling on what one run may spend, in US dollars. 0 disables it.
+      - key: AGENT_BUDGET_USD
+        value: "10"
+
+      # --- The Vercel shop front -------------------------------------------
+      # Lets the public site read the catalogue. Set the same value on Vercel.
+      - key: PWC_PUBLIC_API_TOKEN
+        generateValue: true
