@@ -840,3 +840,44 @@ html[data-theme="linen"] {
   --chip: #fdfbf6;
   --chip-ink: #221e17;
 }
+
+/* --- The hero film ----------------------------------------------------------
+   Twenty seconds behind the headline, silent and looping. The scrim is not
+   decoration: the film is pale linen and the headline is near-black, so without
+   it the type sits on moving highlights and becomes unreadable for a second at
+   a time. Under reduced motion the poster frame stands in — a twenty-second
+   push-in is exactly the kind of movement that makes some people queasy. */
+.hero-film {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: var(--bg) url("/hero/hero-poster.webp") center / cover no-repeat;
+}
+
+.hero-film video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-film::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(100deg,
+      var(--bg) 0%,
+      color-mix(in oklab, var(--bg) 88%, transparent) 30%,
+      color-mix(in oklab, var(--bg) 45%, transparent) 58%,
+      color-mix(in oklab, var(--bg) 12%, transparent) 82%),
+    linear-gradient(to top,
+      var(--bg) 0%,
+      color-mix(in oklab, var(--bg) 55%, transparent) 14%,
+      transparent 32%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-film video { display: none; }
+}

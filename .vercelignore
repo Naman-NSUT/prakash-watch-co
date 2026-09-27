@@ -1,0 +1,21 @@
+# What the shop front does not need on Vercel.
+#
+# The CLI reads this file, not .gitignore, so without it a deploy tries to
+# upload the whole working tree — including the 614 MB of shop data that
+# belongs on the back end's disk.
+
+node_modules
+.next
+.venv
+__pycache__
+runs
+screenshots
+agent-py
+*.xlsx
+*.dc.html
+
+# The catalogue, photographs, tickets and ledger live on Render. The two
+# seed files stay: they are agent configuration, not shop data.
+nextjs/data/*
+!nextjs/data/backdrops.json
+!nextjs/data/brands.json

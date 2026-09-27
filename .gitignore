@@ -48,3 +48,8 @@ npm-debug.log*
 # Run logs. They are a transcript of the shop's own catalogue — prices, stock and
 # source URLs, line by line — so they belong with the data, not the code.
 runs/
+.vercel
+
+# Raw renders from the video tool. The web-ready encodes live in
+# nextjs/public/hero; the 37 MB originals are working files, not code.
+hf_*.mp4

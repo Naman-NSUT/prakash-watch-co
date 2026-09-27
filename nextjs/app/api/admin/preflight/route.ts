@@ -14,7 +14,10 @@ import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 // Reading six catalogues cold takes a while; after that they are cached.
-export const maxDuration = 600;
+// Vercel's Hobby plan refuses any function over 300s, and these admin routes
+// are redirected to the back end there anyway. On the back end, which is where
+// they actually run, Next ignores maxDuration and the work runs to completion.
+export const maxDuration = 300;
 
 const AGENT_URL = process.env.AGENT_SERVICE_URL ?? "http://127.0.0.1:8077";
 const ALLOWED_EXTENSIONS = [".xlsx", ".csv"];
