@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import Cursor from "@/components/Cursor";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import CatalogCard from "@/components/CatalogCard";
@@ -77,7 +76,6 @@ export default async function BrandPage({
   return (
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
-      <Cursor />
       <NavBar />
 
       {brand.banner && (
@@ -210,7 +208,6 @@ export default async function BrandPage({
                   key={other.slug}
                   href={`/brands/${other.slug}`}
                   className="serif"
-                  data-hover
                   style={{ fontSize: 26, color: "var(--body)" }}
                 >
                   {other.name}

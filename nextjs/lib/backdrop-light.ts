@@ -1,5 +1,5 @@
 /**
- * Light-theme counterparts for the photographic backdrops.
+ * Linen counterparts for the photographic backdrops.
  *
  * A cut-out watch is published on transparency and the card supplies the stage
  * behind it. The six stages the agent matches against are all near-black —
@@ -13,9 +13,8 @@
  * cool ones stay cool, the warm ones stay warm — so a watch the agent paired
  * with Bronze for its blue dial still sits on something warm.
  *
- * Only the wash changes. The generated photograph on top is hidden in light
- * themes (see `.card-stage` in globals.css), because re-lighting six studio
- * backdrops is a photography job, not a CSS one.
+ * Only the wash changes: the photographs the library names were never
+ * generated, so a wash is all a stage has ever been.
  */
 
 const WASH: Record<string, string> = {

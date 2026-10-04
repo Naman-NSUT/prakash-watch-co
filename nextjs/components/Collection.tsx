@@ -55,7 +55,6 @@ export default function Collection({ families }: { families: CollectionSummary[]
             key={family.id}
             href={`/collections?family=${family.id}`}
             className="row index-row"
-            data-hover
             onMouseEnter={() => setHover(i)}
             style={{
               display: "grid", gridTemplateColumns: "76px 1.5fr 1fr 150px", alignItems: "center", gap: 24,

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Cursor from "@/components/Cursor";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import WatchFinder, { type Band, type FinderQuestion, type FinderRow } from "@/components/WatchFinder";
@@ -72,7 +71,6 @@ export default async function WatchFinderPage() {
   return (
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
-      <Cursor />
       <NavBar />
 
       <section style={{ padding: "var(--page-top) var(--gutter) 10px" }}>

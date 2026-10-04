@@ -1,4 +1,3 @@
-import Cursor from "@/components/Cursor";
 import NavBar from "@/components/NavBar";
 import Hero from "@/components/Hero";
 import Marquee from "@/components/Marquee";
@@ -20,7 +19,6 @@ export default async function Home() {
   return (
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
-      <Cursor />
       <NavBar />
       <Hero />
       <Marquee />

@@ -18,7 +18,6 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
   return (
     <Link
       href={`/watch/${entry.slug}`}
-      data-hover
       className="hover-card"
       style={{
         display: "flex",

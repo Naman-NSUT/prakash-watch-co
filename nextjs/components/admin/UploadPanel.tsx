@@ -430,7 +430,6 @@ export default function UploadPanel() {
             type="button"
             onClick={check}
             disabled={!file || checking || running}
-            data-hover
             className="btn"
             style={{
               marginLeft: "auto",
@@ -446,7 +445,6 @@ export default function UploadPanel() {
           type="button"
           onClick={start}
           disabled={running || (isSheet ? !file : !one.brand.trim() || !one.modelNumber.trim() || !one.price.trim())}
-          data-hover
           className="btn btn-solid"
           style={{
             // The check button takes the gap when it is shown.

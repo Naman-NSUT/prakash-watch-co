@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Cursor from "@/components/Cursor";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { liveOffers, KIND_LABELS, type Offer } from "@/lib/offers";
@@ -41,7 +40,6 @@ export default async function OffersPage() {
   return (
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
-      <Cursor />
       <NavBar />
 
       <section style={{ padding: "var(--page-top) var(--gutter) 44px" }}>

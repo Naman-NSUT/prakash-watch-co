@@ -32,105 +32,12 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Alternate palettes.
+   The light palette.
 
-   Each one redefines the same tokens and nothing else — no component knows which
-   is active. The default above stays the dark copper the shop has been using;
-   these are switched by data-theme on <html>.
+   Two palettes, and this is the other one: Linen by day, the Copper above after
+   dark. It redefines the same tokens and nothing else — no component knows which
+   is active — and is switched by data-theme on <html>.
    --------------------------------------------------------------------------- */
-
-/* IVORY — warm paper. The light reading of the same house style: parchment
-   grounds, ink-brown text, and the copper darkened until it holds its own
-   against white. Closest to a printed catalogue. */
-html[data-theme="ivory"] {
-  --bg: #f7f4ef;
-  --panel: #fffdfa;
-  --card: #ffffff;
-  --card-hover: #f3eee6;
-  --line: #e6dfd4;
-  --line2: #efe9e0;
-  --border: #d5cbbc;
-  --text: #1c1713;
-  --body: #4f463d;
-  --muted: #6d6257;
-  --dim: #8b8073;
-  --faint: #9d9182;
-  --accent: oklch(0.52 0.13 34);
-  --accent-soft: oklch(0.58 0.12 40);
-  --well: #f0ebe2;
-  --warn: #7d5c1f;
-  --warn-line: #d8c69b;
-  --warn-tint: rgba(125, 92, 31, 0.07);
-  --bad: #9c3f35;
-  --bad-line: #e2bdb7;
-  --scrim: rgba(28, 23, 19, 0.55);
-  /* The brand plaque: pale in every theme, because a brand mark arrives in
-     one fixed colour and cannot invert with the page. */
-  --chip: #fffdfa;
-  --chip-ink: #1c1713;
-}
-
-/* PORCELAIN — cool gallery white. Neutral greys with a steel-blue accent, so
-   the watches carry all the colour on the page and nothing competes with the
-   photography. */
-html[data-theme="porcelain"] {
-  --bg: #f3f5f8;
-  --panel: #ffffff;
-  --card: #ffffff;
-  --card-hover: #edf0f4;
-  --line: #dee4ea;
-  --line2: #e9edf2;
-  --border: #c7d0db;
-  --text: #101720;
-  --body: #454f5b;
-  --muted: #5f6b78;
-  --dim: #7e8a97;
-  --faint: #88939f;
-  --accent: oklch(0.50 0.10 245);
-  --accent-soft: oklch(0.58 0.09 240);
-  --well: #e7ecf2;
-  --warn: #7a5a14;
-  --warn-line: #d9c89a;
-  --warn-tint: rgba(122, 90, 20, 0.07);
-  --bad: #a03a33;
-  --bad-line: #e3bab6;
-  --scrim: rgba(16, 23, 32, 0.55);
-  /* The brand plaque: pale in every theme, because a brand mark arrives in
-     one fixed colour and cannot invert with the page. */
-  --chip: #ffffff;
-  --chip-ink: #101720;
-}
-
-/* DUSK — the middle reading. Neither near-black nor white: cool slate surfaces
-   lifted well above the background, with a warm brass accent across them. A lit
-   display case in a dim room, which is what a watch shop actually looks like. */
-html[data-theme="dusk"] {
-  --bg: #1a1e24;
-  --panel: #222831;
-  --card: #2a313b;
-  --card-hover: #333b47;
-  --line: #39414d;
-  --line2: #2f3742;
-  --border: #4a5361;
-  --text: #f1f3f6;
-  --body: #b8c0ca;
-  --muted: #9aa3ae;
-  --dim: #7c8591;
-  --faint: #727b87;
-  --accent: oklch(0.76 0.11 78);
-  --accent-soft: oklch(0.82 0.09 82);
-  --well: #161a20;
-  --warn: #e0c48f;
-  --warn-line: #5a4c30;
-  --warn-tint: rgba(224, 196, 143, 0.06);
-  --bad: #e58c81;
-  --bad-line: #5a332e;
-  --scrim: rgba(10, 13, 17, 0.78);
-  /* The brand plaque: pale in every theme, because a brand mark arrives in
-     one fixed colour and cannot invert with the page. */
-  --chip: #f1f3f6;
-  --chip-ink: #1a1e24;
-}
 
 * { box-sizing: border-box; }
 html { background: var(--bg); scroll-behavior: smooth; }
@@ -788,38 +695,6 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   font-style: normal; font-size: 11.5px; line-height: 1.6; font-weight: 300; color: var(--dim);
 }
 
-/* GRAPHITE — cool charcoal. A true neutral grey rather than a tinted black:
-   surfaces step up in even increments so panels read as stacked card stock, and
-   the accent is cool too, which keeps the warm metals in the photography as the
-   only warm thing on the page. */
-html[data-theme="graphite"] {
-  --bg: #1f2122;
-  --panel: #272a2b;
-  --card: #2f3233;
-  --card-hover: #383c3d;
-  --line: #3c4041;
-  --line2: #333738;
-  --border: #4d5253;
-  --text: #eff1f1;
-  --body: #b7bdbe;
-  --muted: #9aa0a1;
-  --dim: #7e8586;
-  --faint: #767d7e;
-  --accent: oklch(0.74 0.08 205);
-  --accent-soft: oklch(0.80 0.07 200);
-  --well: #191b1c;
-  --warn: #ddc08c;
-  --warn-line: #55492f;
-  --warn-tint: rgba(221, 192, 140, 0.06);
-  --bad: #e28b80;
-  --bad-line: #56322d;
-  --scrim: rgba(12, 14, 14, 0.78);
-  /* The brand plaque: pale in every theme, because a brand mark arrives in
-     one fixed colour and cannot invert with the page. */
-  --chip: #eff1f1;
-  --chip-ink: #1f2122;
-}
-
 /* LINEN — off-white and beige. Warmer and softer than Ivory: an unbleached,
    sandy ground with an olive-bronze accent, so the page reads as cloth rather
    than paper. The quietest of the six, and the kindest to long reading. */
@@ -980,12 +855,6 @@ body { overflow-x: clip; }
   .collection-peek { display: none !important; }
 }
 
-/* The cursor ring chases a mouse. A touch screen has none, so the ring never
-   moves from where it was created and simply sits on the page. */
-@media (hover: none), (pointer: coarse) {
-  .cursor-ring { display: none !important; }
-}
-
 /* The theme switch lives in the top-right corner — which on a phone is where
    the menu button is. Below 900px it moves out of the way, to the bottom. */
 @media (max-width: 900px) {
@@ -994,26 +863,18 @@ body { overflow-x: clip; }
     bottom: 14px;
     right: 14px;
     opacity: 0.92;
-    /* Anchored to the bottom, the list of themes has to open upwards or it
-       falls off the screen. */
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: flex-end;
   }
-  .theme-switch [role="listbox"] { margin: 0 0 6px !important; }
 }
 
 /* --- The stage behind a cut-out watch ---------------------------------------
    Six photographic backdrops ship with the catalogue and every one of them is
-   near-black: they were made for the copper theme. Inside a linen or ivory card
+   near-black: they were made for the copper theme. Inside a linen card
    they read as a hole punched through the page.
 
-   So in the light themes the card takes a pale wash of the same hue instead,
+   So in the light theme the card takes a pale wash of the same hue instead,
    handed to it as --stage-light. The watch itself is a cut-out, so nothing else
    has to change. */
-html[data-theme="linen"] .card-stage,
-html[data-theme="ivory"] .card-stage,
-html[data-theme="porcelain"] .card-stage {
+html[data-theme="linen"] .card-stage {
   background-image: var(--stage-light) !important;
 }
 
@@ -1427,4 +1288,63 @@ html[data-theme="porcelain"] .card-stage {
 @media (max-width: 560px) {
   .pager { justify-content: center; }
   .pager-numbers { order: -1; width: 100%; justify-content: center; }
+}
+
+/* --- Light or dark -----------------------------------------------------------
+   Two palettes, so this is a switch rather than a menu: one press, no list to
+   read. The label names the palette that is showing; the accessible name says
+   what pressing it will do, because a control labelled with its current state
+   reads as an instruction to half the people who meet it. */
+.theme-switch {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px 7px 9px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--panel) 88%, transparent);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: border-color .25s, background-color .25s;
+}
+.theme-switch:hover { border-color: var(--accent); }
+
+.theme-switch-track {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--well);
+  border: 1px solid var(--line);
+  transition: background-color .3s;
+}
+.theme-switch-track[data-light="true"] { background: var(--accent-soft); }
+
+.theme-switch-knob {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1), background-color .3s;
+}
+.theme-switch-track[data-light="true"] .theme-switch-knob {
+  transform: translateX(14px);
+  background: var(--panel);
+}
+
+.theme-switch-label {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch-knob { transition: none; }
 }

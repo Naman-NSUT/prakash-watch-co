@@ -67,7 +67,6 @@ export default function LoginForm({ next }: { next: string }) {
       <button
         type="submit"
         disabled={busy || !password}
-        data-hover
         className="btn btn-solid"
         style={{ justifyContent: "center", border: "none", cursor: busy ? "wait" : "pointer", opacity: password ? 1 : 0.5 }}
       >

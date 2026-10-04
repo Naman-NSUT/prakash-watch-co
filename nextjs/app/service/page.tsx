@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Cursor from "@/components/Cursor";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import ServiceForm from "@/components/ServiceForm";
@@ -28,7 +27,6 @@ export default function ServicePage() {
   return (
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
-      <Cursor />
       <NavBar />
 
       <section style={{ padding: "var(--page-top) var(--gutter) 20px" }}>
@@ -98,7 +96,6 @@ export default function ServicePage() {
               <a
                 href="tel:+919899645897"
                 className="serif"
-                data-hover
                 style={{ display: "block", marginTop: 10, fontSize: 26, color: "var(--accent-soft)" }}
               >
                 +91 98996 45897

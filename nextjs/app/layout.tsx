@@ -21,12 +21,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/*
           The saved palette is applied before the first paint. Left to the React
-          tree it would paint the default and then correct itself, which on a
+          tree it would paint the default and then correct itself, which on the
           light theme is a full-screen flash of near-black on every page load.
+
+          Anyone still holding one of the four palettes that were retired is
+          moved to Copper here rather than being left on a theme whose tokens
+          no longer exist.
         */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('pwc-theme');if(t&&t!=='copper'){document.documentElement.dataset.theme=t}}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('pwc-theme');if(t==='linen'){document.documentElement.dataset.theme='linen'}else if(t&&t!=='copper'){localStorage.setItem('pwc-theme','copper')}}catch(e){}})()`,
           }}
         />
       </head>

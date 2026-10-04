@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Cursor from "@/components/Cursor";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import Gallery from "@/components/Gallery";
@@ -47,11 +46,10 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
   return (
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
-      <Cursor />
       <NavBar />
 
       <div style={{ padding: "var(--page-top) var(--gutter) 0" }}>
-        <Link href="/collections" data-hover className="mono" style={{ fontSize: 10.5, letterSpacing: "0.2em", color: "var(--faint)", textTransform: "uppercase" }}>
+        <Link href="/collections" className="mono" style={{ fontSize: 10.5, letterSpacing: "0.2em", color: "var(--faint)", textTransform: "uppercase" }}>
           ← Collection
         </Link>
       </div>
@@ -129,12 +127,11 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
           )}
 
           <div style={{ display: "flex", gap: 13, marginTop: 38, flexWrap: "wrap" }}>
-            <a href="tel:+919899645897" data-hover className="btn btn-solid">
+            <a href="tel:+919899645897" className="btn btn-solid">
               Call the boutique
             </a>
             <a
               href={`mailto:prakashwatchco@gmail.com?subject=${enquirySubject}`}
-              data-hover
               className="btn btn-ghost"
             >
               Reserve to try on

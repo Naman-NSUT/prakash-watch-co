@@ -89,7 +89,6 @@ export default function Gallery({
               key={image.url}
               type="button"
               onClick={() => setActive(index)}
-              data-hover
               aria-label={`View image ${index + 1}`}
               aria-current={index === active}
               style={{

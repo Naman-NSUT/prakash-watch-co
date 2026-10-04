@@ -32,7 +32,6 @@ export default function ActiveFilters({ state, base }: { state: FilterState; bas
           key={chip.label}
           href={chip.href}
           scroll={false}
-          data-hover
           className="mono"
           style={{
             display: "inline-flex",

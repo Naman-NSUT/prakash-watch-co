@@ -9,7 +9,6 @@ export default function SignOutButton() {
   return (
     <button
       type="button"
-      data-hover
       disabled={busy}
       onClick={async () => {
         setBusy(true);

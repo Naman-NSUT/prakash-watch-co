@@ -390,16 +390,16 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
       )}
 
       <section style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--line)", paddingTop: 22 }}>
-        <button type="button" onClick={() => save()} disabled={busy !== null} data-hover className="btn btn-ghost" style={{ cursor: "pointer" }}>
+        <button type="button" onClick={() => save()} disabled={busy !== null} className="btn btn-ghost" style={{ cursor: "pointer" }}>
           {busy === "save" ? "Saving…" : "Save changes"}
         </button>
 
         {product.status === "ready" ? (
-          <button type="button" onClick={() => save("needs_review", "unpublish")} disabled={busy !== null} data-hover className="btn btn-ghost" style={{ cursor: "pointer" }}>
+          <button type="button" onClick={() => save("needs_review", "unpublish")} disabled={busy !== null} className="btn btn-ghost" style={{ cursor: "pointer" }}>
             {busy === "unpublish" ? "…" : "Take off the shop"}
           </button>
         ) : (
-          <button type="button" onClick={() => save("ready", "publish")} disabled={busy !== null} data-hover className="btn btn-solid" style={{ border: "none", cursor: "pointer" }}>
+          <button type="button" onClick={() => save("ready", "publish")} disabled={busy !== null} className="btn btn-solid" style={{ border: "none", cursor: "pointer" }}>
             {busy === "publish" ? "…" : "Approve and publish"}
           </button>
         )}
@@ -408,7 +408,6 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
           type="button"
           onClick={remove}
           disabled={busy !== null}
-          data-hover
           className="mono"
           style={{
             marginLeft: "auto",
@@ -443,7 +442,6 @@ function MiniButton({ onClick, children }: { onClick: () => void; children: Reac
     <button
       type="button"
       onClick={onClick}
-      data-hover
       className="mono"
       style={{
         flex: 1,

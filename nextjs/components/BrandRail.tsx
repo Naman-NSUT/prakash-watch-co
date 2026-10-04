@@ -164,7 +164,6 @@ function BrandChip({ brand }: { brand: BrandSummary }) {
     <Link
       href={`/brands/${brand.slug}`}
       className="brand-chip"
-      data-hover
       style={{ scrollSnapAlign: "start", flex: "none", width: 148, textAlign: "center" }}
       aria-label={`${brand.name} — ${brand.inStock} in stock`}
     >

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import Cursor from "@/components/Cursor";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { getBrands } from "@/lib/brands";
@@ -23,7 +22,6 @@ export default async function BrandsPage() {
   return (
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
-      <Cursor />
       <NavBar />
 
       <section style={{ padding: "var(--page-top) var(--gutter) 40px" }}>
@@ -60,7 +58,6 @@ export default async function BrandsPage() {
                   key={brand.slug}
                   href={`/brands/${brand.slug}`}
                   className="row hover-card brand-row"
-                  data-hover
                   style={{
                     padding: "26px 8px",
                     borderBottom: "1px solid var(--line)",

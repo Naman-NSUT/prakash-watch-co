@@ -16,7 +16,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
   return (
     <main style={{ padding: "34px 34px 90px", display: "grid", gridTemplateColumns: "minmax(0, 1.7fr) minmax(280px, 1fr)", gap: 44, alignItems: "start" }}>
       <div>
-        <Link href="/admin" data-hover className="mono" style={{ fontSize: 9.5, letterSpacing: "0.18em", color: "var(--faint)", textTransform: "uppercase" }}>
+        <Link href="/admin" className="mono" style={{ fontSize: 9.5, letterSpacing: "0.18em", color: "var(--faint)", textTransform: "uppercase" }}>
           ← Stock list
         </Link>
 
@@ -35,7 +35,6 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
               <Link
                 href={`/watch/${product.slug}`}
                 target="_blank"
-                data-hover
                 className="mono"
                 style={{ fontSize: 9.5, letterSpacing: "0.16em", color: "var(--muted)", textTransform: "uppercase" }}
               >
@@ -143,7 +142,6 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
                     href={source.url}
                     target="_blank"
                     rel="noreferrer nofollow"
-                    data-hover
                     style={{ fontSize: 12.5, fontWeight: 300, color: "var(--body)", wordBreak: "break-word" }}
                   >
                     [{source.index}] {source.publisher}
