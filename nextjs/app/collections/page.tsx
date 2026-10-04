@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import Cursor from "@/components/Cursor";
-import Nav from "@/components/Nav";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import CatalogCard from "@/components/CatalogCard";
+import Pager from "@/components/shop/Pager";
 import FilterSidebar from "@/components/shop/FilterSidebar";
 import ActiveFilters from "@/components/shop/ActiveFilters";
 import SearchBar from "@/components/shop/SearchBar";
 import SortSelect from "@/components/shop/SortSelect";
 import { getCatalogIndex, getBackdrops } from "@/lib/catalog";
-import { applyFilters, parseFilters, sortEntries } from "@/lib/filters";
+import { applyFilters, parseFilters, sortEntries, PAGE_SIZE } from "@/lib/filters";
 import { isPriced } from "@/agent/types";
 
 // Artifacts change whenever the agent runs or an edit is saved.
@@ -37,6 +38,11 @@ export default async function CollectionsPage({
 
   const matched = sortEntries(applyFilters(published, state), state.sort);
 
+  // Only this page's worth is rendered. The whole list was 9.5 MB of HTML.
+  const pages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
+  const page = Math.min(state.page, pages);
+  const shown = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   // Bounds come from the whole catalogue, so the price field's placeholders stay
   // steady while filters narrow the results.
   // Bounds come from the priced watches only. A brand master carries no prices, so
@@ -51,9 +57,9 @@ export default async function CollectionsPage({
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
       <Cursor />
-      <Nav />
+      <NavBar />
 
-      <section style={{ padding: "160px 44px 34px" }}>
+      <section style={{ padding: "var(--page-top) var(--gutter) 34px" }}>
         <span className="kicker">01 — The Index</span>
         <h1 className="h2" style={{ fontSize: "clamp(36px, 4.6vw, 72px)", maxWidth: 900 }}>
           Every reference,<br />
@@ -115,7 +121,7 @@ export default async function CollectionsPage({
               </div>
             ) : (
               <div className="shop-grid">
-                {matched.map((entry) => (
+                {shown.map((entry) => (
                   <CatalogCard
                     key={entry.sku}
                     entry={entry}
@@ -125,6 +131,8 @@ export default async function CollectionsPage({
               </div>
             )}
           </div>
+
+          <Pager state={state} page={page} pages={pages} base={undefined} />
         </div>
       </div>
 

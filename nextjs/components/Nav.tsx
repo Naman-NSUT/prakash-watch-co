@@ -12,22 +12,35 @@ import { useEffect, useRef, useState } from "react";
  * and it returns focus to the button that opened it — which is the difference
  * between a menu a keyboard can use and one it gets stranded inside.
  */
-const LINKS: { href: string; label: string }[] = [
+export interface NavBrand {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+const LINKS: { href: string; label: string; brands?: true }[] = [
   { href: "/collections", label: "Collection" },
-  { href: "/brands", label: "Brands" },
+  { href: "/brands", label: "Brands", brands: true },
+  { href: "/watch-finder", label: "Watch Finder" },
   { href: "/offers", label: "Offers" },
   { href: "/service", label: "Service" },
   { href: "/#boutiques", label: "Boutiques" },
 ];
 
-export default function Nav() {
+export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
   const [open, setOpen] = useState(false);
+  // Only the phone panel needs state. On a pointer device the flyout is opened
+  // by :hover and :focus-within, so it works with the keyboard and costs no JS.
+  const [brandsOpen, setBrandsOpen] = useState(false);
   const pathname = usePathname();
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
 
   // A route change means the menu has done its job.
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    setOpen(false);
+    setBrandsOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -59,8 +72,7 @@ export default function Nav() {
           // so the close button cannot be lifted over the panel from inside it.
           // Keeping the whole bar on top leaves the wordmark and the X in reach.
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 80, display: "flex", alignItems: "center",
-          justifyContent: "space-between", padding: "26px 44px", backdropFilter: "blur(14px)",
-          background: "linear-gradient(180deg, rgba(8,8,7,0.85), rgba(8,8,7,0))",
+          justifyContent: "space-between",
         }}
         className="site-nav"
       >
@@ -78,11 +90,33 @@ export default function Nav() {
             textTransform: "uppercase", color: "var(--body)",
           }}
         >
-          {LINKS.map((link) => (
-            <Link key={link.href} href={link.href}>
-              {link.label}
-            </Link>
-          ))}
+          {LINKS.map((link) =>
+            link.brands && brands.length > 0 ? (
+              <span key={link.href} className="nav-brands">
+                <Link href={link.href} aria-haspopup="true">
+                  {link.label}
+                  <span aria-hidden className="nav-caret">&#8964;</span>
+                </Link>
+                <span className="nav-brands-panel" role="group" aria-label="Brands we carry">
+                  <span className="nav-brands-grid">
+                    {brands.map((brand) => (
+                      <Link key={brand.slug} href={`/brands/${brand.slug}`} className="nav-brand-link">
+                        {brand.name}
+                        <span className="mono nav-brand-count">{brand.count}</span>
+                      </Link>
+                    ))}
+                  </span>
+                  <Link href="/brands" className="nav-brands-all">
+                    All houses &#8594;
+                  </Link>
+                </span>
+              </span>
+            ) : (
+              <Link key={link.href} href={link.href}>
+                {link.label}
+              </Link>
+            ),
+          )}
         </div>
 
         <div className="nav-est" style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -116,17 +150,45 @@ export default function Nav() {
         inert={!open}
       >
         <div className="nav-panel-inner">
-          {LINKS.map((link, i) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="nav-panel-link"
-              style={{ transitionDelay: open ? `${90 + i * 55}ms` : "0ms" }}
-            >
-              <span className="mono nav-panel-no">{String(i + 1).padStart(2, "0")}</span>
-              <span className="serif">{link.label}</span>
-            </Link>
-          ))}
+          {LINKS.map((link, i) =>
+            link.brands && brands.length > 0 ? (
+              <div key={link.href} style={{ transitionDelay: open ? `${90 + i * 55}ms` : "0ms" }} className="nav-panel-link nav-panel-group">
+                {/* A finger has no hover, so on a phone the houses open on a tap. */}
+                <button
+                  type="button"
+                  className="nav-panel-trigger"
+                  aria-expanded={brandsOpen}
+                  onClick={() => setBrandsOpen((value) => !value)}
+                >
+                  <span className="mono nav-panel-no">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="serif">{link.label}</span>
+                  <span aria-hidden className="nav-caret" data-open={brandsOpen}>&#8964;</span>
+                </button>
+                {brandsOpen && (
+                  <div className="nav-panel-brands">
+                    {brands.map((brand) => (
+                      <Link key={brand.slug} href={`/brands/${brand.slug}`}>
+                        {brand.name}
+                      </Link>
+                    ))}
+                    <Link href="/brands" className="nav-panel-brands-all">
+                      All houses &#8594;
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="nav-panel-link"
+                style={{ transitionDelay: open ? `${90 + i * 55}ms` : "0ms" }}
+              >
+                <span className="mono nav-panel-no">{String(i + 1).padStart(2, "0")}</span>
+                <span className="serif">{link.label}</span>
+              </Link>
+            ),
+          )}
 
           <div className="nav-panel-foot">
             <span className="mono" style={{ fontSize: 10, letterSpacing: "0.24em", color: "var(--faint)" }}>EST. 1976</span>

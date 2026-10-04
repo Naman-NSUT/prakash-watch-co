@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { Backdrop, ProductImage } from "@/agent/types";
+import { lightWash } from "@/lib/backdrop-light";
 
 export default function Gallery({
   images,
@@ -38,6 +39,7 @@ export default function Gallery({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div
+        className={backdrop && current.hasAlpha ? "card-stage" : undefined}
         style={{
           position: "relative",
           aspectRatio: "1 / 1",
@@ -45,12 +47,10 @@ export default function Gallery({
           background: "var(--well)",
           // Cut-out watches sit on the backdrop matched to their colour.
           backgroundImage: backdrop && current.hasAlpha ? backdrop.css : undefined,
+          ...(backdrop && current.hasAlpha ? { ["--stage-light" as string]: lightWash(backdrop.id) } : {}),
           overflow: "hidden",
         }}
       >
-        {backdrop && current.hasAlpha && (
-          <Image src={backdrop.url} alt="" aria-hidden fill sizes="46vw" style={{ objectFit: "cover" }} />
-        )}
         <Image
           key={current.url}
           src={current.url}

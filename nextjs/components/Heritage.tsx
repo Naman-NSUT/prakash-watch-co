@@ -9,8 +9,8 @@ const stats = [
 
 export default function Heritage() {
   return (
-    <section id="heritage" style={{ position: "relative", padding: "120px 44px", background: "var(--panel)", borderTop: "1px solid var(--line2)" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 90, alignItems: "center" }}>
+    <section id="heritage" style={{ position: "relative", padding: "var(--section-y) var(--gutter)", background: "var(--panel)", borderTop: "1px solid var(--line2)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "var(--cols-2)", gap: "var(--gap-xl)", alignItems: "center" }}>
         <Reveal>
           <span className="kicker">02 — Heritage</span>
           <div className="serif" style={{ margin: "26px 0 0", fontSize: "clamp(96px, 15vw, 230px)", lineHeight: 0.8, letterSpacing: "-0.04em" }}>1976</div>
@@ -26,7 +26,7 @@ export default function Heritage() {
         <Reveal style={{ display: "grid", gap: 1, background: "var(--line)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
             {stats.slice(0, 2).map((s) => (
-              <div key={s.n} style={{ background: "var(--card)", padding: "40px 32px" }}>
+              <div key={s.n} style={{ background: "var(--card)", padding: "var(--card-pad)" }}>
                 <div className="serif" style={{ fontSize: 62, lineHeight: 1, color: "var(--accent-soft)" }}>{s.n}</div>
                 <div style={{ marginTop: 12, fontSize: 14, color: "var(--muted)", fontWeight: 300 }}>{s.l}</div>
               </div>
@@ -34,13 +34,13 @@ export default function Heritage() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
             {stats.slice(2).map((s) => (
-              <div key={s.n} style={{ background: "var(--card)", padding: "40px 32px" }}>
+              <div key={s.n} style={{ background: "var(--card)", padding: "var(--card-pad)" }}>
                 <div className="serif" style={{ fontSize: 62, lineHeight: 1, color: "var(--accent-soft)" }}>{s.n}</div>
                 <div style={{ marginTop: 12, fontSize: 14, color: "var(--muted)", fontWeight: 300 }}>{s.l}</div>
               </div>
             ))}
           </div>
-          <div style={{ background: "var(--card)", padding: "34px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+          <div style={{ background: "var(--card)", padding: "var(--card-pad)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
             <span style={{ fontSize: 14.5, fontWeight: 300, color: "var(--body)" }}>Warranty and after-sales handled in house</span>
             <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.2em", color: "var(--accent)" }}>VERIFIED</span>
           </div>

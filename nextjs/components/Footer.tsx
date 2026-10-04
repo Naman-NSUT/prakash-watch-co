@@ -12,8 +12,8 @@ export default function Footer() {
     return () => clearInterval(id);
   }, []);
   return (
-    <footer style={{ position: "relative", padding: "110px 44px 40px", borderTop: "1px solid var(--line2)" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 50, paddingBottom: 90 }}>
+    <footer style={{ position: "relative", padding: "var(--section-y) var(--gutter) 40px", borderTop: "1px solid var(--line2)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "var(--cols-foot)", gap: "var(--gap-md)", paddingBottom: 90 }}>
         <div>
           <div className="serif" style={{ fontSize: "clamp(34px, 4vw, 62px)", lineHeight: 1, letterSpacing: "-0.02em" }}>
             Set your watch<br /><span className="italic-accent">with us</span>

@@ -176,19 +176,29 @@ a:hover { color: var(--accent-soft); }
 .shop-layout {
   display: grid;
   grid-template-columns: 262px minmax(0, 1fr);
-  gap: 44px;
+  gap: var(--gutter);
   align-items: start;
-  padding: 0 44px 130px;
+  padding: 0 var(--gutter) 130px;
 }
 .shop-sidebar { position: sticky; top: 104px; max-height: calc(100vh - 130px); overflow-y: auto; padding-right: 6px; }
 .shop-sidebar::-webkit-scrollbar { width: 4px; }
 .shop-sidebar::-webkit-scrollbar-thumb { background: var(--line); }
 .shop-toolbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 22px; }
+/* Four watches across on a laptop, not two. auto-fill with a 272px minimum
+   gave three at best once the 262px filter column and the gutters were taken
+   out of a 1280px screen, and two on anything narrower — a lot of scrolling
+   for a catalogue of 1,899 pieces. Fixed counts instead, stepped by width. */
+.shop-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+@media (min-width: 1600px) { .shop-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 1180px) { .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px)  { .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } }
 .shop-filter-toggle { display: none; }
 
 /* --- Offers ---------------------------------------------------------------- */
-.offer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 22px; }
+.offer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+@media (min-width: 1600px) { .offer-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .offer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px)  { .offer-grid { grid-template-columns: minmax(0, 1fr); } }
 .offer-card {
   display: flex; flex-direction: column;
   border: 1px solid var(--border); background: var(--card);
@@ -317,7 +327,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .nav-toggle { display: none; }
 
 @media (max-width: 900px) {
-  .site-nav { padding: 22px 24px !important; }
+  .site-nav { padding: 20px var(--gutter) !important; }
   .nav-links, .nav-est { display: none !important; }
 
   .nav-toggle {
@@ -407,7 +417,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 
 /* Snapping aligns to the scrollport edge, not the padding edge, so without this
    the first mark parks flush against the left rim with its inset eaten. */
-.brand-rail { scroll-padding-left: 44px; }
+.brand-rail { scroll-padding-left: var(--gutter); }
 @media (max-width: 720px) { .brand-rail { scroll-padding-left: 24px; } }
 
 .brand-chip .brand-disc {
@@ -880,4 +890,541 @@ html[data-theme="linen"] {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-film video { display: none; }
+}
+
+/* --- Layout that changes with the screen ------------------------------------
+   The pages are written with inline styles, and an inline style cannot hold a
+   media query. So every measurement that has to shrink on a phone lives here as
+   a variable and the components point at it: one place to tune, and the markup
+   stays readable.
+
+   900px is where two columns stop working — it is also where the navigation
+   already collapses into its panel. 560px is where the gutter has to come in
+   again, because a 24px margin on a 360px phone leaves too little for a
+   headline. */
+:root {
+  --gutter: 44px;        /* the page's side margin */
+  --section-y: 120px;    /* vertical breathing room inside a section */
+  --hero-top: 150px;     /* clears the fixed navigation bar */
+  --page-top: 160px;     /* the same, on inner pages with a heading */
+  --gap-xl: 90px;
+  --gap-md: 50px;
+  --cols-hero: 1.15fr 0.85fr;
+  --cols-2: 1fr 1fr;
+  --cols-3: repeat(3, 1fr);
+  --cols-foot: 1.4fr 1fr 1fr;
+  --cols-watch: minmax(320px, 46fr) minmax(320px, 54fr);
+  --card-pad: 40px 32px;
+  --card-pad-lg: 46px 36px 52px;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --gutter: 24px;
+    --section-y: 84px;
+    --hero-top: 124px;
+    --page-top: 120px;
+    --gap-xl: 44px;
+    --gap-md: 32px;
+    --cols-hero: minmax(0, 1fr);
+    --cols-2: minmax(0, 1fr);
+    --cols-3: minmax(0, 1fr);
+    --cols-foot: minmax(0, 1fr);
+    --cols-watch: minmax(0, 1fr);
+    --card-pad: 30px 24px;
+    --card-pad-lg: 32px 24px 36px;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --gutter: 16px;
+    --section-y: 64px;
+    --hero-top: 108px;
+    --page-top: 104px;
+    --card-pad: 26px 20px;
+    --card-pad-lg: 28px 20px 32px;
+  }
+}
+
+/* A last defence against a stray wide child. Clip rather than hidden, so
+   position: sticky keeps working above it. */
+body { overflow-x: clip; }
+
+/* The hero's footer strip: three claims and a scroll cue. On a phone the cue
+   goes — there is nothing below the fold worth pointing at that a thumb will
+   not find anyway — and the claims wrap. */
+@media (max-width: 900px) {
+  .hero-foot { flex-wrap: wrap; gap: 12px; }
+  .hero-stats { gap: 16px !important; flex-wrap: wrap; font-size: 9.5px !important; }
+  .hero-scroll { display: none !important; }
+}
+
+/* The index of collections. Four columns on a desk; on a phone the number sits
+   beside the name and the note and the stock count fall underneath it.
+   !important throughout, because these rows carry inline styles. */
+@media (max-width: 900px) {
+  .index-row {
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+    gap: 2px 12px !important;
+    padding: 20px 4px !important;
+  }
+  .index-row > :nth-child(3),
+  .index-row > :nth-child(4) { grid-column: 2; }
+  .index-row > :nth-child(4) { justify-self: start !important; }
+}
+
+/* The hovering preview card follows a pointer. A touch screen has none, and a
+   300px card that appears mid-tap is only ever in the way. */
+@media (hover: none) {
+  .collection-peek { display: none !important; }
+}
+
+/* The cursor ring chases a mouse. A touch screen has none, so the ring never
+   moves from where it was created and simply sits on the page. */
+@media (hover: none), (pointer: coarse) {
+  .cursor-ring { display: none !important; }
+}
+
+/* The theme switch lives in the top-right corner — which on a phone is where
+   the menu button is. Below 900px it moves out of the way, to the bottom. */
+@media (max-width: 900px) {
+  .theme-switch {
+    top: auto !important;
+    bottom: 14px;
+    right: 14px;
+    opacity: 0.92;
+    /* Anchored to the bottom, the list of themes has to open upwards or it
+       falls off the screen. */
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+  }
+  .theme-switch [role="listbox"] { margin: 0 0 6px !important; }
+}
+
+/* --- The stage behind a cut-out watch ---------------------------------------
+   Six photographic backdrops ship with the catalogue and every one of them is
+   near-black: they were made for the copper theme. Inside a linen or ivory card
+   they read as a hole punched through the page.
+
+   So in the light themes the card takes a pale wash of the same hue instead,
+   handed to it as --stage-light. The watch itself is a cut-out, so nothing else
+   has to change. */
+html[data-theme="linen"] .card-stage,
+html[data-theme="ivory"] .card-stage,
+html[data-theme="porcelain"] .card-stage {
+  background-image: var(--stage-light) !important;
+}
+
+/* --- The bar ----------------------------------------------------------------
+   It sits over the hero film, so it needs its own weight or the wordmark
+   dissolves into whatever frame is playing behind it. Taller than before, and
+   the scrim is mixed from the page's own background rather than hard-coded
+   black — the same bar has to work over linen as over copper. */
+.site-nav {
+  padding: 32px var(--gutter);
+  backdrop-filter: blur(18px);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--bg) 97%, transparent) 0%,
+    color-mix(in oklab, var(--bg) 88%, transparent) 58%,
+    color-mix(in oklab, var(--bg) 40%, transparent) 86%,
+    transparent 100%
+  );
+}
+
+.nav-caret {
+  display: inline-block;
+  margin-left: 7px;
+  font-size: 0.8em;
+  line-height: 1;
+  transition: transform .25s;
+}
+
+/* --- The houses, on a pointer device ----------------------------------------
+   Hover opens it; :focus-within opens it for a keyboard, which is the whole
+   reason this is CSS and not a click handler. visibility rather than display,
+   so the panel can fade. */
+.nav-brands { position: relative; display: inline-flex; align-items: center; }
+.nav-brands > a { display: inline-flex; align-items: center; }
+
+.nav-brands-panel {
+  position: absolute;
+  top: calc(100% + 18px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 90;
+  display: block;
+  width: min(760px, calc(100vw - 2 * var(--gutter)));
+  padding: 22px 24px 18px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow: 0 40px 90px var(--scrim);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity .22s ease, transform .28s cubic-bezier(.2,.8,.2,1), visibility .22s;
+}
+
+/* The gap between the bar and the panel would close the menu as the pointer
+   crossed it. This bridges it. */
+.nav-brands-panel::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 20px;
+}
+
+.nav-brands:hover .nav-brands-panel,
+.nav-brands:focus-within .nav-brands-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.nav-brands:hover .nav-caret,
+.nav-brands:focus-within .nav-caret { transform: rotate(180deg); }
+
+.nav-brands-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px 18px;
+}
+
+.nav-brand-link {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 8px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--body);
+  transition: background-color .2s, color .2s;
+}
+.nav-brand-link:hover { background: var(--card-hover); color: var(--text); }
+.nav-brand-count { font-size: 9.5px; letter-spacing: 0.12em; color: var(--faint); }
+
+.nav-brands-all {
+  display: block;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent-soft);
+}
+
+/* --- The houses, on a phone -------------------------------------------------
+   A finger cannot hover, so here the list opens on a tap inside the menu
+   panel. */
+.nav-panel-group { display: block; }
+
+.nav-panel-trigger {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.nav-panel-trigger .nav-caret { margin-left: auto; align-self: center; }
+.nav-panel-trigger .nav-caret[data-open="true"] { transform: rotate(180deg); }
+
+.nav-panel-brands {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 14px;
+  margin: 14px 0 4px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--line);
+}
+.nav-panel-brands a {
+  padding: 8px 2px;
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--muted);
+}
+.nav-panel-brands-all {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  font-size: 11px !important;
+  letter-spacing: 0.2em;
+  color: var(--accent-soft) !important;
+  text-transform: uppercase;
+}
+
+/* Six destinations plus a wordmark is a tight line. The gap closes a little on
+   the smaller desks before the whole thing collapses into the panel at 900px. */
+@media (max-width: 1200px) {
+  .nav-links { gap: 24px !important; font-size: 12.5px !important; }
+}
+
+/* --- The watch finder -------------------------------------------------------
+   Questions on the left, a running count on the right that stays in view while
+   you answer. Below 980px the count moves to the top and sticks there, because
+   on a phone an answer at the bottom of a long list would otherwise change a
+   number nobody can see. */
+.finder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 54px;
+  align-items: start;
+}
+
+.finder-step {
+  margin: 0 0 34px;
+  padding: 0 0 28px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+.finder-step:last-child { border-bottom: 0; }
+
+.finder-step legend {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 0;
+  margin-bottom: 18px;
+}
+.finder-no { font-size: 10.5px; letter-spacing: 0.2em; color: var(--accent); }
+.finder-ask { font-size: clamp(22px, 2.4vw, 30px); font-weight: 400; color: var(--text); }
+
+.finder-choices { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.finder-chip {
+  padding: 11px 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--body);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: border-color .25s, background-color .25s, color .25s;
+}
+.finder-chip:hover { border-color: var(--accent-soft); color: var(--text); }
+.finder-chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--chip);
+}
+
+.finder-result {
+  position: sticky;
+  top: 118px;
+  padding: 30px 26px 26px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  text-align: center;
+}
+.finder-count { font-size: 68px; line-height: 1; color: var(--accent-soft); }
+.finder-count-label {
+  margin: 12px 0 22px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  font-weight: 300;
+  color: var(--muted);
+}
+.finder-go { width: 100%; justify-content: center; }
+.finder-none { margin: 0; font-size: 13.5px; line-height: 1.7; font-weight: 300; color: var(--muted); }
+.finder-none a { color: var(--accent-soft); }
+.finder-clear {
+  margin-top: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.finder-clear:hover { color: var(--body); }
+
+@media (max-width: 980px) {
+  .finder { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  .finder-result {
+    order: -1;
+    position: sticky;
+    top: 76px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    text-align: left;
+  }
+  .finder-count { font-size: 34px; }
+  .finder-count-label { margin: 0; flex: 1; font-size: 12px; }
+  .finder-go { width: auto; }
+  .finder-clear { margin: 0; }
+}
+
+/* --- Brands, in the stock room ---------------------------------------------- */
+.ops-brands { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+
+.ops-brand {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 14px var(--ops-3);
+  background: var(--card);
+  transition: background-color .18s ease;
+}
+.ops-brand:hover { background: var(--card-hover); }
+
+.ops-brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  background: var(--chip);
+  color: var(--chip-ink);
+  font-size: 15px;
+}
+.ops-brand-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ops-brand-name { font-size: 19px; color: var(--text); }
+.ops-brand-counts { font-size: 9.5px; letter-spacing: 0.14em; color: var(--faint); }
+.ops-brand-banner { font-size: 9px; letter-spacing: 0.18em; color: var(--faint); }
+.ops-brand-banner.is-set { color: var(--accent); }
+
+.ops-desk { display: flex; flex-direction: column; gap: var(--ops-4); }
+.ops-note { margin: 10px 0 0; font-size: 12.5px; line-height: 1.7; font-weight: 300; color: var(--muted); max-width: 760px; }
+.ops-note.ops-warn { color: var(--warn); }
+.ops-done { color: var(--accent); }
+.ops-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.ops-row input[type="file"] { font-size: 12px; color: var(--muted); max-width: 100%; }
+.ops-report { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.ops-table-wrap { margin-top: 14px; max-height: 420px; overflow: auto; border: 1px solid var(--line2); }
+.ops-was { color: var(--faint); text-decoration: line-through; }
+.ops-now { color: var(--accent); }
+.ops-alert {
+  padding: 14px var(--ops-3);
+  border: 1px solid var(--bad-line);
+  background: var(--bad-line);
+  color: var(--bad);
+  font-size: 13px;
+}
+.ops-alert p { margin: 0; }
+.ops-banner-preview { margin-top: 16px; border: 1px solid var(--line); overflow: hidden; }
+.ops-banner-preview img { display: block; width: 100%; height: auto; }
+
+@media (max-width: 760px) {
+  .ops-brand { grid-template-columns: 56px minmax(0, 1fr); gap: 12px; }
+  .ops-brand-banner { grid-column: 2; }
+}
+
+/* --- A brand's banner -------------------------------------------------------
+   Uploaded from the stock room, shown above the wordmark. The aspect ratio is
+   fixed so the page does not jump as the photograph arrives, and it fades up
+   rather than appearing — a hard cut at the top of a page reads as a flash.
+   The gradient at its foot hands the eye down into the page instead of ending
+   the photograph on a hard line. */
+.brand-banner {
+  position: relative;
+  aspect-ratio: 2400 / 820;
+  max-height: 46vh;
+  margin-inline: var(--gutter);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--well);
+  animation: banner-in 1.1s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.brand-banner-fade {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 42%;
+  background: linear-gradient(to top, color-mix(in oklab, var(--bg) 86%, transparent), transparent);
+  pointer-events: none;
+}
+
+@keyframes banner-in {
+  from { opacity: 0; transform: scale(1.03); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-banner { animation: none; }
+}
+
+@media (max-width: 760px) {
+  .brand-banner { aspect-ratio: 16 / 9; max-height: 38vh; }
+}
+
+/* --- Waiting ----------------------------------------------------------------
+   Shown while a page is being built on the server. The shimmer is slow on
+   purpose: a fast one reads as an error state, and this is usually under a
+   second. It stops entirely under reduced motion, leaving a plain block. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--well) 0%,
+    color-mix(in oklab, var(--card-hover) 70%, var(--well)) 50%,
+    var(--well) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* --- Pages of results -------------------------------------------------------- */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+
+.pager-step {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--body);
+  transition: color .2s;
+}
+.pager-step:hover { color: var(--accent); }
+.pager-step.is-off { color: var(--faint); opacity: .5; }
+
+.pager-numbers { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+.pager-no {
+  min-width: 34px;
+  padding: 7px 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  text-align: center;
+  color: var(--muted);
+  transition: background-color .2s, color .2s;
+}
+.pager-no:hover { background: var(--card-hover); color: var(--text); }
+.pager-no.is-here { background: var(--accent); color: var(--chip); }
+.pager-gap { padding: 0 2px; font-size: 11px; color: var(--faint); }
+
+@media (max-width: 560px) {
+  .pager { justify-content: center; }
+  .pager-numbers { order: -1; width: 100%; justify-content: center; }
 }

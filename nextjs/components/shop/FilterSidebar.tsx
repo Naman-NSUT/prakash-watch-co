@@ -22,10 +22,13 @@ export default function FilterSidebar({
   entries,
   state,
   bounds,
+  base,
 }: {
   entries: CatalogEntry[];
   state: FilterState;
   bounds: { low: number; high: number };
+  /** The page these filters belong to — the shop, or one brand's shelf. */
+  base?: string;
 }) {
   const active = activeCount(state);
 
@@ -60,7 +63,7 @@ export default function FilterSidebar({
           <span className="kicker">Refine</span>
           {active > 0 && (
             <Link
-              href="/collections"
+              href={base ?? "/collections"}
               data-hover
               className="mono"
               style={{ fontSize: 9, letterSpacing: "0.14em", color: "var(--accent-soft)", textTransform: "uppercase" }}
@@ -76,12 +79,12 @@ export default function FilterSidebar({
 
         <Group label="Availability">
           <Toggle
-            href={buildHref({ ...state, inStock: !state.inStock })}
+            href={buildHref({ ...state, inStock: !state.inStock, page: 1 }, base)}
             label="In stock only"
             selected={state.inStock}
           />
           <Toggle
-            href={buildHref({ ...state, onSale: !state.onSale })}
+            href={buildHref({ ...state, onSale: !state.onSale, page: 1 }, base)}
             label="Reduced"
             selected={state.onSale}
           />
@@ -97,7 +100,7 @@ export default function FilterSidebar({
               {options.map((option) => (
                 <Link
                   key={option.value}
-                  href={toggledHref(state, group.key, option.value)}
+                  href={toggledHref(state, group.key, option.value, base)}
                   scroll={false}
                   data-hover
                   className="facet-option"

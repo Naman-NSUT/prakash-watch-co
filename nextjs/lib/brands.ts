@@ -14,6 +14,7 @@
  * which would silently eat this file.
  */
 import "server-only";
+import { cache } from "react";
 import { dataRoot } from "@/agent/config";
 import { existsSync, promises as fs } from "node:fs";
 import { join } from "node:path";
@@ -41,6 +42,14 @@ const BrandNoteSchema = z.object({
   badge: z.string().optional(),
   /** Lower sorts first; unordered brands follow, by stock held. */
   order: z.number().optional(),
+  /**
+   * A wide photograph across the top of the brand's page, uploaded from the
+   * stock room. Stored under /media like every other photograph the shop owns,
+   * so it travels with the data rather than with a deploy.
+   */
+  banner: z.string().optional(),
+  /** What the banner shows, for anyone who cannot see it. */
+  bannerAlt: z.string().optional(),
 });
 
 export type BrandNote = z.infer<typeof BrandNoteSchema>;
@@ -63,6 +72,9 @@ export interface BrandSummary {
   /** A representative photograph — the cheapest in-stock piece that has one. */
   image: string | null;
   backdropId: string | null;
+  /** A wide photograph for the top of the brand's page, or null. */
+  banner: string | null;
+  bannerAlt: string | null;
 }
 
 /** "G-Shock Master of G" → "g-shock-master-of-g". */
@@ -91,6 +103,33 @@ export async function readBrandNotes(): Promise<BrandNote[]> {
 
 async function readNotes(): Promise<Map<string, BrandNote>> {
   return new Map((await readBrandNotes()).map((note) => [note.slug, note]));
+}
+
+/**
+ * Change one brand's note, leaving the others alone.
+ *
+ * Fields set to undefined are deleted rather than written as null, so a removed
+ * banner leaves no trace in the file. The write goes through a temporary file
+ * and a rename: two admins saving at once can interleave, but neither can leave
+ * the shop with a half-written brand list.
+ */
+export async function updateBrandNote(slug: string, patch: Partial<BrandNote>): Promise<BrandNote> {
+  const notes = await readBrandNotes();
+  const index = notes.findIndex((note) => note.slug === slug);
+  const merged: BrandNote = { ...(index >= 0 ? notes[index] : { slug }), ...patch, slug };
+
+  for (const [key, value] of Object.entries(merged)) {
+    if (value === undefined) delete (merged as Record<string, unknown>)[key];
+  }
+
+  if (index >= 0) notes[index] = merged;
+  else notes.push(merged);
+
+  const path = join(dataRoot(), "brand-notes.json");
+  const temporary = `${path}.${process.pid}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(notes, null, 2)}\n`, "utf8");
+  await fs.rename(temporary, path);
+  return merged;
 }
 
 /**
@@ -139,6 +178,8 @@ function summarise(brand: string, entries: CatalogEntry[], note: BrandNote | und
     since: note?.since ?? null,
     // A file on disk wins; the note's URL remains available for a hosted one.
     logo: findLogo(brandSlug(brand)) ?? note?.logo ?? null,
+    banner: note?.banner ?? null,
+    bannerAlt: note?.bannerAlt ?? null,
     // A shop-set badge wins; otherwise the only claim made is one the prices prove.
     badge: note?.badge ?? (reduced.length > 0 ? "Reduced" : null),
     count: entries.length,
@@ -151,7 +192,7 @@ function summarise(brand: string, entries: CatalogEntry[], note: BrandNote | und
 }
 
 /** Every brand with something published, richest stock first unless ordered. */
-export async function getBrands(): Promise<BrandSummary[]> {
+export const getBrands = cache(async function getBrands(): Promise<BrandSummary[]> {
   const [index, notes] = await Promise.all([getCatalogIndex(), readNotes()]);
   const published = index.filter((entry) => entry.status === PUBLISHED_STATUS);
 
@@ -173,7 +214,7 @@ export async function getBrands(): Promise<BrandSummary[]> {
   return summaries.sort(
     (a, b) => orderOf(a) - orderOf(b) || b.inStock - a.inStock || a.name.localeCompare(b.name),
   );
-}
+});
 
 export async function getBrand(slug: string): Promise<BrandSummary | null> {
   const wanted = slug.toLowerCase();

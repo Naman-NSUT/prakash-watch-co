@@ -1,5 +1,5 @@
 "use client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 /** Min/max price, committed on blur or Enter rather than on every keystroke. */
@@ -13,6 +13,10 @@ export default function PriceFilter({
   bounds: { low: number; high: number };
 }) {
   const router = useRouter();
+  // Stay where the shopper is. These controls are rendered both by the shop and
+  // by a single brand's shelf; writing /collections into the URL would throw
+  // anyone filtering Seiko back into the whole catalogue.
+  const pathname = usePathname();
   const params = useSearchParams();
   const [from, setFrom] = useState(min === null ? "" : String(min));
   const [to, setTo] = useState(max === null ? "" : String(max));
@@ -31,7 +35,7 @@ export default function PriceFilter({
     else next.delete("max");
 
     const query = next.toString();
-    router.replace(query ? `/collections?${query}` : "/collections", { scroll: false });
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
 
   const field: React.CSSProperties = {

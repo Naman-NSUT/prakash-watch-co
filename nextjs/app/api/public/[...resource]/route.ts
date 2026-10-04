@@ -49,6 +49,9 @@ function publicProduct(product: WatchProduct): WatchProduct {
     ...product,
     costPrice: null,
     quantity: null,
+    // Where the shop researched a watch is its own working note. The pages show
+    // the reference number and nothing else, so the addresses never leave here.
+    sources: [],
     confidence: { overall: 0, identity: 0, specs: 0, images: 0 },
     review: { flags: [], notes: [] },
     meta: {

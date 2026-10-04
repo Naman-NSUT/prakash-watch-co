@@ -1,5 +1,5 @@
 "use client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -11,6 +11,10 @@ import { useEffect, useRef, useState } from "react";
  */
 export default function SearchBar({ initial }: { initial: string }) {
   const router = useRouter();
+  // Stay where the shopper is. These controls are rendered both by the shop and
+  // by a single brand's shelf; writing /collections into the URL would throw
+  // anyone filtering Seiko back into the whole catalogue.
+  const pathname = usePathname();
   const params = useSearchParams();
   const [value, setValue] = useState(initial);
   const typed = useRef(false);
@@ -27,7 +31,7 @@ export default function SearchBar({ initial }: { initial: string }) {
       if (value.trim()) next.set("q", value.trim());
       else next.delete("q");
       const query = next.toString();
-      router.replace(query ? `/collections?${query}` : "/collections", { scroll: false });
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }, 280);
     return () => clearTimeout(timer);
   }, [value, params, router]);

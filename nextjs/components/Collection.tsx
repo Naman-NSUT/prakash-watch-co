@@ -34,7 +34,7 @@ export default function Collection({ families }: { families: CollectionSummary[]
   const active = hover === null ? null : families[hover];
 
   return (
-    <section id="collection" style={{ position: "relative", padding: "130px 44px 120px" }}>
+    <section id="collection" style={{ position: "relative", padding: "130px var(--gutter) 120px" }}>
       <Reveal style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 66 }}>
         <div>
           <span className="kicker">01 — The Index</span>
@@ -54,7 +54,7 @@ export default function Collection({ families }: { families: CollectionSummary[]
           <Link
             key={family.id}
             href={`/collections?family=${family.id}`}
-            className="row"
+            className="row index-row"
             data-hover
             onMouseEnter={() => setHover(i)}
             style={{
@@ -81,7 +81,7 @@ export default function Collection({ families }: { families: CollectionSummary[]
         ))}
       </div>
 
-      <div ref={peek} style={{
+      <div ref={peek} className="collection-peek" style={{
         position: "fixed", top: 0, left: 0, zIndex: 40, width: 300, height: 380, margin: "-190px 0 0 -150px",
         pointerEvents: "none", opacity: hover === null ? 0 : 1, transform: hover === null ? "scale(0.9)" : "scale(1)",
         transition: "opacity .35s, transform .5s cubic-bezier(.2,.8,.2,1)", border: "1px solid var(--border)",

@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Cursor from "@/components/Cursor";
-import Nav from "@/components/Nav";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import CatalogCard from "@/components/CatalogCard";
+import Pager from "@/components/shop/Pager";
 import FilterSidebar from "@/components/shop/FilterSidebar";
 import ActiveFilters from "@/components/shop/ActiveFilters";
 import SearchBar from "@/components/shop/SearchBar";
 import SortSelect from "@/components/shop/SortSelect";
 import { getCatalogIndex, getBackdrops, PUBLISHED_STATUS } from "@/lib/catalog";
-import { applyFilters, parseFilters, sortEntries } from "@/lib/filters";
+import { applyFilters, parseFilters, sortEntries, PAGE_SIZE } from "@/lib/filters";
 import { getBrand, getBrands, brandSlug } from "@/lib/brands";
+import { mediaUrl } from "@/lib/remote";
 import { formatInr } from "@/agent/format";
 import { isPriced } from "@/agent/types";
 
@@ -56,6 +59,11 @@ export default async function BrandPage({
   );
   const matched = sortEntries(applyFilters(published, state), state.sort);
 
+  // Only this page's worth is rendered. The whole list was 9.5 MB of HTML.
+  const pages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
+  const page = Math.min(state.page, pages);
+  const shown = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   // Priced watches only: an unpriced one lists at "price on request" and belongs
   // in no price range.
   const prices = published.filter(isPriced).map((entry) => entry.price.selling);
@@ -70,9 +78,25 @@ export default async function BrandPage({
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
       <Cursor />
-      <Nav />
+      <NavBar />
 
-      <section style={{ padding: "150px 44px 30px" }}>
+      {brand.banner && (
+        // Above the wordmark and the watches, fading up once the page settles.
+        // Fixed aspect so nothing below it jumps as the photograph arrives.
+        <div className="brand-banner" style={{ marginTop: "calc(var(--page-top) - 40px)" }}>
+          <Image
+            src={mediaUrl(brand.banner)}
+            alt={brand.bannerAlt ?? ""}
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: "cover" }}
+          />
+          <div className="brand-banner-fade" />
+        </div>
+      )}
+
+      <section style={{ padding: `${brand.banner ? "34px" : "var(--page-top)"} var(--gutter) 30px` }}>
         <nav
           className="mono"
           style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--faint)", marginBottom: 26 }}
@@ -125,7 +149,7 @@ export default async function BrandPage({
 
       <div className="shop-layout">
         <Suspense fallback={<aside />}>
-          <FilterSidebar entries={published} state={state} bounds={bounds} />
+          <FilterSidebar entries={published} state={state} bounds={bounds} base={`/brands/${brand.slug}`} />
         </Suspense>
 
         <div>
@@ -143,7 +167,7 @@ export default async function BrandPage({
             </div>
           </div>
 
-          <ActiveFilters state={state} />
+          <ActiveFilters state={state} base={`/brands/${brand.slug}`} />
 
           <div style={{ marginTop: 26 }}>
             {matched.length === 0 ? (
@@ -161,7 +185,7 @@ export default async function BrandPage({
               </div>
             ) : (
               <div className="shop-grid">
-                {matched.map((entry) => (
+                {shown.map((entry) => (
                   <CatalogCard
                     key={entry.sku}
                     entry={entry}
@@ -171,11 +195,13 @@ export default async function BrandPage({
               </div>
             )}
           </div>
+
+          <Pager state={state} page={page} pages={pages} base={`/brands/${brand.slug}`} />
         </div>
       </div>
 
       {others.length > 0 && (
-        <section style={{ padding: "20px 44px 110px" }}>
+        <section style={{ padding: "20px var(--gutter) 110px" }}>
           <div style={{ borderTop: "1px solid var(--line)", paddingTop: 34, display: "flex", alignItems: "baseline", gap: 30, flexWrap: "wrap" }}>
             <span className="kicker">Also on the shelf</span>
             <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>

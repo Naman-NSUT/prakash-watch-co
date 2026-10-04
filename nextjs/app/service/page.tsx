@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Cursor from "@/components/Cursor";
-import Nav from "@/components/Nav";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import ServiceForm from "@/components/ServiceForm";
 
@@ -29,9 +29,9 @@ export default function ServicePage() {
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
       <Cursor />
-      <Nav />
+      <NavBar />
 
-      <section style={{ padding: "160px 44px 20px" }}>
+      <section style={{ padding: "var(--page-top) var(--gutter) 20px" }}>
         <span className="kicker">03 — The workshop</span>
         <h1 className="h2" style={{ fontSize: "clamp(38px, 5.4vw, 86px)", maxWidth: 980 }}>
           Book a watch<br />
@@ -43,7 +43,7 @@ export default function ServicePage() {
         </p>
       </section>
 
-      <section style={{ padding: "56px 44px 0" }}>
+      <section style={{ padding: "56px var(--gutter) 0" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 1, background: "var(--line)" }}>
           {STEPS.map((step) => (
             <div key={step.no} className="hover-card" style={{ background: "var(--bg)", padding: "34px 28px 40px" }}>
@@ -55,7 +55,7 @@ export default function ServicePage() {
         </div>
       </section>
 
-      <section style={{ padding: "74px 44px 0" }}>
+      <section style={{ padding: "74px var(--gutter) 0" }}>
         <span className="kicker">What the bench does</span>
         <div style={{ marginTop: 28, borderTop: "1px solid var(--line)" }}>
           {WORK.map((work) => (
@@ -80,7 +80,7 @@ export default function ServicePage() {
         </p>
       </section>
 
-      <section style={{ padding: "86px 44px 120px" }}>
+      <section style={{ padding: "86px var(--gutter) 120px" }}>
         <div className="svc-layout">
           <div>
             <span className="kicker">The docket</span>

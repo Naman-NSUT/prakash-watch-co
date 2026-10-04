@@ -6,6 +6,7 @@
  * browser.
  */
 import "server-only";
+import { cache } from "react";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
@@ -100,7 +101,16 @@ export async function getCollectionSummaries(): Promise<CollectionSummary[]> {
   });
 }
 
-export async function getCatalogIndex(): Promise<CatalogEntry[]> {
+/**
+ * The whole index, read once per request.
+ *
+ * A brand page asks for it four times over — twice through getBrand (the page
+ * and its metadata), then again for the grid and the brand list — and every one
+ * of those parsed 3 MB of JSON from scratch. React's cache() collapses them into
+ * a single read for the duration of one render, and forgets it afterwards, so a
+ * run of the agent is still picked up on the next request.
+ */
+export const getCatalogIndex = cache(async function getCatalogIndex(): Promise<CatalogEntry[]> {
   if (isRemote()) {
     const entries = (await remoteJson<CatalogEntry[] | null>("/api/public/catalog")) ?? [];
     return entries.map((entry) =>
@@ -112,7 +122,7 @@ export async function getCatalogIndex(): Promise<CatalogEntry[]> {
   } catch {
     return [];
   }
-}
+});
 
 /** The backdrop library as a list — the shape it is stored and sent in. */
 export async function readBackdropList(): Promise<Backdrop[]> {

@@ -27,7 +27,7 @@ export default function Cursor() {
     return () => { removeEventListener("mousemove", move); cancelAnimationFrame(raf); };
   }, []);
   return (
-    <div ref={ref} style={{
+    <div ref={ref} className="cursor-ring" style={{
       position: "fixed", top: 0, left: 0, width: 34, height: 34, margin: "-17px 0 0 -17px",
       border: "1px solid oklch(0.72 0.14 34 / 0.7)", borderRadius: 999, pointerEvents: "none", zIndex: 70,
       transition: "width .25s cubic-bezier(.2,.8,.2,1), height .25s cubic-bezier(.2,.8,.2,1), margin .25s cubic-bezier(.2,.8,.2,1), background-color .25s, opacity .3s",

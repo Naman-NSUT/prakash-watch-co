@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import csv
 import re
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -348,3 +349,112 @@ def write_template(path: str | Path) -> None:
 
     path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(path)
+
+
+# --- Discount sheets ---------------------------------------------------------
+#
+# A stock sheet describes watches; a discount sheet only says "this reference is
+# now N% off", or gives a new price for it. The stock parser cannot read one —
+# it insists on a brand and a price per row — so this reads the looser shape:
+# a reference column, and any one of a discount, a price or an MRP.
+#
+# The brand is not taken from the sheet. These are uploaded from a single
+# brand's page in the stock room, and that page says which brand it is.
+
+DISCOUNT_ALIASES: tuple[str, ...] = (
+    "discount", "discountpct", "discountpercent", "discountper", "disc",
+    "off", "percentoff", "percentage", "percent",
+)
+
+
+@dataclass(frozen=True)
+class DiscountRow:
+    row_number: int
+    sheet: str
+    model_number: str
+    discount_pct: float | None = None
+    price: float | None = None
+    mrp: float | None = None
+
+
+def _discount_value(text: str) -> float | None:
+    """Reads 15, 15%, or 0.15 as fifteen per cent."""
+    cleaned = squish(text).replace("%", "").strip()
+    if not cleaned:
+        return None
+    try:
+        value = float(cleaned.replace(",", ""))
+    except ValueError:
+        return None
+    # A sheet written with percentages as fractions: 0.15 means 15%, not 0.15%.
+    if 0 < value < 1:
+        value *= 100
+    if not 0 < value < 100:
+        return None
+    return round(value, 2)
+
+
+def parse_discount_sheet(path: str | Path) -> dict:
+    """Rows of {reference, discount or price} from every readable worksheet."""
+    path = Path(path)
+    rows: list[DiscountRow] = []
+    errors: list[dict] = []
+    columns_seen: list[str] = []
+
+    for grid in _load_grids(path):
+        header_row = 0
+        header: dict[str, int] = {}
+
+        # The header is the first row holding a reference column and one number
+        # column — looser than the stock parser, which needs two known headings.
+        for index in range(1, min(grid.row_count, 15) + 1):
+            found: dict[str, int] = {}
+            for column, cell in enumerate(grid.row(index)):
+                name = _normalise_header(cell or "")
+                if not name:
+                    continue
+                if name in ALIASES["modelNumber"]:
+                    found.setdefault("modelNumber", column)
+                elif name in DISCOUNT_ALIASES:
+                    found.setdefault("discount", column)
+                elif name in ALIASES["price"]:
+                    found.setdefault("price", column)
+                elif name in ALIASES["mrp"]:
+                    found.setdefault("mrp", column)
+            if "modelNumber" in found and len(found) > 1:
+                header_row, header = index, found
+                break
+
+        if not header_row:
+            continue
+
+        columns_seen = sorted(header)
+        for index in range(header_row + 1, grid.row_count + 1):
+            raw = grid.row(index)
+            if not any(squish(cell) for cell in raw):
+                continue
+
+            def read(key: str) -> str:
+                column = header.get(key)
+                return squish(raw[column]) if column is not None and column < len(raw) else ""
+
+            model = read("modelNumber")
+            if not model:
+                continue
+
+            discount = _discount_value(read("discount"))
+            price = parse_money(read("price"))
+            mrp = parse_money(read("mrp"))
+
+            if discount is None and price is None and mrp is None:
+                errors.append({"row_number": index, "sheet": grid.name, "model_number": model,
+                               "reason": "no discount, price or MRP on this line"})
+                continue
+
+            rows.append(DiscountRow(index, grid.name, model, discount, price, mrp))
+
+    return {
+        "rows": [asdict(row) for row in rows],
+        "errors": errors,
+        "columns": columns_seen,
+    }

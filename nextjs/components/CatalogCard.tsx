@@ -2,11 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Backdrop, CatalogEntry } from "@/agent/types";
 import { formatInr } from "@/agent/format";
+import { lightWash } from "@/lib/backdrop-light";
 
 /** One watch in the collections grid, in the house style. */
 export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; backdrop?: Backdrop }) {
   // A cut-out watch is published on transparency, so the card supplies the
   // backdrop the agent matched to its colour. An uncut photograph brings its own.
+  //
+  // The stage is the CSS wash alone. The library also names a photograph per
+  // backdrop, but nothing has ever generated those files — every card has been
+  // requesting one and getting a 400 back. The wash is what has always been on
+  // screen, so it is now the whole of it.
   const usesBackdrop = Boolean(backdrop && entry.image?.hasAlpha);
 
   return (
@@ -23,10 +29,13 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
       }}
     >
       <div
+        className={usesBackdrop ? "card-stage" : undefined}
         style={{
           position: "relative",
           aspectRatio: "1 / 1",
           background: "var(--well)",
+          // The pale twin, used by the light themes. See lib/backdrop-light.ts.
+          ...(usesBackdrop ? { ["--stage-light" as string]: lightWash(backdrop!.id) } : {}),
           // The CSS wash renders instantly; the generated image layers over it.
           backgroundImage: usesBackdrop
             ? backdrop!.css
@@ -37,16 +46,6 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
           overflow: "hidden",
         }}
       >
-        {usesBackdrop && (
-          <Image
-            src={backdrop!.url}
-            alt=""
-            aria-hidden
-            fill
-            sizes="(max-width: 700px) 100vw, 33vw"
-            style={{ objectFit: "cover" }}
-          />
-        )}
 
         {entry.image ? (
           <Image

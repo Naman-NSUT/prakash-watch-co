@@ -27,6 +27,7 @@ export const Icons = {
   repairs: icon(<><path d="M14.7 6.3a4 4 0 01-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 015.4-5.4l-2.6 2.6-2.1-2.1 2.7-2.5z" /></>),
   sources: icon(<><path d="M4 19.5V5a2 2 0 012-2h13v18H6a2 2 0 01-2-1.5z" /><path d="M9.5 8.5h5M9.5 12h5" /><circle cx="7" cy="8.5" r=".6" fill="currentColor" /><circle cx="7" cy="12" r=".6" fill="currentColor" /></>),
   pricing: icon(<><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v5h-5" /><path d="M3 21h18" /></>),
+  brands: icon(<><path d="M3 7.5h18" /><path d="M5 7.5V5.5a1 1 0 011-1h12a1 1 0 011 1v2" /><rect x="3" y="7.5" width="18" height="12" rx="1.5" /><path d="M9.5 12.5h5" /></>),
   offers: icon(<><path d="M20.6 13.4L12 22l-9-9V4a1 1 0 011-1h8.6l8 8a1.4 1.4 0 010 2.4z" /><path d="M7.5 7.5h.01" /></>),
 };
 

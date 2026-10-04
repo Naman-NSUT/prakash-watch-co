@@ -191,6 +191,48 @@ async def refresh(
     )
 
 
+@app.post("/discount-sheet")
+async def discount_sheet(
+    file: UploadFile = File(...),
+    x_agent_token: str | None = Header(default=None),
+) -> dict[str, Any]:
+    """Reads a discount sheet and hands back its lines. Spends nothing.
+
+    A shop sends one of these from a brand's page in the stock room: a column of
+    references and a column of discounts. Parsing lives here because this is
+    where the spreadsheet reader is; deciding what to do with the lines lives in
+    the site, which holds the catalogue.
+    """
+    _check_token(x_agent_token)
+
+    name = (file.filename or "sheet.xlsx").lower()
+    if not name.endswith(ALLOWED_SUFFIXES):
+        raise HTTPException(status_code=400, detail="Upload an .xlsx or .csv file.")
+
+    payload = await file.read()
+    if len(payload) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=400, detail="That file is larger than 8 MB.")
+
+    from .sheet import parse_discount_sheet
+
+    config = load_config()
+    upload_dir = Path(config.upload_dir)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    saved = upload_dir / f"{int(time.time())}-discounts-{_UNSAFE.sub('_', file.filename or 'sheet.xlsx')}"
+    saved.write_bytes(payload)
+
+    result = parse_discount_sheet(saved)
+    if not result["rows"] and not result["errors"]:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No readable lines. The sheet needs a reference column — Model No, Ref, "
+                "Article Code — and a Discount %, Price or MRP column beside it."
+            ),
+        )
+    return result
+
+
 @app.post("/ingest")
 async def ingest(
     file: UploadFile = File(...),

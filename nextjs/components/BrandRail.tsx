@@ -67,7 +67,7 @@ export default function BrandRail({ brands }: { brands: BrandSummary[] }) {
           justifyContent: "space-between",
           gap: 32,
           flexWrap: "wrap",
-          padding: "0 44px",
+          padding: "0 var(--gutter)",
           marginBottom: 54,
         }}
       >
@@ -103,7 +103,7 @@ export default function BrandRail({ brands }: { brands: BrandSummary[] }) {
             gap: 30,
             overflowX: "auto",
             scrollSnapType: "x proximity",
-            padding: "10px 44px 4px",
+            padding: "10px var(--gutter) 4px",
             scrollbarWidth: "none",
             // Centred while the shop carries a handful of houses, start-aligned
             // once the rail overflows. Decided from the measurement rather than

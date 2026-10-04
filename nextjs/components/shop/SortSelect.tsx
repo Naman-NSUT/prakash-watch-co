@@ -1,5 +1,5 @@
 "use client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const OPTIONS: Array<{ value: string; label: string }> = [
   { value: "featured", label: "Featured" },
@@ -11,6 +11,10 @@ const OPTIONS: Array<{ value: string; label: string }> = [
 
 export default function SortSelect({ value }: { value: string }) {
   const router = useRouter();
+  // Stay where the shopper is. These controls are rendered both by the shop and
+  // by a single brand's shelf; writing /collections into the URL would throw
+  // anyone filtering Seiko back into the whole catalogue.
+  const pathname = usePathname();
   const params = useSearchParams();
 
   return (
@@ -23,7 +27,7 @@ export default function SortSelect({ value }: { value: string }) {
           if (event.target.value === "featured") next.delete("sort");
           else next.set("sort", event.target.value);
           const query = next.toString();
-          router.replace(query ? `/collections?${query}` : "/collections", { scroll: false });
+          router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
         }}
         style={{
           padding: "10px 12px",

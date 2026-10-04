@@ -1,5 +1,5 @@
 import Cursor from "@/components/Cursor";
-import Nav from "@/components/Nav";
+import NavBar from "@/components/NavBar";
 import Hero from "@/components/Hero";
 import Marquee from "@/components/Marquee";
 import Collection from "@/components/Collection";
@@ -21,7 +21,7 @@ export default async function Home() {
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
       <Cursor />
-      <Nav />
+      <NavBar />
       <Hero />
       <Marquee />
       <Collection families={families} />

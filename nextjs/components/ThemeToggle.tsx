@@ -49,6 +49,7 @@ export default function ThemeToggle() {
 
   return (
     <div
+      className="theme-switch"
       style={{
         position: "fixed",
         top: 12,

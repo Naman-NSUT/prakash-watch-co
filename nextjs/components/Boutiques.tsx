@@ -9,17 +9,17 @@ const stores = [
 
 export default function Boutiques() {
   return (
-    <section id="boutiques" style={{ position: "relative", padding: "120px 44px", background: "var(--panel)", borderTop: "1px solid var(--line2)" }}>
-      <Reveal style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 58 }}>
+    <section id="boutiques" style={{ position: "relative", padding: "var(--section-y) var(--gutter)", background: "var(--panel)", borderTop: "1px solid var(--line2)" }}>
+      <Reveal style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 18, marginBottom: 58 }}>
         <div>
           <span className="kicker">04 — Boutiques</span>
           <h2 className="h2" style={{ fontSize: "clamp(38px, 4.6vw, 74px)", lineHeight: 0.95 }}>Come in and try it on</h2>
         </div>
         <span className="mono" style={{ fontSize: 11, letterSpacing: "0.18em", color: "var(--muted)" }}>DAILY 10:00 — 21:00</span>
       </Reveal>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--line)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "var(--cols-2)", gap: 1, background: "var(--line)" }}>
         {stores.map((s) => (
-          <div key={s.t} className="hover-card" style={{ background: "var(--card)", padding: "40px 34px", display: "flex", justifyContent: "space-between", gap: 24 }}>
+          <div key={s.t} className="hover-card" style={{ background: "var(--card)", padding: "var(--card-pad)", display: "flex", justifyContent: "space-between", gap: 24 }}>
             <div>
               <h3 className="serif" style={{ margin: 0, fontSize: 30, fontWeight: 400 }}>{s.t}</h3>
               <p style={{ margin: "12px 0 0", fontSize: 14.5, lineHeight: 1.65, fontWeight: 300, color: "var(--muted)" }}>

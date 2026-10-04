@@ -53,3 +53,6 @@ runs/
 # Raw renders from the video tool. The web-ready encodes live in
 # nextjs/public/hero; the 37 MB originals are working files, not code.
 hf_*.mp4
+
+# Scratch output from the browser-automation tool.
+.playwright-cli/

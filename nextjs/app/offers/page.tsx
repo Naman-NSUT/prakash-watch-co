@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Cursor from "@/components/Cursor";
-import Nav from "@/components/Nav";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { liveOffers, KIND_LABELS, type Offer } from "@/lib/offers";
 
@@ -42,9 +42,9 @@ export default async function OffersPage() {
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
       <Cursor />
-      <Nav />
+      <NavBar />
 
-      <section style={{ padding: "160px 44px 44px" }}>
+      <section style={{ padding: "var(--page-top) var(--gutter) 44px" }}>
         <span className="kicker">04 — Offers</span>
         <h1 className="h2" style={{ fontSize: "clamp(38px, 5.4vw, 86px)", maxWidth: 980 }}>
           What is on<br />
@@ -56,7 +56,7 @@ export default async function OffersPage() {
         </p>
       </section>
 
-      <section style={{ padding: "0 44px 120px" }}>
+      <section style={{ padding: "0 var(--gutter) 120px" }}>
         {offers.length === 0 ? (
           <div style={{ border: "1px solid var(--line)", background: "var(--card)", padding: "70px 40px", textAlign: "center" }}>
             <p className="serif" style={{ fontSize: 26, margin: 0 }}>Nothing running this week.</p>

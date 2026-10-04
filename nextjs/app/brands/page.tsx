@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import Cursor from "@/components/Cursor";
-import Nav from "@/components/Nav";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { getBrands } from "@/lib/brands";
 import { getBackdrops } from "@/lib/catalog";
@@ -24,9 +24,9 @@ export default async function BrandsPage() {
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
       <Cursor />
-      <Nav />
+      <NavBar />
 
-      <section style={{ padding: "160px 44px 40px" }}>
+      <section style={{ padding: "var(--page-top) var(--gutter) 40px" }}>
         <span className="kicker">02 — The houses</span>
         <h1 className="h2" style={{ fontSize: "clamp(36px, 4.6vw, 72px)", maxWidth: 900 }}>
           Brands we are<br />
@@ -41,7 +41,7 @@ export default async function BrandsPage() {
         </p>
       </section>
 
-      <section style={{ padding: "0 44px 120px" }}>
+      <section style={{ padding: "0 var(--gutter) 120px" }}>
         {brands.length === 0 ? (
           <div style={{ border: "1px solid var(--line)", background: "var(--card)", padding: "70px 40px", textAlign: "center" }}>
             <p className="serif" style={{ fontSize: 26, margin: 0 }}>

@@ -19,7 +19,18 @@ export interface FilterState {
   inStock: boolean;
   onSale: boolean;
   sort: SortKey;
+  /** 1-based. The grid shows PAGE_SIZE watches at a time. */
+  page: number;
 }
+
+/**
+ * Watches per page.
+ *
+ * Without this the collection rendered all 1,672 listings into one response —
+ * 9.5 MB of HTML, five seconds to build, and on a phone over mobile data a page
+ * nobody waits for. Twelve rows of four is a long scroll and a small payload.
+ */
+export const PAGE_SIZE = 48;
 
 /** One filterable dimension: where its value lives, and how to label it. */
 export interface FilterGroup {
@@ -188,6 +199,7 @@ export function parseFilters(params: RawParams): FilterState {
     inStock: params.stock === "1",
     onSale: params.sale === "1",
     sort,
+    page: Math.max(1, Math.floor(readNumber(params, "page") ?? 1)),
   };
 }
 
@@ -307,16 +319,26 @@ export function sortEntries(entries: CatalogEntry[], sort: SortKey): CatalogEntr
 }
 
 /** Serialises state back to a query string, with one value toggled. */
-export function toggledHref(state: FilterState, groupKey: string, value: string): string {
+export function toggledHref(state: FilterState, groupKey: string, value: string, base = SHOP_BASE): string {
   const next: Record<string, string[]> = { ...state.selected };
   const current = next[groupKey] ?? [];
   next[groupKey] = current.includes(value)
     ? current.filter((entry) => entry !== value)
     : [...current, value];
-  return buildHref({ ...state, selected: next });
+  // A narrower search starts again at the top; page 7 of the old results
+  // is meaningless against the new ones.
+  return buildHref({ ...state, selected: next, page: 1 }, base);
 }
 
-export function buildHref(state: Partial<FilterState> & { selected?: Record<string, string[]> }): string {
+/** Where the filters live by default. A brand's own shelf passes its own path,
+ *  so narrowing a Seiko search stays among the Seikos instead of throwing the
+ *  shopper back into all 1,899 watches. */
+export const SHOP_BASE = "/collections";
+
+export function buildHref(
+  state: Partial<FilterState> & { selected?: Record<string, string[]> },
+  base = SHOP_BASE,
+): string {
   const params = new URLSearchParams();
   if (state.q) params.set("q", state.q);
   for (const [key, values] of Object.entries(state.selected ?? {})) {
@@ -324,12 +346,13 @@ export function buildHref(state: Partial<FilterState> & { selected?: Record<stri
   }
   if (state.min != null) params.set("min", String(state.min));
   if (state.max != null) params.set("max", String(state.max));
+  if (state.page && state.page > 1) params.set("page", String(state.page));
   if (state.inStock) params.set("stock", "1");
   if (state.onSale) params.set("sale", "1");
   if (state.sort && state.sort !== "featured") params.set("sort", state.sort);
 
   const query = params.toString();
-  return query ? `/collections?${query}` : "/collections";
+  return query ? `${base}?${query}` : base;
 }
 
 export function activeCount(state: FilterState): number {

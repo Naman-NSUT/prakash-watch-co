@@ -1,8 +1,8 @@
 export default function Hero() {
   return (
     <section id="top" style={{
-      position: "relative", minHeight: "100vh", display: "grid", gridTemplateColumns: "1.15fr 0.85fr",
-      alignItems: "center", gap: 40, padding: "150px 44px 60px",
+      position: "relative", minHeight: "100vh", display: "grid", gridTemplateColumns: "var(--cols-hero)",
+      alignItems: "center", gap: 40, padding: "var(--hero-top) var(--gutter) 60px",
     }}>
       <div className="hero-film">
         {/* WebM first: a third of the size where it is supported. Both are silent —
@@ -34,15 +34,15 @@ export default function Hero() {
         </div>
       </div>
       <div style={{
-        position: "absolute", bottom: 34, left: 44, right: 44, display: "flex", alignItems: "flex-end",
+        position: "absolute", bottom: 34, left: "var(--gutter)", right: "var(--gutter)", display: "flex", alignItems: "flex-end",
         justifyContent: "space-between", borderTop: "1px solid var(--line)", paddingTop: 18,
-      }}>
-        <div className="mono" style={{ display: "flex", gap: 56, fontSize: 10.5, letterSpacing: "0.2em", color: "var(--dim)", textTransform: "uppercase" }}>
+      }} className="hero-foot">
+        <div className="mono hero-stats" style={{ display: "flex", gap: 56, fontSize: 10.5, letterSpacing: "0.2em", color: "var(--dim)", textTransform: "uppercase" }}>
           <span>50 Years of Service</span>
           <span>20+ Authorized Houses</span>
           <span>In-house Workshop</span>
         </div>
-        <div className="mono" style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 10.5, letterSpacing: "0.2em", color: "var(--dim)" }}>
+        <div className="mono hero-scroll" style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 10.5, letterSpacing: "0.2em", color: "var(--dim)" }}>
           <span>SCROLL</span>
           <span style={{ position: "relative", display: "block", width: 1, height: 46, background: "var(--line)", overflow: "hidden" }}>
             <span style={{ position: "absolute", top: 0, left: 0, width: 1, height: 14, background: "var(--accent)", animation: "drop 2.2s ease-in-out infinite" }} />

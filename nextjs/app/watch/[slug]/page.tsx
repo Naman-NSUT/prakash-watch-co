@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Cursor from "@/components/Cursor";
-import Nav from "@/components/Nav";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import Gallery from "@/components/Gallery";
 import CatalogCard from "@/components/CatalogCard";
@@ -48,9 +48,9 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
     <main style={{ position: "relative", minHeight: "100vh", background: "var(--bg)", overflow: "hidden" }}>
       <div className="grain" />
       <Cursor />
-      <Nav />
+      <NavBar />
 
-      <div style={{ padding: "150px 44px 0" }}>
+      <div style={{ padding: "var(--page-top) var(--gutter) 0" }}>
         <Link href="/collections" data-hover className="mono" style={{ fontSize: 10.5, letterSpacing: "0.2em", color: "var(--faint)", textTransform: "uppercase" }}>
           ← Collection
         </Link>
@@ -59,9 +59,9 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(320px, 46fr) minmax(320px, 54fr)",
+          gridTemplateColumns: "var(--cols-watch)",
           gap: 62,
-          padding: "38px 44px 110px",
+          padding: "38px var(--gutter) 110px",
           alignItems: "start",
         }}
       >
@@ -154,13 +154,15 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
                   </h3>
                   <dl style={{ margin: 0, borderTop: "1px solid var(--line)" }}>
                     {specs.map((spec) => {
-                      const source = spec.sourceIndex === null ? null : product.sources[spec.sourceIndex];
+                      // Where a figure came from is the shop's working note, not the
+                      // customer's business: they get the reference number and the
+                      // shop's word for it.
                       return (
                         <div
                           key={`${spec.label}-${spec.value}`}
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "160px 1fr auto",
+                            gridTemplateColumns: "160px 1fr",
                             gap: 18,
                             alignItems: "baseline",
                             padding: "13px 4px",
@@ -176,20 +178,6 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
                           <dd style={{ margin: 0, fontSize: 14.5, fontWeight: 300, color: "var(--body)" }}>
                             {spec.value}
                           </dd>
-                          {source ? (
-                            <a
-                              href={source.url}
-                              target="_blank"
-                              rel="noreferrer nofollow"
-                              className="mono"
-                              title={`Stated by ${source.publisher}`}
-                              style={{ fontSize: 9, letterSpacing: "0.12em", color: "var(--faint)" }}
-                            >
-                              {source.publisher}
-                            </a>
-                          ) : (
-                            <span />
-                          )}
                         </div>
                       );
                     })}
@@ -215,13 +203,13 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
             {family ? ` · ${family.name}` : ""}
             {product.gender ? ` · ${product.gender}` : ""}
             <br />
-            Specifications compiled from the sources linked above and checked in store. Confirm before purchase.
+            Specifications checked in store. Confirm before purchase.
           </p>
         </div>
       </section>
 
       {related.length > 0 && (
-        <section style={{ padding: "0 44px 130px" }}>
+        <section style={{ padding: "0 var(--gutter) 130px" }}>
           <span className="kicker">Also in {family?.name ?? "the collection"}</span>
           <div
             style={{
