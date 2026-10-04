@@ -39,7 +39,12 @@ function publicEntry(entry: CatalogEntry): CatalogEntry {
   // The index is written by the agent as well as the site, and the agent's copy
   // can carry the cost price. It is removed here whichever wrote it.
   const { costPrice: _cost, ...rest } = entry as CatalogEntry & { costPrice?: unknown };
-  return rest as CatalogEntry;
+  // Each card's photograph also names the page it was found on. The shop front
+  // never draws that, and it should not be carrying it around either.
+  return {
+    ...rest,
+    image: rest.image ? { ...rest.image, sourceUrl: "", sourcePage: null, matchScore: 0 } : rest.image,
+  } as CatalogEntry;
 }
 
 /** A listing as the public pages need it: private figures replaced, not dropped,
@@ -50,8 +55,10 @@ function publicProduct(product: WatchProduct): WatchProduct {
     costPrice: null,
     quantity: null,
     // Where the shop researched a watch is its own working note. The pages show
-    // the reference number and nothing else, so the addresses never leave here.
+    // the reference number and nothing else, so the addresses never leave here —
+    // including the ones carried on each photograph.
     sources: [],
+    images: product.images.map((image) => ({ ...image, sourceUrl: "", sourcePage: null, matchScore: 0 })),
     confidence: { overall: 0, identity: 0, specs: 0, images: 0 },
     review: { flags: [], notes: [] },
     meta: {

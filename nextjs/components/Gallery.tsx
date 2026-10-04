@@ -1,15 +1,33 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import type { Backdrop, ProductImage } from "@/agent/types";
+import type { Backdrop } from "@/agent/types";
 import { lightWash } from "@/lib/backdrop-light";
+
+/**
+ * Only what a picture needs to be drawn.
+ *
+ * This is a client component, so whatever it is handed is serialised into the
+ * page for anyone to read. A full image record carries sourceUrl and
+ * sourcePage — the shop the photograph was found on — which is the shop's own
+ * research note and has no business on a customer's screen. Narrowing the type
+ * here means the compiler refuses a listing that smuggles them back in.
+ */
+export interface GalleryImage {
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
+  blurDataURL: string | null;
+  hasAlpha: boolean;
+}
 
 export default function Gallery({
   images,
   title,
   backdrop,
 }: {
-  images: ProductImage[];
+  images: GalleryImage[];
   title: string;
   backdrop?: Backdrop;
 }) {

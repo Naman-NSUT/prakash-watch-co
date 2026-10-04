@@ -66,7 +66,20 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
         }}
       >
         <div style={{ position: "sticky", top: 120 }}>
-          <Gallery images={product.images} title={product.title} backdrop={backdrop} />
+          <Gallery
+            // Stripped to the fields the gallery draws: the rest of an image
+            // record names the page the photograph was found on.
+            images={product.images.map((image) => ({
+              url: image.url,
+              width: image.width,
+              height: image.height,
+              alt: image.alt,
+              blurDataURL: image.blurDataURL,
+              hasAlpha: image.hasAlpha,
+            }))}
+            title={product.title}
+            backdrop={backdrop}
+          />
         </div>
 
         <div>
