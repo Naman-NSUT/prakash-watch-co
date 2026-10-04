@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Rail from "@/components/admin/Rail";
 import SignOutButton from "@/components/admin/SignOutButton";
+import ThemeToggle from "@/components/ThemeToggle";
 import { isAuthenticated } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             style={{ fontSize: 9, letterSpacing: ".16em", color: "var(--dim)", textTransform: "uppercase" }}>
             View shop ↗
           </Link>
+          <ThemeToggle />
           <SignOutButton />
         </div>
       </aside>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import ThemeToggle from "@/components/ThemeToggle";
 
 const serif = Instrument_Serif({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-serif" });
 const sans = Jost({ weight: ["300", "400", "500"], subsets: ["latin"], variable: "--font-sans" });
@@ -36,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        <ThemeToggle />
       </body>
     </html>
   );

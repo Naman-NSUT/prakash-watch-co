@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "./ThemeToggle";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -119,13 +120,16 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
           )}
         </div>
 
-        <div className="nav-est" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--accent)", animation: "breathe 2.6s ease-in-out infinite" }} />
-          <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.24em", color: "var(--muted)" }}>EST. 1976</span>
-        </div>
+        <div className="nav-right">
+          <div className="nav-est" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--accent)", animation: "breathe 2.6s ease-in-out infinite" }} />
+            <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.24em", color: "var(--muted)" }}>EST. 1976</span>
+          </div>
 
-        <button
-          ref={button}
+          <ThemeToggle />
+
+          <button
+            ref={button}
           type="button"
           className="nav-toggle"
           onClick={() => setOpen((value) => !value)}
@@ -133,9 +137,10 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
           aria-controls="nav-panel"
           aria-label={open ? "Close menu" : "Open menu"}
         >
-          <span className="nav-bar" data-open={open} />
-          <span className="nav-bar" data-open={open} />
-        </button>
+            <span className="nav-bar" data-open={open} />
+            <span className="nav-bar" data-open={open} />
+          </button>
+        </div>
       </nav>
 
       <div

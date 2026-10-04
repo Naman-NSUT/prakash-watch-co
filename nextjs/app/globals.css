@@ -858,12 +858,6 @@ body { overflow-x: clip; }
 /* The theme switch lives in the top-right corner — which on a phone is where
    the menu button is. Below 900px it moves out of the way, to the bottom. */
 @media (max-width: 900px) {
-  .theme-switch {
-    top: auto !important;
-    bottom: 14px;
-    right: 14px;
-    opacity: 0.92;
-  }
 }
 
 /* --- The stage behind a cut-out watch ---------------------------------------
@@ -1290,61 +1284,38 @@ html[data-theme="linen"] .card-stage {
   .pager-numbers { order: -1; width: 100%; justify-content: center; }
 }
 
+
 /* --- Light or dark -----------------------------------------------------------
-   Two palettes, so this is a switch rather than a menu: one press, no list to
-   read. The label names the palette that is showing; the accessible name says
-   what pressing it will do, because a control labelled with its current state
-   reads as an instruction to half the people who meet it. */
+   An icon, not a word: it sits in the bar beside the est. line, and in the
+   stock room's rail above the sign-out. The icon shows what you will get if
+   you press it, which is what every operating system does.
+
+   It is invisible until the browser has told it which palette is showing —
+   data-ready — because an icon that flips itself a moment after the page
+   settles looks like a fault. */
 .theme-switch {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 95;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 7px 12px 7px 9px;
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--panel) 88%, transparent);
-  backdrop-filter: blur(10px);
-  cursor: pointer;
-  transition: border-color .25s, background-color .25s;
-}
-.theme-switch:hover { border-color: var(--accent); }
-
-.theme-switch-track {
-  position: relative;
-  display: block;
+  justify-content: center;
   width: 30px;
-  height: 16px;
-  border-radius: 999px;
-  background: var(--well);
-  border: 1px solid var(--line);
-  transition: background-color .3s;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+  opacity: 0;
+  transition: color .25s, opacity .3s;
 }
-.theme-switch-track[data-light="true"] { background: var(--accent-soft); }
+.theme-switch[data-ready="true"] { opacity: 1; }
+.theme-switch:hover { color: var(--accent); }
+.theme-switch:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
-.theme-switch-knob {
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: var(--accent);
-  transition: transform .3s cubic-bezier(.2, .8, .2, 1), background-color .3s;
-}
-.theme-switch-track[data-light="true"] .theme-switch-knob {
-  transform: translateX(14px);
-  background: var(--panel);
-}
+/* The right-hand end of the bar: the est. line, the switch, and on a phone the
+   menu button — one group, so they space evenly instead of being pushed apart
+   by the bar's own justification. */
+.nav-right { display: flex; align-items: center; gap: 16px; }
 
-.theme-switch-label {
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
-  color: var(--muted);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .theme-switch-knob { transition: none; }
-}
+/* In the rail it sits in a column of links, so it aligns with them. */
+.ops-rail .theme-switch { width: auto; justify-content: flex-start; color: var(--faint); }
+.ops-rail .theme-switch:hover { color: var(--body); }
