@@ -4,6 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import type { AgentEvent } from "@/agent/events";
 import type { RunReport } from "@/agent/types";
 
+type AsideRow = { brand: string; modelNumber: string; sheet: string; row: number };
+
 type StreamMessage = AgentEvent | { type: "report"; report: RunReport } | { type: "error"; message: string };
 
 interface LogLine {
@@ -144,6 +146,15 @@ export default function UploadPanel() {
   const [lines, setLines] = useState<LogLine[]>([]);
   const [report, setReport] = useState<RunReport | null>(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  /**
+   * References the sheet carried that the shop does not stock.
+   *
+   * An update run leaves them alone by design — a price list is not a way to
+   * acquire stock — but saying only "14 rows left alone" tells the shop that
+   * something was skipped without saying what. These are named, so the shop can
+   * look at them and decide.
+   */
+  const [missing, setMissing] = useState<{ rows: AsideRow[]; total: number } | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const lineId = useRef(0);
 
@@ -178,8 +189,23 @@ export default function UploadPanel() {
     }
   }
 
+  /** Research and list the references an update run found no listing for. */
+  function addMissing() {
+    if (!file || running) return;
+    setMissing(null);
+    const form = new FormData();
+    form.set("file", file);
+    // "add" researches exactly the rows that are not listed yet — which is this
+    // set. The same sheet goes back up; nothing has to be edited out of it.
+    form.set("mode", "add");
+    form.set("dryRun", String(dryRun));
+    form.set("coveredFirst", "true");
+    runStream("/api/admin/ingest", form);
+  }
+
   function start() {
     if (running) return;
+    setMissing(null);
     if (isSheet) {
       if (!file) return;
       const form = new FormData();
@@ -245,6 +271,9 @@ export default function UploadPanel() {
           }
 
           if (event.type === "run:start") setProgress({ done: 0, total: event.rows });
+          if (event.type === "sheet:partitioned" && event.mode === "update" && event.setAside > 0) {
+            setMissing({ rows: event.asideRows ?? [], total: event.setAside });
+          }
           if (event.type === "row:done" || event.type === "row:fail") {
             setProgress((previous) => ({ ...previous, done: previous.done + 1 }));
           }
@@ -585,6 +614,58 @@ export default function UploadPanel() {
               </div>
             ))}
             {running && <div style={{ color: "var(--faint)" }}>…</div>}
+          </div>
+        </div>
+      )}
+
+      {missing && (
+        <div className="ops-missing">
+          <div className="ops-missing-head">
+            <span className="serif">{missing.total} not in the inventory</span>
+            <span className="ops-note" style={{ margin: 0 }}>
+              The sheet lists these references and the shop does not. An update leaves them alone — it changes
+              prices and stock, it does not buy watches. Research and list them, or ignore them and they stay out.
+            </span>
+          </div>
+
+          {missing.rows.length > 0 && (
+            <div className="ops-table-wrap" style={{ maxHeight: 260 }}>
+              <table className="ops-table">
+                <thead>
+                  <tr>
+                    <th>Brand</th>
+                    <th>Reference</th>
+                    <th>Where in the sheet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {missing.rows.map((row) => (
+                    <tr key={`${row.sheet}-${row.row}-${row.modelNumber}`}>
+                      <td>{row.brand}</td>
+                      <td className="mono">{row.modelNumber}</td>
+                      <td className="mono" style={{ color: "var(--faint)" }}>
+                        {row.sheet} · row {row.row}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {missing.rows.length < missing.total && (
+            <p className="ops-note">
+              Showing the first {missing.rows.length} of {missing.total}. Listing them will take all of them.
+            </p>
+          )}
+
+          <div className="ops-row">
+            <button type="button" className="ops-btn" data-variant="solid" disabled={running} onClick={addMissing}>
+              Research and list {missing.total === 1 ? "it" : `all ${missing.total}`}
+            </button>
+            <button type="button" className="ops-btn" disabled={running} onClick={() => setMissing(null)}>
+              Leave them out
+            </button>
           </div>
         </div>
       )}

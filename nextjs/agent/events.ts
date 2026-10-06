@@ -19,7 +19,14 @@ export type AgentEvent =
       skippedSheets: Array<{ sheet: string; reason: string }>;
     }
   /** Which half of an uploaded sheet this run is the shop's business. */
-  | { type: "sheet:partitioned"; mode: "update" | "add"; kept: number; setAside: number }
+  | {
+      type: "sheet:partitioned";
+      mode: "update" | "add";
+      kept: number;
+      setAside: number;
+      /** The rows that were set aside, named. Capped at 300 by the agent. */
+      asideRows?: { brand: string; modelNumber: string; sheet: string; row: number }[];
+    }
   /** A whole-run step that is not about one watch — reading catalogues, say. */
   | { type: "run:stage"; stage: string }
   /** How much of the sheet a published catalogue can answer outright. */

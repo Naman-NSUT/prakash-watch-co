@@ -3,6 +3,7 @@ import { getInventory, LOW_STOCK_THRESHOLD } from "@/lib/analytics";
 import { readLedger } from "@/lib/ledger";
 import StockCell from "@/components/admin/StockCell";
 import { Empty, PageHead, Stat, formatInr } from "@/components/admin/ui";
+import OpsPager, { OPS_PAGE_SIZE } from "@/components/admin/OpsPager";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +14,12 @@ const FILTERS = [
   { key: "moving", label: "Selling" },
 ] as const;
 
-export default async function InventoryPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
-  const { filter = "all" } = await searchParams;
+export default async function InventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string; page?: string }>;
+}) {
+  const { filter = "all", page: pageParam } = await searchParams;
   const [rows, ledger] = await Promise.all([getInventory(), readLedger()]);
 
   const shown = rows.filter(({ product, sold }) => {
@@ -24,6 +29,19 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
     if (filter === "moving") return sold > 0;
     return true;
   });
+
+  // A hundred at a time: all 1,899 rows took the better part of seven seconds.
+  const pages = Math.max(1, Math.ceil(shown.length / OPS_PAGE_SIZE));
+  const page = Math.min(Math.max(1, Number(pageParam) || 1), pages);
+  const shownPage = shown.slice((page - 1) * OPS_PAGE_SIZE, page * OPS_PAGE_SIZE);
+
+  const pageHref = (next: number) => {
+    const query = new URLSearchParams();
+    if (filter !== "all") query.set("filter", filter);
+    if (next > 1) query.set("page", String(next));
+    const search = query.toString();
+    return search ? `/admin/inventory?${search}` : "/admin/inventory";
+  };
 
   const units = rows.reduce((sum, r) => sum + (r.product.quantity ?? 0), 0);
   const value = rows.reduce((sum, r) => sum + r.value, 0);
@@ -77,7 +95,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
               </tr>
             </thead>
             <tbody>
-              {shown.map(({ product, sold: soldCount, value: rowValue }) => {
+              {shownPage.map(({ product, sold: soldCount, value: rowValue }) => {
                 const qty = product.quantity ?? 0;
                 return (
                   <tr key={product.sku}>
@@ -106,6 +124,8 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
               })}
             </tbody>
           </table>
+
+          <OpsPager page={page} pages={pages} total={shown.length} href={pageHref} />
         </div>
       )}
     </>

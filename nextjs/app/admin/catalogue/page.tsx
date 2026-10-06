@@ -4,15 +4,16 @@ import UploadPanel from "@/components/admin/UploadPanel";
 import RerunPanel from "@/components/admin/RerunPanel";
 import { getAllProducts } from "@/lib/catalog";
 import { Empty, PageHead, formatInr } from "@/components/admin/ui";
+import OpsPager, { OPS_PAGE_SIZE } from "@/components/admin/OpsPager";
 
 export const dynamic = "force-dynamic";
 
 export default async function CataloguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; flag?: string }>;
+  searchParams: Promise<{ status?: string; flag?: string; page?: string }>;
 }) {
-  const { status, flag } = await searchParams;
+  const { status, flag, page: pageParam } = await searchParams;
   const products = await getAllProducts();
 
   const shown = products.filter((product) => {
@@ -26,6 +27,20 @@ export default async function CataloguePage({
   const ordered = [...shown].sort(
     (a, b) => Number(a.status === "ready") - Number(b.status === "ready") || a.brand.localeCompare(b.brand),
   );
+
+  // A hundred at a time: rendering all 1,899 took several seconds a click.
+  const pages = Math.max(1, Math.ceil(ordered.length / OPS_PAGE_SIZE));
+  const page = Math.min(Math.max(1, Number(pageParam) || 1), pages);
+  const shownPage = ordered.slice((page - 1) * OPS_PAGE_SIZE, page * OPS_PAGE_SIZE);
+
+  const pageHref = (next: number) => {
+    const query = new URLSearchParams();
+    if (status) query.set("status", status);
+    if (flag) query.set("flag", flag);
+    if (next > 1) query.set("page", String(next));
+    const search = query.toString();
+    return search ? `/admin/catalogue?${search}` : "/admin/catalogue";
+  };
 
   const live = products.filter((p) => p.status === "ready").length;
 
@@ -76,7 +91,7 @@ export default async function CataloguePage({
               </tr>
             </thead>
             <tbody>
-              {ordered.map((product) => (
+              {shownPage.map((product) => (
                 <tr key={product.sku}>
                   <td>
                     <span style={{ position: "relative", display: "block", width: 34, height: 34, background: "var(--well)", border: "1px solid var(--line)" }}>
@@ -119,6 +134,8 @@ export default async function CataloguePage({
               ))}
             </tbody>
           </table>
+
+          <OpsPager page={page} pages={pages} total={ordered.length} href={pageHref} />
         </div>
       )}
     </>

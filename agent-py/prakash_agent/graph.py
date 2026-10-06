@@ -908,12 +908,22 @@ async def run_ingestion(
             return artifact_path(cfg, make_sku(row.brand, row.model_number)).exists()
 
         kept = [r for r in rows if is_listed(r) == (mode == "update")]
+        aside = [r for r in rows if is_listed(r) != (mode == "update")]
         bus.emit(
             {
                 "type": "sheet:partitioned",
                 "mode": mode,
                 "kept": len(kept),
-                "setAside": len(rows) - len(kept),
+                "setAside": len(aside),
+                # Under "update" these are references the sheet carries that the
+                # shop does not stock. A count alone leaves the shop knowing
+                # something was skipped but not what, so they are named — capped,
+                # because a mismatched sheet can set aside thousands and the
+                # browser has to hold every one of them.
+                "asideRows": [
+                    {"brand": r.brand, "modelNumber": r.model_number, "sheet": r.sheet, "row": r.row_number}
+                    for r in aside[:300]
+                ],
             }
         )
         rows = kept

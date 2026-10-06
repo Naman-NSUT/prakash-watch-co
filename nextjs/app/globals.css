@@ -1319,3 +1319,30 @@ html[data-theme="linen"] .card-stage {
 /* In the rail it sits in a column of links, so it aligns with them. */
 .ops-rail .theme-switch { width: auto; justify-content: flex-start; color: var(--faint); }
 .ops-rail .theme-switch:hover { color: var(--body); }
+
+/* --- References a sheet carries that the shop does not stock ----------------
+   Shown after an update run. It is a decision, not a log line, so it sits in
+   its own card rather than scrolling away in the transcript. */
+.ops-missing {
+  margin-top: var(--ops-4);
+  padding: var(--ops-3);
+  border: 1px solid var(--warn-line);
+  background: var(--warn-tint);
+}
+.ops-missing-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.ops-missing-head .serif { font-size: 19px; color: var(--warn); }
+
+/* --- Pages of rows in the stock room ----------------------------------------- */
+.ops-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: var(--ops-3);
+  padding-top: var(--ops-3);
+  border-top: 1px solid var(--line);
+}
+.ops-pager-count { font-size: 10px; letter-spacing: 0.16em; color: var(--faint); }
+.ops-pager-steps { display: flex; align-items: center; gap: 10px; }
+.ops-pager-of { font-size: 10.5px; color: var(--muted); }

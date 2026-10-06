@@ -27,7 +27,57 @@ const config = loadConfig();
 /** Only `ready` listings are visible to shoppers; everything else awaits review. */
 export const PUBLISHED_STATUS = "ready" as const;
 
-export async function getAllProducts(): Promise<WatchProduct[]> {
+/**
+ * Every listing, in full.
+ *
+ * One file per watch, so this is 1,899 reads. Done one after another they took
+ * eleven seconds, and the stock room pages that need them — the catalogue, the
+ * price watch, a new bill — looked broken when you clicked them. Reading in
+ * batches lets the disk work on several at once; the batch is bounded because
+ * opening two thousand files at the same moment exhausts the file handles on a
+ * small container.
+ *
+ * Cached for the life of one request: the catalogue page and its metadata ask
+ * separately, and the books ask again through another path.
+ */
+const READ_AT_ONCE = 48;
+
+/**
+ * The last full read, kept between requests.
+ *
+ * Reading 1,900 artifacts means 1,900 file reads and 1,900 schema validations,
+ * which took between four and eleven seconds — on every single stock room page,
+ * because the overview, the analytics, the books and the catalogue all ask for
+ * the same thing. Caching for the life of one request was not enough: the slow
+ * part was happening once per click.
+ *
+ * The cache is keyed on what the directory looks like — how many artifacts
+ * there are and the newest modification time among them. Collecting that costs
+ * 1,900 stats, which is milliseconds, against seconds to read and validate. So
+ * an agent run, a hand edit or a price change all invalidate it on the next
+ * request, and nothing else does.
+ *
+ * It lives in the process, so it is per instance. The back end runs one.
+ */
+let memo: { signature: string; products: WatchProduct[] } | null = null;
+
+async function signatureOf(files: string[]): Promise<string> {
+  let newest = 0;
+  for (let start = 0; start < files.length; start += 256) {
+    const batch = await Promise.all(
+      files.slice(start, start + 256).map((file) =>
+        fs.stat(join(config.dataDir, file)).then(
+          (s) => s.mtimeMs,
+          () => 0,
+        ),
+      ),
+    );
+    for (const mtime of batch) if (mtime > newest) newest = mtime;
+  }
+  return `${files.length}:${newest}`;
+}
+
+export const getAllProducts = cache(async function getAllProducts(): Promise<WatchProduct[]> {
   let files: string[] = [];
   try {
     files = (await fs.readdir(config.dataDir)).filter((name) => name.endsWith(".json") && name !== "index.json");
@@ -35,19 +85,30 @@ export async function getAllProducts(): Promise<WatchProduct[]> {
     return [];
   }
 
+  const signature = await signatureOf(files);
+  if (memo && memo.signature === signature) return memo.products;
+
   const products: WatchProduct[] = [];
-  for (const file of files) {
-    try {
-      const parsed = WatchProductSchema.safeParse(JSON.parse(await fs.readFile(join(config.dataDir, file), "utf8")));
-      if (parsed.success) products.push(parsed.data);
-    } catch {
-      // A corrupt artifact must not take down the shop.
-    }
+  for (let start = 0; start < files.length; start += READ_AT_ONCE) {
+    const batch = await Promise.all(
+      files.slice(start, start + READ_AT_ONCE).map(async (file) => {
+        try {
+          const raw = await fs.readFile(join(config.dataDir, file), "utf8");
+          const parsed = WatchProductSchema.safeParse(JSON.parse(raw));
+          return parsed.success ? parsed.data : null;
+        } catch {
+          // A corrupt artifact must not take down the shop.
+          return null;
+        }
+      }),
+    );
+    for (const product of batch) if (product) products.push(product);
   }
 
   products.sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
+  memo = { signature, products };
   return products;
-}
+});
 
 export async function getProduct(sku: string): Promise<WatchProduct | null> {
   // Guard against path traversal via the URL segment.
