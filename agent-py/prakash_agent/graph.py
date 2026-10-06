@@ -200,6 +200,21 @@ def build_watch_graph(deps: Deps):
                     quoted, priced_from = await find_prices(
                         hosts, row.model_number, deps.http, deps.cache, row.brand
                     )
+                    # A looked-up price is checked against what this brand
+                    # actually sells for before it is believed.
+                    #
+                    # Four watches reached the shop at a fiftieth of their worth —
+                    # a Tissot at ₹625, which is its price in dollars on an
+                    # American page. A feed carries no currency, so a foreign
+                    # figure arrives looking exactly like a rupee one; a mismatched
+                    # reference does the same. Both land far below what the shop
+                    # charges for that brand, and that is what this catches,
+                    # whichever way the number got in.
+                    if quoted is not None:
+                        refused = implausible_price(quoted, row.brand, deps.config)
+                        if refused:
+                            stage("price", f"₹{quoted:,.0f} refused — {refused}")
+                            quoted, priced_from = None, []
                     if quoted is not None:
                         row = row.model_copy(update={"price": quoted})
                         stage("price", f"₹{quoted:,.0f} — agreed across {len(priced_from)} source(s)")
@@ -1049,3 +1064,59 @@ async def run_rows(
         rows_read=len(rows),
         sheet_errors=[],
     )
+
+
+#: No watch on this shelf sells for less than this. The cheapest genuine listing
+#: is around ₹800; anything under a few hundred rupees is a foreign figure, a
+#: battery, or a strap.
+PRICE_FLOOR_INR = 500.0
+
+#: How far below the brand's own median a looked-up price may sit before it is
+#: refused. A fifth is generous — a clearance Titan against a median Titan — and
+#: still an order of magnitude above a dollar figure read as rupees.
+BRAND_FLOOR_RATIO = 0.2
+
+#: Below this many listings a brand has no median worth trusting.
+BRAND_SAMPLE_MIN = 5
+
+_brand_medians: dict[str, float] | None = None
+
+
+def _medians(config: "AgentConfig") -> dict[str, float]:
+    """Median selling price per brand, from what the shop already lists."""
+    global _brand_medians
+    if _brand_medians is not None:
+        return _brand_medians
+
+    import statistics
+    from collections import defaultdict
+
+    prices: dict[str, list[float]] = defaultdict(list)
+    rows = read_json(Path(config.data_dir) / "index.json") or []
+    for row in rows:
+        if row.get("status") != "ready":
+            continue
+        selling = (row.get("price") or {}).get("selling")
+        if selling:
+            prices[(row.get("brand") or "").strip().upper()].append(float(selling))
+
+    _brand_medians = {
+        brand: statistics.median(values)
+        for brand, values in prices.items()
+        if len(values) >= BRAND_SAMPLE_MIN
+    }
+    return _brand_medians
+
+
+def implausible_price(quoted: float, brand: str, config: "AgentConfig") -> str | None:
+    """Why this looked-up price should not be believed, or None if it is fine."""
+    if quoted < PRICE_FLOOR_INR:
+        return f"below ₹{PRICE_FLOOR_INR:,.0f}, which no watch here sells for"
+
+    median = _medians(config).get((brand or "").strip().upper())
+    if median and quoted < median * BRAND_FLOOR_RATIO:
+        return (
+            f"a fraction of what {brand} sells for here "
+            f"(median ₹{median:,.0f}) — most likely another currency"
+        )
+    return None
