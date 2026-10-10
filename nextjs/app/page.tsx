@@ -1,6 +1,7 @@
 import NavBar from "@/components/NavBar";
 import Hero from "@/components/Hero";
 import Marquee from "@/components/Marquee";
+import BannerStrip from "@/components/BannerStrip";
 import Collection from "@/components/Collection";
 import BrandRail from "@/components/BrandRail";
 import Heritage from "@/components/Heritage";
@@ -22,6 +23,7 @@ export default async function Home() {
       <NavBar />
       <Hero />
       <Marquee />
+      <BannerStrip />
       <Collection families={families} />
       <BrandRail brands={brands} />
       <Heritage />

@@ -5,18 +5,28 @@ import RerunPanel from "@/components/admin/RerunPanel";
 import { getAllProducts } from "@/lib/catalog";
 import { Empty, PageHead, formatInr } from "@/components/admin/ui";
 import OpsPager, { OPS_PAGE_SIZE } from "@/components/admin/OpsPager";
+import CatalogueSearch from "@/components/admin/CatalogueSearch";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
 export default async function CataloguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; flag?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; flag?: string; page?: string; q?: string }>;
 }) {
-  const { status, flag, page: pageParam } = await searchParams;
+  const { status, flag, page: pageParam, q } = await searchParams;
   const products = await getAllProducts();
 
-  const shown = products.filter((product) => {
+  // Reference, brand, name or sku — whatever the shop has in hand.
+  const needle = (q ?? "").trim().toLowerCase();
+  const matches = (product: (typeof products)[number]) =>
+    !needle ||
+    [product.modelNumber, product.brand, product.title, product.modelName, product.sku]
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(needle));
+
+  const shown = products.filter(matches).filter((product) => {
     if (flag) return product.review.flags.includes(flag as never);
     if (status === "review") return product.status !== "ready";
     if (status === "live") return product.status === "ready";
@@ -37,6 +47,7 @@ export default async function CataloguePage({
     const query = new URLSearchParams();
     if (status) query.set("status", status);
     if (flag) query.set("flag", flag);
+    if (q) query.set("q", q);
     if (next > 1) query.set("page", String(next));
     const search = query.toString();
     return search ? `/admin/catalogue?${search}` : "/admin/catalogue";
@@ -50,6 +61,10 @@ export default async function CataloguePage({
         title="Catalogue"
         lead="Every listing the agent has produced. Upload a stock sheet and it researches, writes and photographs each watch, then holds it here for your approval."
       />
+
+      <Suspense fallback={<div className="ops-search" />}>
+        <CatalogueSearch initial={q ?? ""} total={products.length} />
+      </Suspense>
 
       <UploadPanel />
 

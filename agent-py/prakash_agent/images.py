@@ -219,6 +219,30 @@ def _is_official(page_url: str, official_hosts: list[str]) -> bool:
     return any(host == official or host.endswith(f".{official}") for official in official_hosts)
 
 
+def _is_trusted_page(page_url: str, official_hosts: list[str]) -> bool:
+    """A page whose gallery can be believed without grading each picture.
+
+    The brand's own site, or one of the authorised shops the catalogue is built
+    from. Their product page *is* the product: every picture in the gallery is
+    that reference, photographed from another angle — the caseback, the clasp,
+    the box, a wrist shot.
+
+    The grader cannot know that. Asked "is this the reference?", it sees a
+    caseback and answers 0.3, and the picture is thrown away. That is why the
+    average listing carried three photographs when its source page had six.
+
+    So identity is taken from the page here, not from the picture. Whether the
+    thing is a watch at all is still judged, because these pages also carry
+    payment icons, delivery banners and the shop's own logo.
+    """
+    from .storefront import RETAILER_FEEDS
+
+    host = page_url.lower().split("//")[-1].split("/")[0].removeprefix("www.")
+    if _is_official(page_url, official_hosts):
+        return True
+    return any(host == shop or host.endswith(f".{shop}") for shop in RETAILER_FEEDS)
+
+
 def collect_candidates(
     row: SheetRow,
     pages: list[ScrapedPage],
@@ -259,6 +283,7 @@ def collect_candidates(
                     "source_page": page.url,
                     "manual": False,
                     "official": _is_official(page.url, hosts),
+                    "trusted": _is_trusted_page(page.url, hosts),
                     "rank": 100 + page_index * 30 + image_index,
                 }
             )
@@ -451,7 +476,7 @@ async def process_images(
         # A watch, but not confidently this one. Held back rather than discarded:
         # if nothing better turns up, the shop would rather see the closest picture
         # with a warning than an empty listing.
-        if not item["manual"] and grade["matches_model"] < 0.45:
+        if not item["manual"] and not item.get("trusted") and grade["matches_model"] < 0.45:
             rejected.append({"url": item["url"], "reason": grade["reason"] or "does not match the reference"})
             fallbacks.append({
                 "item": item,
@@ -463,7 +488,7 @@ async def process_images(
 
         # The decisive check: what the grader saw, against what the sources state.
         # This is what stops a neon-yellow G-Shock being published for a blue one.
-        if not item["manual"]:
+        if not item["manual"] and not item.get("trusted"):
             conflict = contradicts(expected, grade)
             if conflict:
                 rejected.append({"url": item["url"], "reason": conflict})
@@ -485,6 +510,9 @@ async def process_images(
             # Prefer shots that will separate cleanly from their background, so the
             # front image of a listing is a cutout rather than someone's desk.
             + (2.0 if item.get("official") else 0.0)
+            # A shop the catalogue is actually built from, photographing its own
+            # stock. Below the brand's photography, above a stranger's.
+            + (1.2 if item.get("trusted") and not item.get("official") else 0.0)
             + (1.5 if item.get("supplied_alpha") else 0.0)
             + (0.8 if grade["background"] == "plain" else 0.0)
             - (0.6 if grade["background"] == "busy" else 0.0)

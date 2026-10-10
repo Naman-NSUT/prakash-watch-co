@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: "/admin/pricing", label: "Price watch", icon: Icons.pricing },
   { href: "/admin/offers", label: "Offers", icon: Icons.offers },
   { href: "/admin/brands", label: "Brands", icon: Icons.brands },
+  { href: "/admin/banners", label: "Banners", icon: Icons.banners },
   { href: "/admin/catalogue", label: "Catalogue", icon: Icons.catalogue },
   { href: "/admin/sources", label: "Source book", icon: Icons.sources },
   { href: "/admin/runs", label: "Agent runs", icon: Icons.runs },

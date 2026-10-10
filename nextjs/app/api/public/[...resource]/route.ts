@@ -14,6 +14,7 @@
 import { getCatalogIndex, getProduct, PUBLISHED_STATUS, readBackdropList } from "@/lib/catalog";
 import { readBrandNotes } from "@/lib/brands";
 import { liveOffers } from "@/lib/offers";
+import { liveBanners } from "@/lib/banners";
 import { isRemote } from "@/lib/remote";
 import type { CatalogEntry, WatchProduct } from "@/agent/types";
 
@@ -102,6 +103,9 @@ export async function GET(
       return json(await readBrandNotes());
     case "offers":
       return json(await liveOffers());
+    case "banners":
+      // Only the live ones: a scheme written for next Diwali is not public yet.
+      return json(await liveBanners());
     default:
       return json({ errors: ["Not found."] }, 404);
   }

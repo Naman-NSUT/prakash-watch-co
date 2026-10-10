@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import WhatsApp from "@/components/WhatsApp";
 
 const serif = Instrument_Serif({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-serif" });
 // 600 is here for the navigation: the bar sits over a moving film, and 500
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <WhatsApp />
       </body>
     </html>
   );

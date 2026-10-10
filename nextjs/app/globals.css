@@ -1550,3 +1550,146 @@ html[data-theme="linen"] .card-stage {
 @media (max-width: 760px) {
   .job-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
 }
+
+/* --- The houses, drifting --------------------------------------------------
+   Logos rather than names, on a plaque so a dark mark stays visible on the
+   copper palette and a light one on linen — a brand mark arrives in one fixed
+   colour and cannot invert with the page. */
+.marquee {
+  position: relative;
+  padding: 26px 0;
+  border-top: 1px solid var(--line2);
+  border-bottom: 1px solid var(--line2);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.marquee-track { display: flex; width: max-content; animation: marquee 46s linear infinite; }
+.marquee-strip { display: flex; align-items: center; gap: 18px; padding-right: 18px; }
+
+.marquee-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 128px;
+  height: 56px;
+  padding: 10px 16px;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.marquee-mark img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+
+/* A strip that never stops is movement nobody asked for; under reduced motion
+   it holds still and simply shows the first few. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+}
+
+@media (max-width: 760px) {
+  .marquee { padding: 18px 0; }
+  .marquee-mark { width: 104px; height: 46px; padding: 8px 12px; }
+  .marquee-strip { gap: 12px; padding-right: 12px; }
+}
+
+/* --- The shop's own notices ------------------------------------------------
+   Under the strip of houses. It drifts on its own and stops on hover, because
+   a banner that slides away as you reach for it is worse than one that never
+   moved. */
+.banners { position: relative; overflow: hidden; border-bottom: 1px solid var(--line2); background: var(--bg); }
+.banners-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  padding: 18px var(--gutter);
+  animation: marquee 40s linear infinite;
+}
+.banners:hover .banners-track,
+.banners:focus-within .banners-track { animation-play-state: paused; }
+
+.banner-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 420px;
+  height: 158px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--well);
+  text-decoration: none;
+}
+.banner-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.banner-words {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 16px 18px 14px;
+  background: linear-gradient(to top, var(--scrim), transparent);
+  color: #f6f2ee;
+}
+.banner-words strong { font-size: 20px; font-weight: 400; line-height: 1.15; }
+.banner-words span { font-size: 12.5px; font-weight: 300; opacity: .85; }
+
+a.banner-card { transition: border-color .25s; }
+a.banner-card:hover { border-color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .banners-track { animation: none; flex-wrap: wrap; width: auto; }
+}
+
+@media (max-width: 760px) {
+  .banner-card { width: 300px; height: 120px; }
+  .banners-track { gap: 12px; padding: 14px var(--gutter); }
+  .banner-words { padding: 12px 14px 11px; }
+  .banner-words strong { font-size: 16px; }
+}
+
+/* --- Banners, in the stock room --------------------------------------------- */
+.ops-banner-row { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 20px; align-items: start; }
+.ops-banner-shot { border: 1px solid var(--line); background: var(--well); overflow: hidden; aspect-ratio: 1600 / 600; }
+.ops-banner-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ops-banner-fields { min-width: 0; }
+
+@media (max-width: 860px) {
+  .ops-banner-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The catalogue's own search: one watch out of 1,899, by reference or name. */
+.ops-search { margin: 0 0 var(--ops-4); }
+.ops-search input { width: 100%; max-width: 520px; }
+
+/* --- Message the shop ------------------------------------------------------
+   Bottom right, above everything. The moment someone wants to ask "do you have
+   this in blue" is while they are looking at the watch, not after they have
+   scrolled to the bottom to find a phone number. WhatsApp green, which is the
+   one colour on the page that is not the shop's to choose — the mark is only
+   recognisable as itself. */
+.whatsapp {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 92;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #25d366;
+  color: #fff;
+  box-shadow: 0 10px 28px var(--scrim);
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+}
+.whatsapp:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 16px 34px var(--scrim); }
+.whatsapp:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .whatsapp { width: 48px; height: 48px; right: 14px; bottom: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp { transition: none; }
+  .whatsapp:hover { transform: none; }
+}
