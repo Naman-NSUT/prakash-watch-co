@@ -548,7 +548,8 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-dl dd { margin: 0; color: var(--body); }
 
 .ops-shots { display: flex; gap: 8px; flex-wrap: wrap; }
-.ops-shot { position: relative; width: 78px; height: 78px; border: 1px solid var(--border); overflow: hidden; display: block; }
+.ops-shot { position: relative; width: 78px; height: 78px; border: 1px solid var(--border); overflow: hidden; display: block; background: var(--well); }
+.ops-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ops-shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .ops-mover { border: 1px solid var(--line2); padding: var(--ops-3); }
@@ -1473,4 +1474,79 @@ html[data-theme="linen"] .card-stage {
   }
   .home-search { margin-top: 22px; }
   .home-search input { padding: 15px 0; }
+}
+
+/* --- Billing the bench ------------------------------------------------------- */
+.ops-inline { display: flex; align-items: center; gap: 8px; }
+.ops-inline > .mono { font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+
+.ops-totals { margin: 20px 0 0; display: flex; flex-direction: column; gap: 7px; max-width: 320px; }
+.ops-totals > div { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.ops-totals dt { font-size: 12.5px; font-weight: 300; color: var(--muted); }
+.ops-totals dd { margin: 0; font-size: 13px; color: var(--body); }
+.ops-totals-due { padding-top: 8px; border-top: 1px solid var(--line); }
+.ops-totals-due dt { color: var(--text); font-weight: 400; }
+.ops-totals-due dd { font-size: 17px; color: var(--accent); }
+
+.ops-table .ops-field { width: 100%; }
+
+/* --- The job card ------------------------------------------------------------
+   One docket on A4: who, which watch, what they said, what came with it, and
+   the photographs as received. The pictures print because a disagreement about
+   a mark six weeks later is settled by what the watch looked like before the
+   caseback came off. */
+.job-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 26px;
+  margin: 26px 0 30px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.job-head {
+  margin: 0 0 8px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.job-lines { margin: 0; font-size: 13.5px; line-height: 1.7; font-weight: 300; color: var(--body); }
+.job-lines strong { font-weight: 500; color: var(--text); }
+.job-prose {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.75;
+  font-weight: 300;
+  color: var(--body);
+  max-width: 70ch;
+}
+.job-check {
+  margin: 0 0 28px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: var(--faint);
+}
+.job-shots { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+.job-shots img {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--well);
+}
+.job-history td { font-size: 12.5px; }
+
+@media print {
+  .job-grid { border-color: #bbb; }
+  .job-shots img { width: 120px; height: 120px; border-color: #bbb; }
+  /* Ask the browser to put the ink on the paper: by default it drops
+     backgrounds and photographs print pale or not at all. */
+  .job-shots img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@media (max-width: 760px) {
+  .job-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
 }

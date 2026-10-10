@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { STATUSES, STATUS_LABELS, SERVICE_LABELS, isClosed, type Status } from "@/lib/repairs.shared";
 import { formatInr } from "@/agent/format";
@@ -190,12 +189,25 @@ export default function TicketBoard({ initial }: { initial: Ticket[] }) {
                             <div className="ops-shots">
                               {ticket.photos.map((photo) => (
                                 <a key={photo.url} href={photo.url} target="_blank" rel="noreferrer" className="ops-shot">
-                                  <Image src={photo.url} alt={photo.name} fill sizes="120px" style={{ objectFit: "cover" }} />
+                                  {/* A plain img, not next/image. A customer's photographs are
+                                      served only to a signed-in admin, and the image optimiser
+                                      fetches server-side with no session — it got a 401 and every
+                                      thumbnail here was blank. The browser has the cookie. */}
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={photo.url} alt={photo.name} loading="lazy" />
                                 </a>
                               ))}
                             </div>
                           </>
                         )}
+
+                        <Label>On paper</Label>
+                        <div className="ops-row" style={{ marginTop: 0, marginBottom: 18 }}>
+                          <a className="ops-btn" href={`/admin/repairs/${ticket.id}/print`} target="_blank" rel="noreferrer">
+                            Job card
+                          </a>
+                          <a className="ops-btn" href="/admin/billing/repair">Bill this work</a>
+                        </div>
 
                         <Label>Move it on</Label>
                         <Mover

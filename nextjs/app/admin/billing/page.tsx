@@ -22,7 +22,12 @@ export default async function BillingPage() {
       <PageHead
         title="Billing"
         lead="Every sale written at the counter. A bill takes the watch out of stock and moves the figures on the overview."
-        action={<Link href="/admin/billing/new" className="ops-btn" data-variant="solid">{Icons.plus} New bill</Link>}
+        action={
+          <span style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/admin/billing/new" className="ops-btn" data-variant="solid">{Icons.plus} Sell a watch</Link>
+            <Link href="/admin/billing/repair" className="ops-btn">{Icons.plus} Bill a repair</Link>
+          </span>
+        }
       />
 
       {demoCount > 0 && (

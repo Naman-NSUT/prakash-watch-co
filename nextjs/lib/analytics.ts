@@ -113,7 +113,9 @@ export async function getOverview(): Promise<Overview> {
   // Top sellers
   const seller = new Map<string, { title: string; units: number; revenue: number }>();
   for (const bill of live) {
-    for (const line of bill.lines) {
+    // Watches only. Labour has no sku, so every repair would collapse into one
+    // phantom product named after whichever job was billed last.
+    for (const line of bill.lines.filter((line) => line.kind !== "service")) {
       const entry = seller.get(line.sku) ?? { title: line.title, units: 0, revenue: 0 };
       entry.units += line.quantity;
       entry.revenue += line.unitPrice * line.quantity;
@@ -131,7 +133,7 @@ export async function getOverview(): Promise<Overview> {
   }
   const bySku = new Map(products.map((p) => [p.sku, p] as const));
   for (const bill of live) {
-    for (const line of bill.lines) {
+    for (const line of bill.lines.filter((line) => line.kind !== "service")) {
       const brand = bySku.get(line.sku)?.brand ?? "Other";
       const entry = brands.get(brand) ?? { units: 0, value: 0, sold: 0 };
       entry.sold += line.quantity;

@@ -26,7 +26,20 @@ const BILLS_DIR = join(config.dataDir, "..", "bills");
 export const DEFAULT_GST_RATE = 18;
 
 export const BillLineSchema = z.object({
+  /**
+   * What is being charged for.
+   *
+   * "watch" comes out of stock and carries a cost price, so it earns margin in
+   * the books. "service" is labour on the bench: there is nothing to take out
+   * of inventory, nothing was bought to sell, and the whole amount is the
+   * shop's. Defaulted so every bill written before repairs were billable still
+   * reads correctly.
+   */
+  kind: z.enum(["watch", "service"]).default("watch"),
+  /** Empty on a service line — labour has no catalogue entry. */
   sku: z.string(),
+  /** The docket this work was done under, when the line is a repair. */
+  ticketRef: z.string().default(""),
   title: z.string(),
   modelNumber: z.string(),
   quantity: z.number().int().positive(),
@@ -76,13 +89,25 @@ export const BillDraftSchema = z.object({
   }),
   lines: z
     .array(
-      z.object({
-        sku: z.string().min(1),
-        quantity: z.number().int().positive().max(99),
-        unitPrice: z.number().nonnegative(),
-      }),
+      z.union([
+        z.object({
+          kind: z.literal("watch").default("watch"),
+          sku: z.string().min(1),
+          quantity: z.number().int().positive().max(99),
+          unitPrice: z.number().nonnegative(),
+        }),
+        z.object({
+          kind: z.literal("service"),
+          /** What was done: "Full overhaul", "Crystal replaced", "Battery". */
+          description: z.string().min(1, "Say what the work was").max(160),
+          quantity: z.number().int().positive().max(99).default(1),
+          unitPrice: z.number().nonnegative(),
+          /** The repair docket, so the bill and the bench agree. */
+          ticketRef: z.string().max(60).default(""),
+        }),
+      ]),
     )
-    .min(1, "Add at least one watch"),
+    .min(1, "Add at least one line"),
   gstRate: z.number().min(0).max(50).default(DEFAULT_GST_RATE),
   payment: z.enum(["cash", "card", "upi", "bank", "other"]).default("cash"),
   note: z.string().max(500).default(""),
@@ -151,6 +176,24 @@ export async function createBill(draft: BillDraft): Promise<BillResult> {
   const lines: BillLine[] = [];
 
   for (const line of draft.lines) {
+    // Labour: nothing to look up, nothing to take out of stock. The amount is
+    // what the bench agreed with the customer, and it stands on its own.
+    if (line.kind === "service") {
+      lines.push({
+        kind: "service",
+        sku: "",
+        ticketRef: line.ticketRef ?? "",
+        title: line.description,
+        modelNumber: "",
+        quantity: line.quantity,
+        unitPrice: round2(line.unitPrice),
+        // Nothing was discounted off a list price, so list equals charged and
+        // the bill shows no phantom saving.
+        listPrice: round2(line.unitPrice),
+      });
+      continue;
+    }
+
     const product = await getProduct(line.sku);
     if (!product) {
       errors.push(`${line.sku} is not in the catalogue.`);
@@ -168,7 +211,9 @@ export async function createBill(draft: BillDraft): Promise<BillResult> {
       continue;
     }
     lines.push({
+      kind: "watch",
       sku: product.sku,
+      ticketRef: "",
       title: product.title,
       modelNumber: product.modelNumber,
       quantity: line.quantity,
@@ -208,8 +253,9 @@ export async function createBill(draft: BillDraft): Promise<BillResult> {
   await fs.writeFile(join(BILLS_DIR, `${bill.id}.json`), `${JSON.stringify(bill, null, 2)}\n`);
 
   // Take the stock out only once the bill is safely on disk.
+  const stockLines = lines.filter((line) => line.kind === "watch");
   await appendMovements(
-    lines.map((line) => ({
+    stockLines.map((line) => ({
       sku: line.sku,
       kind: "sale" as const,
       delta: -line.quantity,
@@ -218,7 +264,7 @@ export async function createBill(draft: BillDraft): Promise<BillResult> {
     })),
   );
 
-  for (const line of lines) {
+  for (const line of stockLines) {
     const product = await getProduct(line.sku);
     if (!product) continue;
     const remaining = Math.max(0, (product.quantity ?? 0) - line.quantity);
