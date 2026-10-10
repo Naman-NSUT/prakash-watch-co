@@ -1,4 +1,3 @@
-import HomeSearch from "./HomeSearch";
 export default function Hero() {
   return (
     <section id="top" style={{
@@ -29,10 +28,7 @@ export default function Hero() {
           Since 1976 we have sold, set and serviced fine watches across Delhi and Gurugram. Authorized
           retail for the houses that matter — and a workshop that keeps them running long after the sale.
         </p>
-        {/* Most people arrive knowing what they want. This asks them. */}
-        <HomeSearch />
-
-        <div style={{ display: "flex", gap: 14, marginTop: 26, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 14, marginTop: 46, flexWrap: "wrap" }}>
           <a className="btn btn-solid" href="#collection">Browse the collection</a>
           <a className="btn btn-ghost" href="#service">Book a service</a>
         </div>
