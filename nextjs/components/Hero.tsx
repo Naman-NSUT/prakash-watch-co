@@ -1,8 +1,9 @@
+import HomeSearch from "./HomeSearch";
 export default function Hero() {
   return (
     <section id="top" style={{
       position: "relative", minHeight: "100vh", display: "grid", gridTemplateColumns: "var(--cols-hero)",
-      alignItems: "center", gap: 40, padding: "var(--hero-top) var(--gutter) 60px",
+      alignItems: "center", gap: 40, padding: "var(--hero-top) var(--gutter) var(--hero-bottom)",
     }}>
       <div className="hero-film">
         {/* WebM first: a third of the size where it is supported. Both are silent —
@@ -21,18 +22,25 @@ export default function Hero() {
           <span style={{ width: 54, height: 1, background: "var(--accent)" }} />
           <span className="kicker" style={{ color: "var(--body)" }}>Delhi NCR · Four Boutiques</span>
         </div>
-        <h1 className="serif" style={{ margin: 0, fontSize: "clamp(56px, 9.2vw, 158px)", lineHeight: 0.85, letterSpacing: "-0.025em" }}>
+        <h1 className="serif" style={{ margin: 0, // Sized off the shorter dimension as well as the wider one: on a short
+          // laptop window a headline picked by width alone pushed the search and
+          // the figures below it off the first screen.
+          fontSize: "clamp(56px, min(9.2vw, 15vh), 158px)", lineHeight: 0.85, letterSpacing: "-0.025em" }}>
           Time,<br /><span className="italic-accent">kept</span> well.
         </h1>
         <p style={{ maxWidth: 460, margin: "40px 0 0", fontSize: 17.5, lineHeight: 1.65, fontWeight: 300, color: "var(--body)", textWrap: "pretty" }}>
           Since 1976 we have sold, set and serviced fine watches across Delhi and Gurugram. Authorized
           retail for the houses that matter — and a workshop that keeps them running long after the sale.
         </p>
-        <div style={{ display: "flex", gap: 14, marginTop: 46, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 14, marginTop: 38, flexWrap: "wrap" }}>
           <a className="btn btn-solid" href="#collection">Browse the collection</a>
           <a className="btn btn-ghost" href="#service">Book a service</a>
         </div>
       </div>
+
+      {/* Its own row, spanning the grid, so it runs the width of the page
+          under both columns rather than being squeezed beside the film. */}
+      <HomeSearch />
       <div style={{
         position: "absolute", bottom: 34, left: "var(--gutter)", right: "var(--gutter)", display: "flex", alignItems: "flex-end",
         justifyContent: "space-between", borderTop: "1px solid var(--line)", paddingTop: 18,

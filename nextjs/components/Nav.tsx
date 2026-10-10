@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
-import HomeSearch from "./HomeSearch";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -85,10 +84,6 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
           </span>
         </Link>
 
-        {/* The front page carries the search; every other page has the
-            collection's own, and two of them would be one too many. */}
-        {pathname === "/" && <HomeSearch />}
-
         <div
           className="nav-links"
           style={{
@@ -160,7 +155,6 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
         inert={!open}
       >
         <div className="nav-panel-inner">
-          {pathname === "/" && <HomeSearch />}
           {LINKS.map((link, i) =>
             link.brands && brands.length > 0 ? (
               <div key={link.href} style={{ transitionDelay: open ? `${90 + i * 55}ms` : "0ms" }} className="nav-panel-link nav-panel-group">
