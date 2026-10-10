@@ -77,7 +77,7 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
         }}
         className="site-nav"
       >
-        <Link href="/" style={{ display: "flex", flexDirection: "column", lineHeight: 0.95 }}>
+        <Link href="/" className="nav-wordmark" style={{ display: "flex", flexDirection: "column", lineHeight: 0.95 }}>
           <span className="serif" style={{ fontSize: 25 }}>Prakash</span>
           <span className="mono" style={{ fontSize: 9.5, letterSpacing: "0.42em", color: "var(--muted)", textTransform: "uppercase" }}>
             Watch Co.

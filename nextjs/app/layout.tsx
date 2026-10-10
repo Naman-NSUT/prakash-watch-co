@@ -3,7 +3,9 @@ import { Instrument_Serif, Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const serif = Instrument_Serif({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-serif" });
-const sans = Jost({ weight: ["300", "400", "500"], subsets: ["latin"], variable: "--font-sans" });
+// 600 is here for the navigation: the bar sits over a moving film, and 500
+// disappears into a bright frame.
+const sans = Jost({ weight: ["300", "400", "500", "600"], subsets: ["latin"], variable: "--font-sans" });
 const mono = JetBrains_Mono({ weight: ["400", "500"], subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {

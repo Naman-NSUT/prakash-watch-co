@@ -1346,3 +1346,109 @@ html[data-theme="linen"] .card-stage {
 .ops-pager-count { font-size: 10px; letter-spacing: 0.16em; color: var(--faint); }
 .ops-pager-steps { display: flex; align-items: center; gap: 10px; }
 .ops-pager-of { font-size: 10.5px; color: var(--muted); }
+
+/* --- Searching from the front page ------------------------------------------
+   It sits under the headline, above the two buttons: the first thing after the
+   claim, because most people arrive knowing a brand or a reference and the
+   alternative was three clicks to the collection's own search. */
+.home-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 520px;
+  margin-top: 40px;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--panel) 82%, transparent);
+  backdrop-filter: blur(10px);
+  transition: border-color .25s;
+}
+.home-search:focus-within { border-color: var(--accent); }
+
+.home-search-icon { flex: 0 0 auto; color: var(--dim); }
+
+.home-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 11px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 300;
+}
+.home-search input::placeholder { color: var(--faint); }
+.home-search input:focus { outline: none; }
+/* Safari draws its own clear button on type=search, which fights the layout. */
+.home-search input::-webkit-search-decoration,
+.home-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+.home-search-go {
+  flex: 0 0 auto;
+  padding: 11px 22px;
+  border: 0;
+  background: var(--accent);
+  color: var(--chip);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color .25s;
+}
+.home-search-go:hover { background: var(--accent-soft); }
+
+@media (max-width: 560px) {
+  .home-search { margin-top: 30px; padding-left: 13px; }
+  .home-search input { font-size: 14px; }
+  .home-search-go { padding: 11px 15px; font-size: 10.5px; letter-spacing: 0.12em; }
+}
+
+/* Present for screen readers, absent from the page. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Making the bar carry ----------------------------------------------------
+   The navigation sits over a film that is pale in half its frames, and at
+   weight 400 in --body the links were dissolving into it. The links go to 600
+   and to full ink; the wordmark goes up in size and takes a hairline stroke,
+   because Instrument Serif ships in one weight only and there is no bold cut to
+   reach for. */
+.nav-links {
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
+.nav-links a { color: var(--text); }
+.nav-links a:hover { color: var(--accent); }
+
+.nav-wordmark .serif {
+  font-size: 34px !important;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  /* Half a pixel of stroke. Instrument Serif has no bold cut, so weight has to
+     come from size and this: enough to out-weigh the links beside it, not
+     enough to read as a smeared fake bold. */
+  -webkit-text-stroke: 0.55px currentColor;
+}
+
+.nav-wordmark .mono {
+  font-weight: 600 !important;
+  color: var(--body) !important;
+}
+
+.nav-est .mono { font-weight: 500; }
+
+@media (max-width: 900px) {
+  .nav-wordmark .serif { font-size: 27px !important; }
+}
