@@ -59,6 +59,7 @@ from .report import write_report
 from .registry import BrandRegistry, ensure as ensure_brand
 from .sourcebook import record as record_sources
 from .storefront import find_prices, find_product, resolve_reference, walk_order
+from .resolve import translate_code
 from .research import (
     CONFIDENT_SCORE,
     MAX_UNCONFIRMED_SOURCES,
@@ -220,6 +221,26 @@ def build_watch_graph(deps: Deps):
                         stage("price", f"₹{quoted:,.0f} — agreed across {len(priced_from)} source(s)")
 
                 found, note = await find_product(hosts, row.model_number, deps.http, deps.cache, row.brand)
+
+                # Nobody we trust carries this code — which, for the brands the
+                # sheet lists under the shop's own numbering, is the normal case
+                # rather than a failure. Shops that index both numbers may be
+                # asked what the maker calls it; nothing but that string crosses
+                # over, and it only counts once a second house confirms it. Then
+                # the trusted shops are asked again, with a reference that means
+                # something to them.
+                if not found:
+                    translated, how = await translate_code(
+                        row.brand, row.model_number, hosts, deps.http, deps.cache
+                    )
+                    if translated:
+                        found, note = await find_product(
+                            hosts, translated, deps.http, deps.cache, row.brand
+                        )
+                        if found:
+                            row = row.model_copy(update={"reference": translated})
+                            stage("reference", how)
+
                 if found:
                     # The sheet lists some brands under the shop's own codes —
                     # Casio as A1149, four characters, which matches a power bank

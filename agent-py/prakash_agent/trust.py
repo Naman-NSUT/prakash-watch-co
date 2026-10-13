@@ -1,0 +1,121 @@
+"""The house's order of trust, in one place.
+
+Three different questions used to be answered by one tuple of hostnames, and
+because they were the same tuple, adding a shop for one purpose silently granted
+it the other two. They are separated here:
+
+  tier 1  the brand's own site — authoritative about its own watches
+  tier 2  the dealers the shop buys from and vouches for by doing so
+  index   shops consulted ONLY to translate a shop code into the brand's
+          reference, and which never supply a fact, a photograph or a price
+
+A listing may be published when everything it was built from — every source and
+every photograph — comes from tier 1 or tier 2. Anything else is held for a
+person to look at before the shop's name goes on it.
+"""
+
+from __future__ import annotations
+
+import json
+from functools import lru_cache
+from pathlib import Path
+
+from .brands import BRANDS, _norm
+
+#: Tier 2. Named by the shop, one at a time, because it buys from them.
+TRUSTED_DEALERS: tuple[str, ...] = (
+    "rameshwatch.com",
+    "kamalwatch.com",
+    "justintime.in",
+    "watchfactory.in",
+    "casiostore.bhawar.com",
+    "avikya.in",
+)
+
+#: Consulted only to resolve a code. 335 of 336 Casio rows carry the shop's own
+#: four-character code rather than a Casio reference, and a retailer that indexes
+#: both is the only place that mapping can be read. Reading it there is fine;
+#: describing the watch from there is not, so nothing but the reference crosses
+#: over, and the listing is then built from the brand or a vouched dealer.
+REFERENCE_INDEX: tuple[str, ...] = (
+    *TRUSTED_DEALERS,
+    "titanworld.com",
+    "helioswatchstore.com",
+    "swisstimehouse.com",
+    "kewalrams.com",
+    "zimsonwatches.com",
+    "watchbase.com",
+)
+
+
+def host_of(url: str) -> str:
+    """The bare hostname, lowercased, without www."""
+    return (url or "").lower().split("//")[-1].split("/")[0].removeprefix("www.").strip()
+
+
+def _matches(host: str, domain: str) -> bool:
+    domain = domain.split("/")[0].lower().removeprefix("www.")
+    return bool(host) and bool(domain) and (host == domain or host.endswith(f".{domain}"))
+
+
+@lru_cache(maxsize=1)
+def _registry_domains() -> dict[str, tuple[str, ...]]:
+    """Every brand's official domains, as the registry on disk records them.
+
+    Read straight from the file rather than through BrandRegistry, because this
+    is asked on every artifact and the answer changes only when a brand is
+    discovered — which happens once per brand, ever.
+    """
+    from .config import load_config
+
+    try:
+        path = Path(load_config().brands_path)
+        raw = json.loads(path.read_text("utf-8"))
+    except Exception:  # noqa: BLE001 — a missing registry must not stop a build
+        raw = []
+
+    rows = raw if isinstance(raw, list) else raw.get("brands", [])
+    out: dict[str, tuple[str, ...]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        brand = _norm(str(row.get("brand", "")))
+        domains = tuple(d for d in (row.get("domains") or []) if isinstance(d, str))
+        if brand and domains:
+            out[brand] = domains
+    return out
+
+
+def official_domains(brand: str) -> tuple[str, ...]:
+    """Where this brand speaks for itself: the static table and the registry."""
+    key = _norm(brand)
+    seeded = BRANDS.get(key)
+    found = _registry_domains().get(key, ())
+    both = (*(seeded.domains if seeded else ()), *found)
+    # Aliases are brand names, not hosts, so only domains are returned.
+    seen: set[str] = set()
+    return tuple(d for d in both if not (d in seen or seen.add(d)))
+
+
+def tier(url: str, brand: str) -> int:
+    """1 the brand itself, 2 a vouched dealer, 3 everything else."""
+    host = host_of(url)
+    if not host:
+        return 3
+    if any(_matches(host, domain) for domain in official_domains(brand)):
+        return 1
+    if any(_matches(host, dealer) for dealer in TRUSTED_DEALERS):
+        return 2
+    return 3
+
+
+def may_index(url: str) -> bool:
+    """Whether this host may be read purely to translate a code."""
+    host = host_of(url)
+    return any(_matches(host, shop) for shop in REFERENCE_INDEX)
+
+
+def worst_tier(urls, brand: str) -> int:
+    """The weakest link among everything a listing was built from."""
+    tiers = [tier(u, brand) for u in urls if u]
+    return max(tiers) if tiers else 3

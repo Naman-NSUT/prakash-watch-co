@@ -51,12 +51,27 @@ BLOCKING_FLAGS = (
 )
 
 
-def _is_verified_dealer(url: str) -> bool:
-    """One of the dealers the shop buys from, which it vouches for by doing so."""
-    from .storefront import RETAILER_FEEDS
+def _untrusted(brand: str, sources, images) -> list[str]:
+    """Hosts a listing leans on that are neither the brand nor a vouched dealer.
 
-    host = (url or "").lower().split("//")[-1].split("/")[0].removeprefix("www.")
-    return any(host == shop or host.endswith(f".{shop}") for shop in RETAILER_FEEDS)
+    Photographs are examined as well as sources, which they were not before. The
+    photograph recovery pass returns pictures without adding the pages it read to
+    the source list, so a listing could be judged on sources that supplied none of
+    its pictures — and 46 photographs on 24 published listings had arrived that
+    way, from a Qatari shop, an American one and, once, a newspaper.
+    """
+    from .trust import host_of, tier
+
+    bad: list[str] = []
+    for url in [
+        *(source.url for source in sources),
+        *(image.source_page for image in images if image.source_page),
+    ]:
+        if tier(url, brand) == 3:
+            host = host_of(url)
+            if host and host not in bad:
+                bad.append(host)
+    return bad
 
 
 def normalise_gender(value: str | None) -> str | None:
@@ -209,14 +224,17 @@ def build_product(
         flag("no-official-source")
 
     # The house's order of trust: the brand's own site first, then the dealers
-    # the shop actually buys from, and after that nothing is taken on faith. A
-    # listing built entirely off a shop nobody vouched for is held for a human —
-    # it may be perfectly good, but the shop should look before it is in the
-    # window with its name on it.
-    if sources and not any(
-        source.kind == "official" or _is_verified_dealer(source.url) for source in sources
-    ):
+    # the shop actually buys from, and after that nothing is taken on faith.
+    #
+    # The test is on the weakest link rather than the strongest. One official
+    # source used to excuse a listing whose photographs all came from somewhere
+    # nobody vouched for; now anything the listing leans on — a source or a
+    # picture — has to be the brand or a dealer the shop buys from, or a person
+    # looks before the shop's name goes on it.
+    strangers = _untrusted(row.brand, sources, images)
+    if strangers:
         flag("unverified-source")
+        notes.append("Not vouched for: " + ", ".join(strangers[:6]))
 
     if not images:
         flag("no-images")
