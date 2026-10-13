@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FilterShell from "./FilterShell";
 import PriceFilter from "./PriceFilter";
 import type { CatalogEntry } from "@/agent/types";
 import {
@@ -17,39 +18,29 @@ import {
  * before any JavaScript loads and each combination is a real, shareable address.
  * Counts are computed per group against the other filters, so a number always
  * answers "how many if I also picked this", never "how many are already showing".
+ *
+ * Where it sits is FilterShell's business: a rail beside the grid on a laptop,
+ * a sheet over it on a phone.
  */
 export default function FilterSidebar({
   entries,
   state,
   bounds,
   base,
+  count,
 }: {
   entries: CatalogEntry[];
   state: FilterState;
   bounds: { low: number; high: number };
   /** The page these filters belong to — the shop, or one brand's shelf. */
   base?: string;
+  /** How many watches these filters leave, for the sheet's closing button. */
+  count?: number;
 }) {
   const active = activeCount(state);
 
   return (
-    <details className="shop-sidebar" data-collapsible="true" open>
-      <summary
-        className="mono shop-filter-toggle"
-        style={{
-          cursor: "pointer",
-          listStyle: "none",
-          padding: "13px 0",
-          fontSize: 10,
-          letterSpacing: "0.2em",
-          color: "var(--muted)",
-          textTransform: "uppercase",
-          borderBottom: "1px solid var(--line)",
-        }}
-      >
-        Filters{active ? ` (${active})` : ""}
-      </summary>
-
+    <FilterShell active={active} count={count}>
       <div className="shop-facets">
         <div
           style={{
@@ -130,7 +121,7 @@ export default function FilterSidebar({
           );
         })}
       </div>
-    </details>
+    </FilterShell>
   );
 }
 

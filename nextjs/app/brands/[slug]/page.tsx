@@ -147,7 +147,7 @@ export default async function BrandPage({
 
       <div className="shop-layout">
         <Suspense fallback={<aside />}>
-          <FilterSidebar entries={published} state={state} bounds={bounds} base={`/brands/${brand.slug}`} />
+          <FilterSidebar entries={published} state={state} bounds={bounds} base={`/brands/${brand.slug}`} count={matched.length} />
         </Suspense>
 
         <div>

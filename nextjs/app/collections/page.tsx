@@ -71,7 +71,7 @@ export default async function CollectionsPage({
 
       <div className="shop-layout">
         <Suspense fallback={<aside />}>
-          <FilterSidebar entries={published} state={state} bounds={bounds} />
+          <FilterSidebar entries={published} state={state} bounds={bounds} count={matched.length} />
         </Suspense>
 
         <div>

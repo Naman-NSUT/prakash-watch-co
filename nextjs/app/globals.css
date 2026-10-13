@@ -97,7 +97,12 @@ a:hover { color: var(--accent-soft); }
 @media (min-width: 1600px) { .shop-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 @media (max-width: 1180px) { .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px)  { .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } }
-.shop-filter-toggle { display: none; }
+/* The filter sheet is a phone affordance: on a laptop the rail is simply the
+   rail, and none of the sheet's furniture is drawn. */
+.shop-filter-trigger,
+.shop-sheet-scrim,
+.shop-sheet-head,
+.shop-sheet-foot { display: none; }
 
 /* --- Offers ---------------------------------------------------------------- */
 .offer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
@@ -371,13 +376,111 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   .brand-row > .brand-row-stock { justify-self: start; text-align: left; }
 }
 
+/* --- The filter sheet, on a phone -----------------------------------------
+   Stacked above the grid, the rail put the first watch 1,200px down a 659px
+   screen: nearly two screens of filter before any stock. So below 980px the
+   rail leaves the flow altogether and becomes a sheet that rises over the
+   watches, with a button where it used to be. Nothing about the filtering
+   changes — the options are the same links, and the page still filters with
+   JavaScript switched off, it simply cannot rise and fall without it. */
 @media (max-width: 980px) {
-  .shop-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 0 24px 90px; }
-  .shop-sidebar { position: static; max-height: none; }
-  /* Collapsed behind a summary on small screens, open on large. */
-  .shop-filter-toggle { display: block; }
-  .shop-sidebar[data-collapsible="true"] > .shop-facets { display: none; }
-  .shop-sidebar[data-collapsible="true"][open] > .shop-facets { display: block; }
+  .shop-layout { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 24px 90px; }
+
+  /* Fixed, not sticky: the button is a grid item in its own row, so sticky
+     would only have that row's 55px to travel in and would scroll away with
+     it. Fixed costs the layout nothing at all — the first watch moves up
+     another button's worth — and keeps the filter under a thumb however far
+     down the catalogue you are. Bottom left, because bottom right is the
+     shop's WhatsApp mark. */
+  .shop-filter-trigger {
+    display: inline-flex; align-items: center; gap: 9px;
+    position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 92;
+    padding: 13px 18px;
+    border: 1px solid var(--border); border-radius: 999px;
+    background: var(--panel); color: var(--text);
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    box-shadow: 0 10px 28px -12px var(--scrim);
+    transition: opacity .25s, transform .25s cubic-bezier(.2,.8,.2,1);
+  }
+  .shop-filter-trigger:active { transform: scale(0.97); }
+  .shop-filter-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .shop-filter-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 17px; height: 17px; padding: 0 5px;
+    background: var(--accent); color: var(--panel);
+    font-size: 9.5px; letter-spacing: 0.04em; border-radius: 999px;
+  }
+
+  .shop-sheet-scrim {
+    display: block; position: fixed; inset: 0; z-index: 95;
+    background: var(--scrim);
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s cubic-bezier(.4, 0, .2, 1);
+  }
+  .shop-sheet-scrim[data-open="true"] { opacity: 1; pointer-events: auto; }
+
+  .shop-sidebar {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 96;
+    display: flex; flex-direction: column;
+    max-height: 84vh; max-width: none; padding: 0;
+    border-top: 1px solid var(--border); background: var(--panel);
+    box-shadow: 0 -18px 50px -24px var(--scrim);
+    overflow: hidden;
+    transform: translateY(101%);
+    visibility: hidden;
+    /* Hidden only once it has finished sliding out, so it is not focusable
+       while off-screen; visible the instant it starts sliding in, so focus
+       can be moved into it. */
+    transition: transform .35s cubic-bezier(.4, 0, .2, 1), visibility 0s .35s;
+  }
+  .shop-sidebar[data-open="true"] {
+    transform: none; visibility: visible;
+    transition: transform .35s cubic-bezier(.4, 0, .2, 1), visibility 0s;
+  }
+
+  /* A handle at the top, the way every sheet on a phone has one. */
+  .shop-sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 0 0 auto; padding: 16px 22px 13px;
+    border-bottom: 1px solid var(--line);
+  }
+  .shop-sheet-head > .mono {
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+  }
+  .shop-sheet-close {
+    display: grid; place-items: center; width: 34px; height: 34px;
+    margin: -6px -8px -6px 0; color: var(--body);
+  }
+
+  /* The options scroll; the head and the closing button do not. */
+  .shop-sidebar > .shop-facets { flex: 1 1 auto; overflow-y: auto; padding: 0 22px 10px; }
+  .shop-sidebar > .shop-facets > div:first-child { padding-top: 14px; }
+
+  .shop-sheet-foot {
+    display: block; flex: 0 0 auto;
+    padding: 12px 22px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line); background: var(--panel);
+  }
+  .shop-sheet-done {
+    width: 100%; padding: 14px;
+    background: var(--text); color: var(--bg);
+    font-family: var(--font-mono), monospace;
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+  }
+
+  /* One floating thing at a time: with the sheet up, neither the WhatsApp mark
+     nor the button that opened it has anything to say. */
+  html[data-sheet="open"] .whatsapp,
+  html[data-sheet="open"] .shop-filter-trigger { opacity: 0; pointer-events: none; }
+
+  /* A group's options get the sheet's height to play with rather than a fixed
+     320px, so Colour does not scroll inside a thing that is already scrolling. */
+  .facet-group-body { max-height: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-sidebar, .shop-sheet-scrim, .shop-filter-trigger { transition: none; }
+  .shop-filter-trigger:active { transform: none; }
 }
 
 .facet-option { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; font-size: 13.5px; font-weight: 300; color: var(--body); transition: color .25s; }
@@ -782,6 +885,7 @@ html[data-theme="copper"] {
 :root {
   --gutter: 44px;        /* the page's side margin */
   --section-y: 120px;    /* vertical breathing room inside a section */
+  --nav-h: 82px;         /* the fixed navigation bar's own height */
   --hero-top: 150px;     /* clears the fixed navigation bar */
   --hero-bottom: 92px;   /* leaves the foot strip its own air */
   --page-top: 160px;     /* the same, on inner pages with a heading */
@@ -1681,7 +1785,7 @@ a.banner-card:hover { border-color: var(--accent); }
   background: #25d366;
   color: #fff;
   box-shadow: 0 10px 28px var(--scrim);
-  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, opacity .25s;
 }
 .whatsapp:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 16px 34px var(--scrim); }
 .whatsapp:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
