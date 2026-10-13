@@ -26,13 +26,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           tree it would paint the default and then correct itself, which on the
           light theme is a full-screen flash of near-black on every page load.
 
-          Anyone still holding one of the four palettes that were retired is
-          moved to Copper here rather than being left on a theme whose tokens
-          no longer exist.
+          The shop opens in daylight: Linen is the default, and the attribute is
+          only set for anyone who has asked for Copper. Anyone still holding one
+          of the retired palettes is moved to the default rather than left on a
+          theme whose tokens no longer exist.
         */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('pwc-theme');if(t==='linen'){document.documentElement.dataset.theme='linen'}else if(t&&t!=='copper'){localStorage.setItem('pwc-theme','copper')}}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('pwc-theme');if(t==='copper'){document.documentElement.dataset.theme='copper'}else if(t&&t!=='linen'){localStorage.setItem('pwc-theme','linen')}}catch(e){}})()`,
           }}
         />
       </head>

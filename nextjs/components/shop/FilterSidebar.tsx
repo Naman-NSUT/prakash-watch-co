@@ -72,11 +72,11 @@ export default function FilterSidebar({
           )}
         </div>
 
-        <Group label="Price">
+        <Group label="Price" alwaysOpen>
           <PriceFilter min={state.min} max={state.max} bounds={bounds} />
         </Group>
 
-        <Group label="Availability">
+        <Group label="Availability" alwaysOpen>
           <Toggle
             href={buildHref({ ...state, inStock: !state.inStock, page: 1 }, base)}
             label="In stock only"
@@ -95,7 +95,11 @@ export default function FilterSidebar({
           if (options.length < 2 && !options.some((option) => option.selected)) return null;
 
           return (
-            <Group key={group.key} label={group.label}>
+            <Group
+              key={group.key}
+              label={group.label}
+              chosen={(state.selected[group.key] ?? []).length}
+            >
               {options.map((option) => (
                 <Link
                   key={option.value}
@@ -130,24 +134,40 @@ export default function FilterSidebar({
   );
 }
 
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
+/**
+ * One dimension of the filter, closed until it is wanted.
+ *
+ * Ten groups open at once is a wall of two hundred checkboxes — on a phone the
+ * first watch was a long scroll past Colour and Complications. The names stay
+ * visible so the whole shape of the filter can be read at a glance; the options
+ * arrive when one is asked for.
+ *
+ * A group with something chosen in it opens itself, because a filter you cannot
+ * see you are using is a filter you cannot undo.
+ */
+function Group({
+  label,
+  children,
+  chosen = 0,
+  alwaysOpen = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  chosen?: number;
+  alwaysOpen?: boolean;
+}) {
   return (
-    <section style={{ padding: "18px 0", borderBottom: "1px solid var(--line2)" }}>
-      <h3
-        className="mono"
-        style={{
-          margin: "0 0 10px",
-          fontSize: 9.5,
-          letterSpacing: "0.2em",
-          color: "var(--dim)",
-          textTransform: "uppercase",
-          fontWeight: 400,
-        }}
-      >
-        {label}
-      </h3>
-      {children}
-    </section>
+    <details className="facet-group" open={alwaysOpen || chosen > 0}>
+      <summary className="mono facet-group-head">
+        <span>{label}</span>
+        {chosen > 0 && <span className="facet-group-count">{chosen}</span>}
+        <svg className="facet-group-caret" viewBox="0 0 12 12" width="9" height="9" fill="none"
+          stroke="currentColor" strokeWidth="1.8" aria-hidden>
+          <path d="M3 4.5L6 7.5 9 4.5" />
+        </svg>
+      </summary>
+      <div className="facet-group-body">{children}</div>
+    </details>
   );
 }
 

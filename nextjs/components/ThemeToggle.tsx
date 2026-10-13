@@ -14,6 +14,8 @@ import { useEffect, useState } from "react";
  * and applied by a script in the document head before the first paint, so a
  * reload does not flash the wrong palette.
  */
+// Light is the default now, so it is the absence of the attribute; dark is
+// the one you ask for.
 const LIGHT = "linen";
 const DARK = "copper";
 
@@ -25,7 +27,7 @@ export default function ThemeToggle() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setLight(document.documentElement.dataset.theme === LIGHT);
+    setLight(document.documentElement.dataset.theme !== DARK);
     setReady(true);
   }, []);
 
@@ -33,9 +35,9 @@ export default function ThemeToggle() {
     const next = !light;
     setLight(next);
 
-    // Copper is the default, so it is the absence of the attribute.
-    if (next) document.documentElement.dataset.theme = LIGHT;
-    else delete document.documentElement.dataset.theme;
+    // Linen is the default, so it is the absence of the attribute.
+    if (next) delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = DARK;
 
     try {
       localStorage.setItem("pwc-theme", next ? LIGHT : DARK);

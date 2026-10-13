@@ -126,17 +126,48 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
             </ul>
           )}
 
+          {/* A watch that is not in the case cannot be reserved or tried on, and
+              offering it is how a shop loses an afternoon. It is still worth
+              asking about — the same reference often comes back in — so the
+              invitation changes rather than disappearing. */}
           <div style={{ display: "flex", gap: 13, marginTop: 38, flexWrap: "wrap" }}>
-            <a href="tel:+919899645897" className="btn btn-solid">
-              Call the boutique
-            </a>
-            <a
-              href={`mailto:prakashwatchco@gmail.com?subject=${enquirySubject}`}
-              className="btn btn-ghost"
-            >
-              Reserve to try on
-            </a>
+            {product.inStock ? (
+              <>
+                <a href="tel:+919899645897" className="btn btn-solid">
+                  Call the boutique
+                </a>
+                <a
+                  href={`mailto:prakashwatchco@gmail.com?subject=${enquirySubject}`}
+                  className="btn btn-ghost"
+                >
+                  Reserve to try on
+                </a>
+              </>
+            ) : (
+              <>
+                <a
+                  href={`https://wa.me/919899645897?text=${encodeURIComponent(
+                    `Hello — is the ${product.brand} ${product.modelNumber} available? I saw it on your website.`,
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-solid"
+                >
+                  Contact the store
+                </a>
+                <a href="tel:+919899645897" className="btn btn-ghost">
+                  Call the boutique
+                </a>
+              </>
+            )}
           </div>
+
+          {!product.inStock && (
+            <p style={{ margin: "16px 0 0", maxWidth: 460, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, color: "var(--muted)" }}>
+              Not in the case at the moment. Message us and we will tell you when this reference is back, or show you
+              what is in the safe that is close to it.
+            </p>
+          )}
 
           {/* The spec sheet, sectioned the way a brand's own product page reads,
               with every line still traceable to the source it was quoted from. */}
