@@ -73,7 +73,19 @@ _NOT_A_WATCH = re.compile(r"screenshot|banner|logo|payment|size[-_]?guide|placeh
 
 def canonical_image(url: str) -> str:
     """The full-size original behind a thumbnail address."""
-    return _SHOPIFY_SIZE.sub("", url or "")
+    return _SHOPIFY_SIZE.sub("", (url or "").split("?")[0])
+
+
+def asset_name(url: str) -> str:
+    """The file's own name, stripped of its address and its size.
+
+    One photograph has two addresses on Shopify: the shop's own domain and
+    cdn.shopify.com both serve /…/products/T0854102201300.jpg. Comparing whole
+    URLs treats those as two pictures, and a listing ends up showing its hero
+    shot twice — which is what happened to 464 listings. The file name is the
+    same in both, so that is what identity is taken from.
+    """
+    return canonical_image(url).rsplit("/", 1)[-1].lower()
 
 
 def _normalise(reference: str) -> str:
@@ -155,6 +167,7 @@ async def top_up_product(
 
     reference = product.get("modelNumber") or ""
     have_urls = {canonical_image(image.get("sourceUrl", "")) for image in existing}
+    have_names = {asset_name(image.get("sourceUrl", "")) for image in existing if image.get("sourceUrl")}
 
     # Collapse the sizes, drop the furniture, keep each page's own order. Pages
     # are read in turn and stopped at as soon as there are enough.
@@ -175,9 +188,11 @@ async def top_up_product(
         read.append(candidate)
         for url in gallery_urls(html, candidate):
             full = canonical_image(url)
-            if full in have_urls or _NOT_A_WATCH.search(full):
+            name = asset_name(url)
+            if full in have_urls or name in have_names or _NOT_A_WATCH.search(full):
                 continue
             have_urls.add(full)
+            have_names.add(name)
             wanted.append((full, candidate))
 
     # Still short, and the pages on record have given what they have. The other
@@ -194,9 +209,11 @@ async def top_up_product(
         if hit and hit.url not in read:
             for url in hit.images:
                 full = canonical_image(url)
-                if full in have_urls or _NOT_A_WATCH.search(full):
+                name = asset_name(url)
+                if full in have_urls or name in have_names or _NOT_A_WATCH.search(full):
                     continue
                 have_urls.add(full)
+                have_names.add(name)
                 wanted.append((full, hit.url))
             if hit.images:
                 read.append(hit.url)
@@ -238,10 +255,6 @@ async def top_up_product(
             with open_bounded(payload) as oriented:
                 if min(oriented.size) < config.min_image_width // 2:
                     continue
-                fingerprint = average_hash(oriented)
-                if any(hamming(fingerprint, seen) <= NEAR_DUPLICATE for seen in have_hashes):
-                    continue
-                have_hashes.append(fingerprint)
 
                 main, has_alpha, backdrop = prepare_background(
                     oriented,
@@ -250,6 +263,14 @@ async def top_up_product(
                     attempt_cutout=config.image_cutout,
                     vision_background=None,
                 )
+                # Hashed after processing, because that is what the stored
+                # pictures are; a repeat at another size, or the same file from
+                # a second shop, lands within a hamming hair of one already here.
+                fingerprint = average_hash(main)
+                if any(hamming(fingerprint, seen) <= NEAR_DUPLICATE for seen in have_hashes):
+                    continue
+                have_hashes.append(fingerprint)
+
                 encoded = BytesIO()
                 main.save(encoded, format="WEBP", quality=82)
                 blob = encoded.getvalue()
