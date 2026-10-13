@@ -134,7 +134,9 @@ async def promote_product(
 ) -> dict[str, Any]:
     brand = product.get("brand") or ""
     reference = product.get("modelNumber") or ""
-    hosts = [d for d in official_domains(brand)]
+    # A registry entry may carry a path — casio.com/in, rado.com/en-in — and a
+    # catalogue is fetched from the host, not the locale folder.
+    hosts = list(dict.fromkeys(d.split("/")[0] for d in official_domains(brand)))
     if not hosts or not reference:
         return {"state": "no official site"}
 
