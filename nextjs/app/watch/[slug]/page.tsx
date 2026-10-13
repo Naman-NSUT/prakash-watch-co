@@ -7,6 +7,7 @@ import Gallery from "@/components/Gallery";
 import CatalogCard from "@/components/CatalogCard";
 import { getProduct, getCatalogIndex, getBackdrops, COLLECTION_META } from "@/lib/catalog";
 import { formatInr } from "@/agent/format";
+import { brandSlug, getBrand } from "@/lib/brands";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,11 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
 
   // Unreviewed listings are not public; they live in the admin panel until approved.
   if (!product || product.status !== "ready") notFound();
+
+  // Whether this house may be bought from the website at all. Set per brand in
+  // the stock room, off unless the shop has said otherwise.
+  const house = await getBrand(brandSlug(product.brand));
+  const sellsOnline = house?.directSale ?? false;
 
   const backdrops = await getBackdrops();
   const backdrop = product.backdropId ? backdrops.get(product.backdropId) : undefined;
@@ -131,7 +137,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
               asking about — the same reference often comes back in — so the
               invitation changes rather than disappearing. */}
           <div style={{ display: "flex", gap: 13, marginTop: 38, flexWrap: "wrap" }}>
-            {product.inStock ? (
+            {product.inStock && sellsOnline ? (
               <>
                 <a href="tel:+919899645897" className="btn btn-solid">
                   Call the boutique
@@ -162,12 +168,17 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
             )}
           </div>
 
-          {!product.inStock && (
+          {!product.inStock ? (
             <p style={{ margin: "16px 0 0", maxWidth: 460, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, color: "var(--muted)" }}>
               Not in the case at the moment. Message us and we will tell you when this reference is back, or show you
               what is in the safe that is close to it.
             </p>
-          )}
+          ) : !sellsOnline ? (
+            <p style={{ margin: "16px 0 0", maxWidth: 460, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, color: "var(--muted)" }}>
+              {product.brand} is sold at the counter rather than online. Message us and we will hold it, send more
+              photographs, or show you what else has come in.
+            </p>
+          ) : null}
 
           {/* The spec sheet, sectioned the way a brand's own product page reads,
               with every line still traceable to the source it was quoted from. */}

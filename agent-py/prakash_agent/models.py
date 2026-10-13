@@ -33,6 +33,7 @@ REVIEW_FLAGS = (
     "llm-unavailable",
     "no-price",
     "estimated-price",
+    "unverified-source",
 )
 ReviewFlag = Literal[
     "no-images",
@@ -49,6 +50,7 @@ ReviewFlag = Literal[
     "llm-unavailable",
     "no-price",
     "estimated-price",
+    "unverified-source",
 ]
 
 REVIEW_FLAG_EXPLANATIONS: dict[str, str] = {
@@ -57,6 +59,10 @@ REVIEW_FLAG_EXPLANATIONS: dict[str, str] = {
     "low-image-match": "The photographs may show a different colourway or reference.",
     "no-official-source": "Nothing from the brand's own site — specifications came from resellers.",
     "no-sources": "No page could be read at all. Check the reference number.",
+    "unverified-source": (
+        "Everything here was read off a shop the house has not vouched for — not the brand's own "
+        "site, and not one of the authorised dealers. Worth your eye before it goes in the window."
+    ),
     "sparse-specs": "Fewer than four core specifications were confirmed.",
     "model-mismatch": "The pages found appear to describe a different reference.",
     "price-outlier": "A source quotes a very different price — often a sign it describes another reference. The shop's price is unaffected.",

@@ -47,6 +47,7 @@ export default async function BrandAdminPage({ params }: { params: Promise<{ slu
         listed={brand.count}
         banner={brand.banner}
         bannerAlt={brand.bannerAlt}
+        directSale={brand.directSale}
       />
     </>
   );

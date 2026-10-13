@@ -149,6 +149,7 @@ export const REVIEW_FLAGS = [
   "llm-unavailable",
   "no-price",
   "estimated-price",
+  "unverified-source",
 ] as const;
 export type ReviewFlag = (typeof REVIEW_FLAGS)[number];
 
@@ -169,6 +170,8 @@ export const REVIEW_FLAG_EXPLANATIONS: Record<ReviewFlag, string> = {
   "llm-unavailable": "Written without research (dry run or model unavailable).",
   "no-price": "No price yet — the listing shows 'price on request'. Set one when you know it.",
   "estimated-price": "Price taken from what the trade is charging, not the shop's own sheet. Check it before relying on it.",
+  "unverified-source":
+    "Read off a shop the house has not vouched for — not the brand's own site, and not one of the authorised dealers. Worth your eye before it goes in the window.",
 };
 
 export const WatchProductSchema = z.object({

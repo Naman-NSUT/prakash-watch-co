@@ -50,6 +50,15 @@ const BrandNoteSchema = z.object({
   banner: z.string().optional(),
   /** What the banner shows, for anyone who cannot see it. */
   bannerAlt: z.string().optional(),
+  /**
+   * Whether this house may be bought straight from the website.
+   *
+   * Some brands hold their dealers to selling in person, and some the shop
+   * would simply rather talk through — a ₹60,000 automatic is a conversation,
+   * not a checkout. Off by default: a house is sold online because the shop
+   * decided it, never because nobody said otherwise.
+   */
+  directSale: z.boolean().optional(),
 });
 
 export type BrandNote = z.infer<typeof BrandNoteSchema>;
@@ -75,6 +84,8 @@ export interface BrandSummary {
   /** A wide photograph for the top of the brand's page, or null. */
   banner: string | null;
   bannerAlt: string | null;
+  /** True when this house may be bought from the website rather than in store. */
+  directSale: boolean;
 }
 
 /** "G-Shock Master of G" → "g-shock-master-of-g". */
@@ -180,6 +191,7 @@ function summarise(brand: string, entries: CatalogEntry[], note: BrandNote | und
     logo: findLogo(brandSlug(brand)) ?? note?.logo ?? null,
     banner: note?.banner ?? null,
     bannerAlt: note?.bannerAlt ?? null,
+    directSale: note?.directSale ?? false,
     // A shop-set badge wins; otherwise the only claim made is one the prices prove.
     badge: note?.badge ?? (reduced.length > 0 ? "Reduced" : null),
     count: entries.length,

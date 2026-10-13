@@ -40,7 +40,23 @@ CORE_FIELDS = ("movement", "case_material", "case_diameter_mm", "water_resistanc
 #: would rather show the watch with what is known and quote at the counter than
 #: not show it at all. The flag is still raised — it is worth knowing — it simply
 #: does not block.
-BLOCKING_FLAGS = ("no-sources", "model-mismatch", "no-images", "unverified-copy", "provisional-image")
+BLOCKING_FLAGS = (
+    "no-sources",
+    "model-mismatch",
+    "no-images",
+    "unverified-copy",
+    "provisional-image",
+    # Read off a shop outside the house's own list. Held, not discarded.
+    "unverified-source",
+)
+
+
+def _is_verified_dealer(url: str) -> bool:
+    """One of the dealers the shop buys from, which it vouches for by doing so."""
+    from .storefront import RETAILER_FEEDS
+
+    host = (url or "").lower().split("//")[-1].split("/")[0].removeprefix("www.")
+    return any(host == shop or host.endswith(f".{shop}") for shop in RETAILER_FEEDS)
 
 
 def normalise_gender(value: str | None) -> str | None:
@@ -191,6 +207,16 @@ def build_product(
             notes.append(facts.mismatch_reason)
     if sources and not any(source.kind == "official" for source in sources):
         flag("no-official-source")
+
+    # The house's order of trust: the brand's own site first, then the dealers
+    # the shop actually buys from, and after that nothing is taken on faith. A
+    # listing built entirely off a shop nobody vouched for is held for a human —
+    # it may be perfectly good, but the shop should look before it is in the
+    # window with its name on it.
+    if sources and not any(
+        source.kind == "official" or _is_verified_dealer(source.url) for source in sources
+    ):
+        flag("unverified-source")
 
     if not images:
         flag("no-images")

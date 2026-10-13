@@ -40,21 +40,44 @@ export default function BrandDesk({
   listed,
   banner,
   bannerAlt,
+  directSale,
 }: {
   slug: string;
   name: string;
   listed: number;
   banner: string | null;
   bannerAlt: string | null;
+  directSale: boolean;
 }) {
   // --- the discount sheet ---------------------------------------------------
   const sheetInput = useRef<HTMLInputElement>(null);
   const [sheet, setSheet] = useState<File | null>(null);
   const [report, setReport] = useState<Report | null>(null);
-  const [busy, setBusy] = useState<"read" | "apply" | "banner" | null>(null);
+  const [busy, setBusy] = useState<"read" | "apply" | "banner" | "selling" | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
 
   // --- the banner -----------------------------------------------------------
+  const [sellsOnline, setSellsOnline] = useState(directSale);
+
+  async function setSelling(next: boolean) {
+    setBusy("selling");
+    setErrors([]);
+    try {
+      const response = await fetch(`/api/admin/brands/${slug}/selling`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ directSale: next }),
+      });
+      const payload = await response.json();
+      if (!response.ok) setErrors(payload.errors ?? ["That could not be saved."]);
+      else setSellsOnline(payload.directSale);
+    } catch {
+      setErrors(["Could not reach the shop's server."]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const bannerInput = useRef<HTMLInputElement>(null);
   const [current, setCurrent] = useState<{ url: string | null; alt: string | null }>({
     url: banner,
@@ -218,6 +241,28 @@ export default function BrandDesk({
             )}
           </div>
         )}
+      </section>
+
+      {/* --- how it sells ----------------------------------------------- */}
+      <section className="ops-card">
+        <h2 className="serif">How {name} sells</h2>
+        <p className="ops-note">
+          {sellsOnline
+            ? `A ${name} in stock shows the shop's own buying buttons on its page.`
+            : `Every ${name} page asks the customer to contact the store, in stock or not.`}{" "}
+          Some makers hold their dealers to selling in person, and some watches are a conversation rather than a
+          checkout. Off unless the shop says otherwise.
+        </p>
+        <div className="ops-row">
+          <button type="button" className="ops-btn" data-variant={sellsOnline ? "solid" : undefined}
+            disabled={busy !== null} onClick={() => setSelling(!sellsOnline)}>
+            {busy === "selling"
+              ? "Saving…"
+              : sellsOnline
+                ? "Sold online — switch to contact the store"
+                : "Contact the store — allow selling online"}
+          </button>
+        </div>
       </section>
 
       {/* --- banner ---------------------------------------------------- */}
