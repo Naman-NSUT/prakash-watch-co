@@ -958,12 +958,6 @@ body { overflow-x: clip; }
   .index-row > :nth-child(4) { justify-self: start !important; }
 }
 
-/* The hovering preview card follows a pointer. A touch screen has none, and a
-   300px card that appears mid-tap is only ever in the way. */
-@media (hover: none) {
-  .collection-peek { display: none !important; }
-}
-
 /* The theme switch lives in the top-right corner — which on a phone is where
    the menu button is. Below 900px it moves out of the way, to the bottom. */
 @media (max-width: 900px) {
