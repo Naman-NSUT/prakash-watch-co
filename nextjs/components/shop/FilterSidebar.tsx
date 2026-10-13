@@ -67,7 +67,10 @@ export default function FilterSidebar({
           <PriceFilter min={state.min} max={state.max} bounds={bounds} />
         </Group>
 
-        <Group label="Availability" alwaysOpen>
+        {/* Not held open: two tick boxes are worth less than the eleven headings
+            they would push below the fold on a phone. It opens itself when
+            something in it is on, like every other group. */}
+        <Group label="Availability" chosen={(state.inStock ? 1 : 0) + (state.onSale ? 1 : 0)}>
           <Toggle
             href={buildHref({ ...state, inStock: !state.inStock, page: 1 }, base)}
             label="In stock only"

@@ -206,6 +206,17 @@ export const WatchProductSchema = z.object({
   gender: z.enum(["men", "women", "unisex"]).nullable(),
   tags: z.array(z.string()),
   inStock: z.boolean(),
+
+  /**
+   * Whether this one watch may be bought on the site, overriding its house.
+   *
+   * Null — the default, and what every listing written before this meant — is
+   * "do whatever the brand does". A brand that sells online can still have one
+   * reference that must be bought in person (a single piece, a special order),
+   * and a brand that does not can still have one it is happy to ship. Those are
+   * the cases this exists for; the house setting covers the rest.
+   */
+  directSale: z.boolean().nullable().default(null),
   quantity: z.number().int().nonnegative().nullable(),
 
   /** Structured attributes. Null means "not stated by any source we read". */
@@ -276,6 +287,7 @@ export const CatalogEntrySchema = WatchProductSchema.pick({
   collection: true,
   gender: true,
   inStock: true,
+  directSale: true,
   backdropId: true,
 }).extend({
   facets: FacetsSchema.default(() => ({ ...EMPTY_FACETS })),

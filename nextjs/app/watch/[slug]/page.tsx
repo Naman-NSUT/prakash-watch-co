@@ -34,10 +34,16 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
   // Unreviewed listings are not public; they live in the admin panel until approved.
   if (!product || product.status !== "ready") notFound();
 
-  // Whether this house may be bought from the website at all. Set per brand in
-  // the stock room, off unless the shop has said otherwise.
+  // Whether this watch may be bought from the website at all.
+  //
+  // The house decides for its range, and the shop sets that in the stock room;
+  // off unless it has said otherwise. One watch may overrule its house in
+  // either direction — a single piece a brand would rather be seen in person,
+  // or one reference the shop is happy to ship from a house that otherwise is
+  // not — and null, which is what every listing says unless somebody changed
+  // it, means "follow the house".
   const house = await getBrand(brandSlug(product.brand));
-  const sellsOnline = house?.directSale ?? false;
+  const sellsOnline = product.directSale ?? house?.directSale ?? false;
 
   const backdrops = await getBackdrops();
   const backdrop = product.backdropId ? backdrops.get(product.backdropId) : undefined;

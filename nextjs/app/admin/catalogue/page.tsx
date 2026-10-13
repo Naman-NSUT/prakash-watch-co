@@ -6,6 +6,8 @@ import { getAllProducts } from "@/lib/catalog";
 import { Empty, PageHead, formatInr } from "@/components/admin/ui";
 import OpsPager, { OPS_PAGE_SIZE } from "@/components/admin/OpsPager";
 import CatalogueSearch from "@/components/admin/CatalogueSearch";
+import SellCell from "@/components/admin/SellCell";
+import { brandSlug, getBrands } from "@/lib/brands";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +19,9 @@ export default async function CataloguePage({
 }) {
   const { status, flag, page: pageParam, q } = await searchParams;
   const products = await getAllProducts();
+  // What each house does, so a row can label its default without the shop
+  // having to remember which brands it sells online.
+  const houses = new Map((await getBrands()).map((house) => [house.slug, house.directSale]));
 
   // Reference, brand, name or sku — whatever the shop has in hand.
   const needle = (q ?? "").trim().toLowerCase();
@@ -102,6 +107,7 @@ export default async function CataloguePage({
                 <th style={{ textAlign: "right" }}>Photos</th>
                 <th style={{ textAlign: "right" }}>Specs</th>
                 <th style={{ textAlign: "right" }}>Confidence</th>
+                <th>Sold</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -139,6 +145,13 @@ export default async function CataloguePage({
                   <td className="ops-num">{product.specs.length}</td>
                   <td className="ops-num" style={{ color: product.confidence.overall > 0.7 ? "var(--accent)" : "var(--dim)" }}>
                     {(product.confidence.overall * 100).toFixed(0)}%
+                  </td>
+                  <td>
+                    <SellCell
+                      sku={product.sku}
+                      value={product.directSale ?? null}
+                      house={houses.get(brandSlug(product.brand)) ?? false}
+                    />
                   </td>
                   <td>
                     {product.status === "ready"

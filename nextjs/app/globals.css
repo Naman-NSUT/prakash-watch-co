@@ -338,8 +338,6 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   transform: translateY(-6px);
   box-shadow: 0 14px 34px var(--scrim);
 }
-.brand-chip:hover .brand-name,
-.brand-chip:focus-visible .brand-name { color: var(--accent-soft); }
 
 /* The link itself carries no outline — the ring belongs on the disc, which is
    the shape the eye is actually tracking. */
@@ -473,9 +471,12 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   html[data-sheet="open"] .whatsapp,
   html[data-sheet="open"] .shop-filter-trigger { opacity: 0; pointer-events: none; }
 
-  /* A group's options get the sheet's height to play with rather than a fixed
-     320px, so Colour does not scroll inside a thing that is already scrolling. */
-  .facet-group-body { max-height: none; }
+  /* An opened group keeps its own ceiling and scrolls inside it. Without one,
+     Brand's hundred options were 362px tall in a 430px sheet and pushed every
+     other heading — Movement, Colour, Case size — below the fold, so opening
+     one filter looked like losing the rest. Capped, the list scrolls within
+     itself and the other headings stay in view underneath. */
+  .shop-sidebar .facet-group-body { max-height: 200px; overscroll-behavior: contain; }
 }
 
 @media (prefers-reduced-motion: reduce) {

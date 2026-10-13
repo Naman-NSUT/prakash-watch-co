@@ -297,6 +297,8 @@ export const ProductPatchSchema = z.object({
   collection: z.enum(Object.keys(COLLECTION_META) as [CollectionId, ...CollectionId[]]).nullable().optional(),
   gender: z.enum(["men", "women", "unisex"]).nullable().optional(),
   inStock: z.boolean().optional(),
+  /** True sells it, false sends the buyer to the shop, null follows the house. */
+  directSale: z.boolean().nullable().optional(),
   quantity: z.number().int().nonnegative().nullable().optional(),
   price: z
     .object({
@@ -384,6 +386,7 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
     ...(patch.collection !== undefined ? { collection: patch.collection } : {}),
     ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
     ...(patch.inStock !== undefined ? { inStock: patch.inStock } : {}),
+    ...(patch.directSale !== undefined ? { directSale: patch.directSale } : {}),
     ...(patch.quantity !== undefined ? { quantity: patch.quantity } : {}),
     copy: { ...product.copy, ...(patch.copy ?? {}) },
     meta: { ...product.meta, updatedAt: new Date().toISOString() },

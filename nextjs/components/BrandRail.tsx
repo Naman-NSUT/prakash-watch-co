@@ -164,8 +164,10 @@ function BrandChip({ brand }: { brand: BrandSummary }) {
     <Link
       href={`/brands/${brand.slug}`}
       className="brand-chip"
-      style={{ scrollSnapAlign: "start", flex: "none", width: 148, textAlign: "center" }}
-      aria-label={`${brand.name} — ${brand.inStock} in stock`}
+      // The label that used to sit under the disc is gone, so the chip keeps a
+      // little floor of its own for the badge that hangs off the disc's edge.
+      style={{ scrollSnapAlign: "start", flex: "none", width: 148, textAlign: "center", paddingBottom: 22 }}
+      aria-label={brand.name}
     >
       <span style={{ position: "relative", display: "block" }}>
         <span
@@ -222,22 +224,6 @@ function BrandChip({ brand }: { brand: BrandSummary }) {
             {brand.badge}
           </span>
         )}
-      </span>
-
-      <span
-        className="mono brand-name"
-        style={{
-          display: "block",
-          // Constant, badge or not, so every label in the row sits on one baseline.
-          marginTop: 26,
-          fontSize: 10,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: "var(--dim)",
-          transition: "color .3s",
-        }}
-      >
-        {brand.inStock > 0 ? `${brand.inStock} in stock` : "Ask in store"}
       </span>
     </Link>
   );
