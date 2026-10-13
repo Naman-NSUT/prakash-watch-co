@@ -67,8 +67,12 @@ services:
         value: "1"
       - key: AGENT_MAX_SOURCES
         value: "4"
+      # Four photographs a watch: the front, the side, the caseback, the clasp.
+      # Measured on the disk at 97 KB each, four across 1,899 listings is about
+      # 737 MB of a 2 GB disk — a third of it, with the catalogue and the
+      # tickets alongside. Ten was a ceiling nothing reached; four is a choice.
       - key: AGENT_MAX_IMAGES
-        value: "10"
+        value: "4"
       - key: AGENT_MIN_IMAGE_WIDTH
         value: "600"
       - key: AGENT_IMAGE_MODE
