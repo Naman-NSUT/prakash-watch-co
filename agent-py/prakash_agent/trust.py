@@ -48,6 +48,46 @@ REFERENCE_INDEX: tuple[str, ...] = (
 )
 
 
+#: Brand storefronts that are the brand's but not this market's.
+#:
+#: Measured rather than inferred from the domain, because the domain lies in both
+#: directions: boat-lifestyle.com and gonoise.com are Indian brands on .com and
+#: price in rupees, while danielwellington.com/in — an India path on the brand's
+#: own site — answers in euros. Each of these was read and found quoting USD or
+#: EUR, or names another market outright.
+#:
+#: A foreign storefront sells a different article: another market's variant of
+#: the reference, in another currency, under another warranty. It is the brand,
+#: so it reads as authoritative, and that is exactly what makes it dangerous —
+#: a Tissot reached this shop at ₹625 because a dollar figure arrived looking
+#: like a rupee one. The shop sells Indian-market references, so these do not
+#: speak for the brand here and are not read at all.
+FOREIGN_BRAND_HOSTS: tuple[str, ...] = (
+    "guesswatches.com",        # USD
+    "gcwatches.com",           # USD
+    "kennethcole.com",         # USD, and a US apparel store — 102 of its 1,949 products are watches
+    "justcavalliwatches.com",  # EUR
+    "danielwellington.com",    # EUR, even on /in
+    "usa.tommy.com",           # names its market in its hostname
+    "armani.com",              # the global store; armaniexchange.in is the Indian one
+    "calvinklein.com",         # the global store
+    "seikowatches.com",        # the global store; seikowatches.co.in is the Indian one
+    "michaelkors.global",      # the global store; the /in/en locale is kept below
+)
+
+#: Locales of an otherwise foreign host that do serve this market.
+INDIAN_LOCALES: tuple[str, ...] = ("michaelkors.global/in/en",)
+
+
+def is_foreign_brand_host(domain: str) -> bool:
+    """Whether a brand's own domain belongs to another market."""
+    lowered = (domain or "").lower().removeprefix("www.")
+    if any(lowered.startswith(keep) for keep in INDIAN_LOCALES):
+        return False
+    host = lowered.split("/")[0]
+    return any(host == f or host.endswith(f".{f}") for f in FOREIGN_BRAND_HOSTS)
+
+
 def host_of(url: str) -> str:
     """The bare hostname, lowercased, without www."""
     return (url or "").lower().split("//")[-1].split("/")[0].removeprefix("www.").strip()
@@ -92,9 +132,13 @@ def official_domains(brand: str) -> tuple[str, ...]:
     seeded = BRANDS.get(key)
     found = _registry_domains().get(key, ())
     both = (*(seeded.domains if seeded else ()), *found)
-    # Aliases are brand names, not hosts, so only domains are returned.
+    # Aliases are brand names, not hosts, so only domains are returned — and a
+    # storefront serving another market does not speak for the brand here.
     seen: set[str] = set()
-    return tuple(d for d in both if not (d in seen or seen.add(d)))
+    return tuple(
+        d for d in both
+        if not is_foreign_brand_host(d) and not (d in seen or seen.add(d))
+    )
 
 
 def tier(url: str, brand: str) -> int:

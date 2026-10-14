@@ -169,14 +169,23 @@ BARRED_MARKETPLACES: tuple[str, ...] = ("amazon.", "flipkart.")
 def is_foreign_seller(url: str) -> bool:
     """True for a source that must never be read: a shop abroad, or a marketplace.
 
-    Two different reasons, one answer. A foreign shop sells a different article —
+    Three reasons now, one answer. A foreign shop sells a different article —
     another market's variant of the reference, in another currency, under another
-    warranty. A marketplace sells the right article described by a stranger.
+    warranty. A marketplace sells the right article described by a stranger. And
+    a brand's own storefront for another market is both the most convincing of
+    the three and no more use than the rest: measured, guesswatches.com quotes
+    dollars and danielwellington.com/in quotes euros.
     """
+    from .trust import is_foreign_brand_host
+
     lowered = url.lower()
     if any(marker in lowered for marker in BARRED_MARKETPLACES):
         return True
-    return any(marker in lowered for marker in FOREIGN_SELLERS)
+    if any(marker in lowered for marker in FOREIGN_SELLERS):
+        return True
+    # Host and path together: michaelkors.global serves another market, but
+    # michaelkors.global/in/en is this one.
+    return is_foreign_brand_host(lowered.split("//")[-1].removeprefix("www."))
 
 
 def _norm(value: str) -> str:
