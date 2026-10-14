@@ -31,7 +31,14 @@ from .cache import Cache
 from .config import AgentConfig
 from .http_client import HttpClient
 from .background import analyse_background
-from .images import CUTOUT_SHOTS, MAX_ASSET_BYTES, open_bounded, prepare_background
+from .images import (
+    CUTOUT_SHOTS,
+    DIAL_EDGE_FLOOR,
+    MAX_ASSET_BYTES,
+    dial_score,
+    open_bounded,
+    prepare_background,
+)
 from .models import WatchProduct
 from .util import read_json
 
@@ -39,15 +46,33 @@ from .util import read_json
 SHOT_ORDER = {"product": 0, "detail": 1, "packaging": 2, "wrist": 3, "lifestyle": 4}
 
 
-def ordered(images: list[dict]) -> list[dict]:
-    """The gallery in the order a shop would lay it out."""
-    return sorted(
-        enumerate(images),
-        key=lambda pair: (SHOT_ORDER.get(pair[1].get("kind") or "", 5), pair[0]),
-    ) and [image for _, image in sorted(
-        enumerate(images),
-        key=lambda pair: (SHOT_ORDER.get(pair[1].get("kind") or "", 5), pair[0]),
-    )]
+def ordered(images: list[dict], scores: dict[str, float] | None = None) -> list[dict]:
+    """The gallery in the order a shop would lay it out.
+
+    The front of the watch leads. Which photograph that is comes from the
+    picture — a dial is busy in the middle where a caseback and a bracelet are
+    quiet — because the label cannot be trusted for it: on an Alba AG8Q32X1 the
+    caseback and the dial were both called product shots, and the caseback was
+    the more confident of the two.
+
+    A scene is always last, whatever it scores, and among equals the order the
+    shop's own gallery used is kept.
+    """
+    scores = scores or {}
+
+    def rank(pair):
+        index, image = pair
+        kind = image.get("kind") or ""
+        scene = SHOT_ORDER.get(kind, 5) >= SHOT_ORDER["wrist"]
+        looks_like_a_dial = scores.get(image.get("url") or "", 0.0) >= DIAL_EDGE_FLOOR
+        return (
+            1 if scene else 0,            # scenes last
+            0 if looks_like_a_dial else 1,  # the front of the watch first
+            SHOT_ORDER.get(kind, 5),      # then the grader's view, as a tiebreak
+            index,                        # then the shop's own order
+        )
+
+    return [image for _, image in sorted(enumerate(images), key=rank)]
 
 
 async def _looks_isolated(image: dict, http: HttpClient) -> bool:
@@ -90,11 +115,13 @@ async def _reprocess(
     out_dir = Path(config.image_dir) / sku
     try:
         with open_bounded(payload) as oriented:
+            # The real pipeline, not a special case: the corrected guards in
+            # background.py decide whether this picture may be cut out at all.
             main, has_alpha, backdrop = prepare_background(
                 oriented,
                 size=config.image_canvas,
                 background=config.image_background,
-                attempt_cutout=False,
+                attempt_cutout=config.image_cutout,
                 vision_background=None,
             )
             encoded = BytesIO()
@@ -152,19 +179,14 @@ async def run_tidy(
 
             changed = False
 
-            # Anything that was cut out is judged again from the picture itself
-            # rather than from the label it was given: is there only a watch in
-            # the frame? A person, a sleeve, a table or a prop crosses the border
-            # somewhere, and the border is what the test reads. The label is kept
-            # as a second gate, so a scene the grader called a product shot is
-            # caught either way.
+            # Every photograph that was cut out is put back through the pipeline
+            # as it now stands, and the corrected guards decide for themselves:
+            # the border test refuses a scene, and the kept-fraction floor
+            # refuses a fill that ate a white watch. Whatever comes out is what
+            # is stored, so this needs no list of which fault applied to which
+            # picture.
             for image in images:
                 if not image.get("hasAlpha"):
-                    continue
-                scene = image.get("kind") not in CUTOUT_SHOTS
-                if not scene:
-                    scene = not await _looks_isolated(image, http)
-                if not scene:
                     continue
                 if dry_run:
                     rematted += 1
@@ -173,7 +195,16 @@ async def run_tidy(
                     rematted += 1
                     changed = True
 
-            new_order = ordered(images)
+            scores: dict[str, float] = {}
+            for image in images:
+                file = Path(config.image_dir) / product["sku"] / (image.get("url") or "").rsplit("/", 1)[-1]
+                if file.exists():
+                    try:
+                        with Image.open(file) as stored:
+                            scores[image.get("url") or ""] = dial_score(stored)
+                    except Exception:  # noqa: BLE001
+                        pass
+            new_order = ordered(images, scores)
             if [i.get("url") for i in new_order] != [i.get("url") for i in images]:
                 images = new_order
                 reordered += 1

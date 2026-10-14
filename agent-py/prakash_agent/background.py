@@ -37,6 +37,17 @@ BORDER_STDDEV_LIMIT = 18.0
 #: taken hold — usually a gradient that stopped the fill partway.
 MAX_KEPT_FRACTION = 0.82
 
+#: And a flood that leaves less than this much has eaten the watch.
+#:
+#: A white watch on a white ground is the case that breaks the fill: the strap
+#: and the case are the background's own colour, so the fill runs straight
+#: through them and what survives is a ghost — an Armani Exchange chronograph
+#: went out as a faint outline of itself. Measured over 51 sound cut-outs the
+#: watch keeps between 9.5% and 52.6% of the frame, median 27.8%; the ghost kept
+#: 7.1%. Below this floor the cut-out is thrown away and the photograph is used
+#: as the shop found it, which is never wrong — only less tidy.
+MIN_KEPT_FRACTION = 0.12
+
 #: How close a pixel must be to the border colour to count as background.
 FLOOD_TOLERANCE = 32
 
@@ -164,10 +175,16 @@ def cut_out(image: Image.Image, tolerance: int = FLOOD_TOLERANCE) -> Image.Image
 
     # Refuse implausible masks: a cutout that keeps almost nothing, or almost
     # everything, means the flood either ate the watch or never took hold. The
-    # upper bound is the one that matters — it catches the gradient case, where
-    # the fill stops partway and leaves a ring of old background around the watch.
+    # upper bound catches the gradient case, where the fill stops partway and
+    # leaves a ring of old background around the watch.
+    #
+    # The lower bound was 4%, which was too generous to be any use: a white
+    # Armani Exchange on a white ground kept 7.1% — a ghost of itself, the case
+    # and strap flooded away because they were the background's own colour — and
+    # went out on the shop's front page like that. A sound cut-out keeps a
+    # quarter of the frame or so, and never less than a tenth.
     kept = ImageStat.Stat(alpha).mean[0] / 255
-    if not 0.04 <= kept <= MAX_KEPT_FRACTION:
+    if not MIN_KEPT_FRACTION <= kept <= MAX_KEPT_FRACTION:
         return None
 
     # Pull the edge in by a pixel to kill the pale halo the original background

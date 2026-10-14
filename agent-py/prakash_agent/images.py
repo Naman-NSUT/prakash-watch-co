@@ -186,6 +186,41 @@ def contradicts(expected: dict[str, str | None], grade: dict) -> str | None:
 
 
 #: Shot types that can be published, ordered by how well they sell a watch.
+def dial_score(image) -> float:
+    """How much this photograph looks like the front of a watch.
+
+    A dial carries hands, markers, a date window and printed text, and all of
+    that makes edges in the middle of the frame. A caseback is a brushed disc
+    with its engraving around the rim, and a bracelet or a clasp is smooth metal
+    — both are quiet in the centre where a dial is busy.
+
+    The grader's own label cannot be used for this. Asked about an Alba AG8Q32X1
+    it called the caseback a product shot at 0.22 and the dial a product shot at
+    0.14, so ordering by what it said put the back of the watch on the card. This
+    reads the picture instead. Measured on the listings that showed the fault:
+    dials 16.7 and 21.8, casebacks 7.9 and 8.5, bracelet shots 6.3 to 6.9.
+    """
+    from PIL import ImageFilter, ImageStat
+
+    try:
+        grey = image.convert("L")
+        width, height = grey.size
+        side = int(min(width, height) * 0.30)
+        if side < 8:
+            return 0.0
+        centre = grey.crop((
+            (width - side) // 2, (height - side) // 2,
+            (width + side) // 2, (height + side) // 2,
+        ))
+        return float(ImageStat.Stat(centre.filter(ImageFilter.FIND_EDGES)).mean[0])
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+#: Above this, the centre of the frame is busy enough to be a dial.
+DIAL_EDGE_FLOOR = 12.0
+
+
 #: Shots that may be lifted off their background.
 #:
 #: A product shot is an object on a plinth and the cut-out is the whole point:
@@ -626,6 +661,35 @@ async def process_images(
     # simply cover whatever we put behind it. Taken from a published photograph,
     # since that is the one the site will actually show.
     backdrop_id: str | None = None
+    # The front of the watch leads the gallery.
+    #
+    # Ranking by the grader's confidence is what put a caseback on a card: asked
+    # about a Tissot Ballade it scored the back 0.95 and the dial 0.05. So the
+    # order is settled by reading the pictures — a dial is busy in the middle
+    # where a caseback and a bracelet are quiet — and a scene goes last whatever
+    # it scored. Among equals the order they arrived in is kept, which is the
+    # shop's own gallery order.
+    if len(images) > 1:
+        faces: dict[str, float] = {}
+        for image in images:
+            file = Path(config.image_dir) / sku / image.url.rsplit("/", 1)[-1]
+            if file.exists():
+                try:
+                    with Image.open(file) as stored:
+                        faces[image.url] = dial_score(stored)
+                except Exception:  # noqa: BLE001
+                    pass
+        images = [
+            image for _, image in sorted(
+                enumerate(images),
+                key=lambda pair: (
+                    1 if pair[1].kind in ("wrist", "lifestyle", "packaging") else 0,
+                    0 if faces.get(pair[1].url, 0.0) >= DIAL_EDGE_FLOOR else 1,
+                    pair[0],
+                ),
+            )
+        ]
+
     if images and images[0].has_alpha:
         try:
             with Image.open(Path(config.image_dir) / sku / images[0].url.rsplit("/", 1)[-1]) as primary:
