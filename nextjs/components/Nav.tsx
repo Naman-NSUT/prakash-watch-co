@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { useEffect, useRef, useState } from "react";
+import NavSearch from "@/components/shop/NavSearch";
 
 /**
  * The house navigation.
@@ -125,6 +126,8 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
             <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--accent)", animation: "breathe 2.6s ease-in-out infinite" }} />
             <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.24em", color: "var(--muted)" }}>EST. 1976</span>
           </div>
+
+          <NavSearch />
 
           <ThemeToggle />
 

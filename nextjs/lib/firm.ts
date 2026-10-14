@@ -24,6 +24,17 @@ const FirmSchema = z.object({
   stateCode: z.string().default(""),
   financialYearStartMonth: z.number().min(1).max(12).default(4),
   signatory: z.string().default("Proprietor"),
+  /**
+   * The shop's Instagram. The handle is what the front page links to; the
+   * follower figure is only a fallback, used until Meta's API is connected and
+   * whenever it cannot be reached. See lib/social.ts.
+   */
+  instagram: z
+    .object({
+      handle: z.string().default(""),
+      followers: z.number().nonnegative().default(0),
+    })
+    .default({ handle: "", followers: 0 }),
 });
 export type Firm = z.infer<typeof FirmSchema>;
 

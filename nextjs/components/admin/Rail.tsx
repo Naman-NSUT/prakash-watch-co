@@ -6,6 +6,7 @@ import { Icons } from "./ui";
 const SECTIONS = [
   { href: "/admin", label: "Overview", icon: Icons.overview, exact: true },
   { href: "/admin/analytics", label: "Analytics", icon: Icons.chart },
+  { href: "/admin/orders", label: "Orders", icon: Icons.billing },
   { href: "/admin/billing", label: "Billing", icon: Icons.billing },
   { href: "/admin/books", label: "Books", icon: Icons.books },
   { href: "/admin/inventory", label: "Inventory", icon: Icons.inventory },

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import AddToBag from "@/components/shop/AddToBag";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import Gallery from "@/components/Gallery";
@@ -144,17 +145,16 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
               invitation changes rather than disappearing. */}
           <div style={{ display: "flex", gap: 13, marginTop: 38, flexWrap: "wrap" }}>
             {product.inStock && sellsOnline ? (
-              <>
-                <a href="tel:+919899645897" className="btn btn-solid">
-                  Call the boutique
-                </a>
-                <a
-                  href={`mailto:prakashwatchco@gmail.com?subject=${enquirySubject}`}
-                  className="btn btn-ghost"
-                >
-                  Reserve to try on
-                </a>
-              </>
+              <AddToBag
+                item={{
+                  sku: product.sku,
+                  slug: product.slug,
+                  title: product.title,
+                  brand: product.brand,
+                  image: product.images[0]?.url ?? "",
+                  price: product.price.selling ?? 0,
+                }}
+              />
             ) : (
               <>
                 <a

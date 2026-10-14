@@ -723,7 +723,13 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
 
 @media print {
-  @page { size: A4; margin: 13mm; }
+  /* The shop's invoice forms are 145 × 210mm — half of A4 lengthways, the size
+     the pad on the counter is cut to. Printing an A4 layout onto one either
+     ran off the edge or left the bottom third empty, so the sheet is declared
+     at its real size with a margin that leaves 125 × 190mm of printable area,
+     and the type is set down to suit it. A full-page record — the day book,
+     the ledger — still wants A4, and says so for itself. */
+  @page { size: 145mm 210mm; margin: 10mm; }
   html, body { background: #fff !important; color: #111 !important; }
   .grain, .ops-rail, .ops-noprint, details { display: none !important; }
   .ops { display: block; }
@@ -1843,4 +1849,104 @@ a.banner-card:hover { border-color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
   .facet-group-caret { transition: none; }
+}
+
+/* --- The invoice on its own form ------------------------------------------- */
+@media print {
+  /* 125mm of printable width is 70% of A4's, so everything is set to match
+     rather than scaled by the printer, which would blur the rules and the
+     letterhead. These sizes were chosen against the real figures a bill
+     carries: a 6-figure total, a model number, and up to eight lines. */
+  .bill-doc { width: 125mm; font-size: 8.5pt; line-height: 1.45; }
+  .bill-doc .ops-table { font-size: 8pt; }
+  .bill-doc .ops-table th,
+  .bill-doc .ops-table td { padding: 2.4mm 1.6mm; }
+  .bill-doc h1, .bill-doc .serif { font-size: 15pt; }
+  .bill-doc .doc-head { padding-bottom: 3mm; }
+  .bill-doc .doc-sign { margin-top: 12mm; }
+  .bill-doc footer { font-size: 6.5pt; line-height: 1.7; }
+  /* One bill, one sheet. A second page of an invoice is a lost invoice. */
+  .bill-doc { page-break-inside: avoid; }
+}
+
+/* A full-page record keeps A4: a day book or a ledger has columns that will not
+   fit a 125mm measure, and it is filed rather than handed over. */
+@media print {
+  .doc-a4 { page: a4sheet; }
+}
+@page a4sheet { size: A4; margin: 13mm; }
+
+/* --- The bag and the counter ------------------------------------------------
+   Two columns on a laptop — the watches and the address on the left, the money
+   on the right where it stays in view while the form is filled. One column on a
+   phone, with the total last, because a total above a form you have not filled
+   in is a number without a reason. */
+.checkout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; margin-top: 34px; }
+@media (max-width: 860px) { .checkout { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+.checkout-line { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 18px; align-items: center;
+  padding: 18px 0; border-bottom: 1px solid var(--line); }
+.checkout-shot { display: block; width: 76px; height: 76px; background: var(--well); border: 1px solid var(--line); }
+.checkout-shot img { width: 100%; height: 100%; object-fit: contain; }
+.checkout-step { width: 26px; height: 26px; border: 1px solid var(--border); color: var(--body); font-size: 14px; line-height: 1; }
+.checkout-step:hover { border-color: var(--accent); color: var(--accent); }
+.checkout-remove { font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); margin-left: 6px; }
+.checkout-remove:hover { color: var(--bad); }
+
+.checkout-form { margin-top: 34px; }
+.checkout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+
+.checkout-total { position: sticky; top: 104px; border: 1px solid var(--border); background: var(--panel); padding: 24px 22px; }
+@media (max-width: 860px) { .checkout-total { position: static; } }
+.checkout-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 7px 0; font-size: 13.5px; font-weight: 300; color: var(--body); }
+.checkout-row dd { margin: 0; }
+.checkout-sum { margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 16px; color: var(--text); }
+.checkout-sum dd { font-size: 19px; color: var(--accent-soft); }
+.checkout-errors { margin-top: 16px; padding: 12px 14px; border-left: 2px solid var(--bad-line); background: var(--well); }
+.checkout-errors p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.6; color: var(--bad); }
+.checkout-errors p:last-child { margin-bottom: 0; }
+
+/* --- The glass and the bag in the bar ---------------------------------------
+   The search opens across the whole bar rather than beside the wordmark: a
+   field squeezed next to a logo is four characters wide on a phone, and across
+   the bar it is obvious the shop has stopped doing anything else and is waiting
+   to be told what to look for. */
+.nav-icon {
+  position: relative; display: inline-grid; place-items: center;
+  width: 34px; height: 34px; color: var(--body);
+  transition: color .25s;
+}
+.nav-icon:hover { color: var(--accent); }
+.nav-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.nav-bag-count {
+  position: absolute; top: 2px; right: 1px;
+  min-width: 15px; height: 15px; padding: 0 4px;
+  display: grid; place-items: center; border-radius: 999px;
+  background: var(--accent); color: var(--panel);
+  font-size: 8.5px; line-height: 1; letter-spacing: 0;
+}
+
+.nav-search {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 var(--gutter);
+  background: var(--panel);
+  opacity: 0; visibility: hidden;
+  transition: opacity .25s, visibility 0s .25s;
+}
+.nav-search[data-open="true"] { opacity: 1; visibility: visible; transition: opacity .25s, visibility 0s; }
+.nav-search > svg { flex: none; color: var(--faint); }
+.nav-search input {
+  flex: 1 1 auto; min-width: 0; height: 100%;
+  background: none; border: none; color: var(--text);
+  font-family: var(--font-serif), serif; font-size: clamp(18px, 3.4vw, 27px);
+}
+.nav-search input::placeholder { color: var(--faint); font-size: clamp(14px, 2.4vw, 19px); }
+.nav-search input:focus { outline: none; }
+.nav-search-close { flex: none; display: grid; place-items: center; width: 32px; height: 32px; color: var(--muted); }
+.nav-search-close:hover { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-search { transition: none; }
 }

@@ -62,7 +62,12 @@ export const BillSchema = z.object({
   }),
   lines: z.array(BillLineSchema).min(1),
   gstRate: z.number().min(0).max(50),
-  /** Rupee amounts, all exclusive of tax except `total`. */
+  /**
+   * Rupee amounts. `subtotal`, `discount` and `total` are what the shop and the
+   * customer talk about, and all include GST — the ticket price is the price.
+   * `taxable` and `gstAmount` are that total split for the tax invoice, and
+   * taxable + gstAmount = total.
+   */
   subtotal: z.number(),
   discount: z.number(),
   taxable: z.number(),
@@ -225,9 +230,19 @@ export async function createBill(draft: BillDraft): Promise<BillResult> {
   if (errors.length) return { bill: null, errors };
   if (!lines.length) return { bill: null, errors: ["Nothing to bill."] };
 
+  // Every price in this shop includes GST, because that is what the ticket on
+  // the watch says and what the customer hands over. A ₹20,000 watch is ₹20,000
+  // at the counter, not ₹23,600 — so the tax is worked backwards out of the
+  // price rather than added on top of it:
+  //
+  //     taxable = charged ÷ 1.18      GST = charged − taxable
+  //
+  // The invoice still has to show both figures separately, because that is what
+  // makes it a tax invoice and what a customer claiming input credit needs.
   const listTotal = lines.reduce((sum, line) => sum + line.listPrice * line.quantity, 0);
-  const taxable = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-  const gstAmount = round2((taxable * draft.gstRate) / 100);
+  const charged = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+  const taxable = round2(charged / (1 + draft.gstRate / 100));
+  const gstAmount = round2(charged - taxable);
 
   const now = new Date();
   const bill: Bill = {
@@ -238,10 +253,10 @@ export async function createBill(draft: BillDraft): Promise<BillResult> {
     lines,
     gstRate: draft.gstRate,
     subtotal: round2(listTotal),
-    discount: round2(Math.max(0, listTotal - taxable)),
-    taxable: round2(taxable),
+    discount: round2(Math.max(0, listTotal - charged)),
+    taxable,
     gstAmount,
-    total: round2(taxable + gstAmount),
+    total: round2(charged),
     payment: draft.payment,
     note: draft.note,
     status: "paid",

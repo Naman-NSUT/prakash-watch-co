@@ -40,7 +40,7 @@ export default async function JobCardPage({ params }: { params: Promise<{ id: st
         <Link href={`/admin/billing/repair`} className="ops-btn">Bill this work</Link>
       </div>
 
-      <article className="doc-page">
+      <article className="doc-page bill-doc">
         <Letterhead firm={firm} title="Job card" period={ticket.ref} note={`Received ${when(ticket.createdAt)}`} />
 
         <section className="job-grid">

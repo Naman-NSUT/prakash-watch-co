@@ -35,7 +35,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
         </p>
       )}
 
-      <article className="ops-panel" style={{ maxWidth: 780, padding: 32 }}>
+      <article className="ops-panel bill-doc" style={{ maxWidth: 780, padding: 32 }}>
         <header style={{ display: "flex", justifyContent: "space-between", gap: 24, flexWrap: "wrap", paddingBottom: 20, borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="serif" style={{ fontSize: 26 }}>Prakash Watch Co.</div>
@@ -98,8 +98,10 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
           <dl style={{ margin: 0, minWidth: 260 }}>
             <Line label={`Subtotal (${units} watch${units === 1 ? "" : "es"})`} value={formatInr(bill.subtotal)} />
             {bill.discount > 0 && <Line label="Discount" value={`− ${formatInr(bill.discount)}`} />}
+            {/* The split, not an addition: the prices above already include the
+                tax, so these two add up to the total rather than on top of it. */}
             <Line label="Taxable value" value={formatInr(bill.taxable)} />
-            <Line label={`GST @ ${bill.gstRate}%`} value={formatInr(bill.gstAmount)} />
+            <Line label={`GST @ ${bill.gstRate}% (included)`} value={formatInr(bill.gstAmount)} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
               <dt style={{ fontSize: 13 }}>Total paid</dt>
               <dd className="mono" style={{ margin: 0, fontSize: 20, color: "var(--accent-soft)" }}>{formatInr(bill.total)}</dd>

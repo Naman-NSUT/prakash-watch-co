@@ -59,7 +59,7 @@ export default async function PrintBooksPage({
   const demoNote = hasDemo ? "Includes sample data — not for filing" : undefined;
 
   return (
-    <div className="doc">
+    <div className="doc doc-a4">
       <div className="ops-noprint" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <Link href="/admin/books" className="mono" style={{ fontSize: 9.5, letterSpacing: ".18em", color: "var(--faint)", textTransform: "uppercase" }}>
           ← Books
