@@ -31,6 +31,7 @@ from .config import AgentConfig
 from .http_client import HttpClient
 from .images import MAX_ASSET_BYTES, average_hash, hamming, open_bounded, prepare_background
 from .models import WatchProduct
+from .sitemap import find_on_brand_site
 from .storefront import find_product
 from .topup import NEAR_DUPLICATE, asset_name, canonical_image, _NOT_A_WATCH
 from .trust import official_domains, tier
@@ -147,26 +148,37 @@ async def promote_product(
     try:
         hit, _note = await find_product(hosts, reference, http, cache, brand)
     except Exception:  # noqa: BLE001
-        return {"state": "shop would not answer"}
-    if not hit:
-        return {"state": "brand's shop does not carry it"}
+        hit = None
 
-    photos = await _official_photographs(product, list(hit.images), hit.url, config, http, target)
+    if hit:
+        page, gallery, title = hit.url, list(hit.images), hit.title
+    else:
+        # No feed, or a feed that does not carry it. Several brands publish no
+        # feed at all and still list every product page in a sitemap that names
+        # the reference, which answers the same question for the price of one
+        # file. Tissot is 580 references that way.
+        found = await find_on_brand_site(brand, reference, http, cache)
+        if not found:
+            return {"state": "brand's shop does not carry it"}
+        page, gallery = found
+        title = f"{brand} {reference}"
+
+    photos = await _official_photographs(product, gallery, page, config, http, target)
 
     product["sources"] = [
         *sources,
         {
             "index": len(sources),
-            "url": hit.url,
-            "title": hit.title or f"{brand} {reference}",
-            "publisher": hit.url.split("//")[-1].split("/")[0].removeprefix("www."),
+            "url": page,
+            "title": title or f"{brand} {reference}",
+            "publisher": page.split("//")[-1].split("/")[0].removeprefix("www."),
             "kind": "official",
             "fetchedAt": now_iso(),
         },
     ]
     if photos:
         product["images"] = [*(product.get("images") or []), *photos]
-    return {"state": "promoted", "url": hit.url, "photographs": len(photos)}
+    return {"state": "promoted", "url": page, "photographs": len(photos)}
 
 
 async def run_promotion(
