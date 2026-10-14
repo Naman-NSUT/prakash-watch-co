@@ -33,9 +33,10 @@ from .http_client import HttpClient
 from .background import analyse_background
 from .images import (
     CUTOUT_SHOTS,
-    DIAL_EDGE_FLOOR,
     MAX_ASSET_BYTES,
+    MIN_FRAME_FILL,
     dial_score,
+    frame_fill,
     open_bounded,
     prepare_background,
 )
@@ -46,7 +47,7 @@ from .util import read_json
 SHOT_ORDER = {"product": 0, "detail": 1, "packaging": 2, "wrist": 3, "lifestyle": 4}
 
 
-def ordered(images: list[dict], scores: dict[str, float] | None = None) -> list[dict]:
+def ordered(images: list[dict], scores: dict[str, tuple[float, float]] | None = None) -> list[dict]:
     """The gallery in the order a shop would lay it out.
 
     The front of the watch leads. Which photograph that is comes from the
@@ -55,21 +56,35 @@ def ordered(images: list[dict], scores: dict[str, float] | None = None) -> list[
     caseback and the dial were both called product shots, and the caseback was
     the more confident of the two.
 
-    A scene is always last, whatever it scores, and among equals the order the
+    Two readings decide it, because neither is enough alone. Busyness in the
+    middle tells a dial from a caseback, but a watch photographed small on a
+    marble slab beats a clean studio dial on busyness, since the stone makes
+    edges too — so how much of the frame the watch occupies is read as well, and
+    a picture the watch does not fill cannot lead however busy it is.
+
+    The comparison is within the listing rather than against a fixed bar. A bar
+    is the wrong instrument: 174 listings had their best photograph at 10 to 12
+    against a floor of 12, and a watch with a plain dial and no date is simply
+    quieter than a chronograph. The dial does not have to be busy in absolute
+    terms — only busier than this watch's own caseback and bracelet, which it
+    always is.
+
+    A scene is always last whatever it scores, and among equals the order the
     shop's own gallery used is kept.
     """
     scores = scores or {}
 
     def rank(pair):
         index, image = pair
+        url = image.get("url") or ""
         kind = image.get("kind") or ""
         scene = SHOT_ORDER.get(kind, 5) >= SHOT_ORDER["wrist"]
-        looks_like_a_dial = scores.get(image.get("url") or "", 0.0) >= DIAL_EDGE_FLOOR
+        busy, fill = scores.get(url, (0.0, 0.0))
         return (
-            1 if scene else 0,            # scenes last
-            0 if looks_like_a_dial else 1,  # the front of the watch first
-            SHOT_ORDER.get(kind, 5),      # then the grader's view, as a tiebreak
-            index,                        # then the shop's own order
+            1 if scene else 0,                        # scenes last
+            0 if fill >= MIN_FRAME_FILL else 1,       # then anything too small to lead
+            -busy,                                    # then the busiest centre: the dial
+            index,                                    # then the shop's own order
         )
 
     return [image for _, image in sorted(enumerate(images), key=rank)]
@@ -195,13 +210,13 @@ async def run_tidy(
                     rematted += 1
                     changed = True
 
-            scores: dict[str, float] = {}
+            scores: dict[str, tuple[float, float]] = {}
             for image in images:
                 file = Path(config.image_dir) / product["sku"] / (image.get("url") or "").rsplit("/", 1)[-1]
                 if file.exists():
                     try:
                         with Image.open(file) as stored:
-                            scores[image.get("url") or ""] = dial_score(stored)
+                            scores[image.get("url") or ""] = (dial_score(stored), frame_fill(stored))
                     except Exception:  # noqa: BLE001
                         pass
             new_order = ordered(images, scores)

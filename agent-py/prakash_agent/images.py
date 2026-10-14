@@ -221,6 +221,35 @@ def dial_score(image) -> float:
 DIAL_EDGE_FLOOR = 12.0
 
 
+def frame_fill(image) -> float:
+    """How much of the frame the subject occupies, 0 to 1.
+
+    A studio shot of a watch fills its frame; a watch photographed small on a
+    marble slab leaves most of the canvas empty, and the slab's own texture
+    makes enough edges in the middle to beat a clean dial on busyness alone.
+    That is how a Titan's hero became a small angled shot on stone. Measured:
+    the studio dial covers 38% of its frame, the marble shot 14%.
+    """
+    from PIL import ImageChops, ImageStat
+
+    try:
+        rgb = image.convert("RGB")
+        width, height = rgb.size
+        patch = max(4, min(width, height) // 12)
+        corner = ImageStat.Stat(rgb.crop((0, 0, patch, patch))).mean[:3]
+        ground = Image.new("RGB", rgb.size, tuple(int(c) for c in corner))
+        difference = ImageChops.difference(rgb, ground).convert("L")
+        subject = difference.point(lambda value: 0 if value <= 12 else 255)
+        return float(ImageStat.Stat(subject).mean[0] / 255)
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+#: Below this the watch is a small object in a large picture, whatever else is
+#: in the frame. Such a photograph can sit in a gallery; it should not lead one.
+MIN_FRAME_FILL = 0.20
+
+
 #: Shots that may be lifted off their background.
 #:
 #: A product shot is an object on a plinth and the cut-out is the whole point:
@@ -670,13 +699,13 @@ async def process_images(
     # it scored. Among equals the order they arrived in is kept, which is the
     # shop's own gallery order.
     if len(images) > 1:
-        faces: dict[str, float] = {}
+        faces: dict[str, tuple[float, float]] = {}
         for image in images:
             file = Path(config.image_dir) / sku / image.url.rsplit("/", 1)[-1]
             if file.exists():
                 try:
                     with Image.open(file) as stored:
-                        faces[image.url] = dial_score(stored)
+                        faces[image.url] = (dial_score(stored), frame_fill(stored))
                 except Exception:  # noqa: BLE001
                     pass
         images = [
@@ -684,7 +713,8 @@ async def process_images(
                 enumerate(images),
                 key=lambda pair: (
                     1 if pair[1].kind in ("wrist", "lifestyle", "packaging") else 0,
-                    0 if faces.get(pair[1].url, 0.0) >= DIAL_EDGE_FLOOR else 1,
+                    0 if faces.get(pair[1].url, (0.0, 0.0))[1] >= MIN_FRAME_FILL else 1,
+                    -faces.get(pair[1].url, (0.0, 0.0))[0],
                     pair[0],
                 ),
             )
