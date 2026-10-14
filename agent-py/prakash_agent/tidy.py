@@ -47,7 +47,7 @@ from .util import read_json
 SHOT_ORDER = {"product": 0, "detail": 1, "packaging": 2, "wrist": 3, "lifestyle": 4}
 
 
-def ordered(images: list[dict], scores: dict[str, tuple[float, float]] | None = None) -> list[dict]:
+def ordered(images: list[dict], scores: dict[str, tuple[float, bool]] | None = None) -> list[dict]:
     """The gallery in the order a shop would lay it out.
 
     The front of the watch leads. Which photograph that is comes from the
@@ -56,11 +56,17 @@ def ordered(images: list[dict], scores: dict[str, tuple[float, float]] | None = 
     caseback and the dial were both called product shots, and the caseback was
     the more confident of the two.
 
-    Two readings decide it, because neither is enough alone. Busyness in the
-    middle tells a dial from a caseback, but a watch photographed small on a
-    marble slab beats a clean studio dial on busyness, since the stone makes
-    edges too — so how much of the frame the watch occupies is read as well, and
-    a picture the watch does not fill cannot lead however busy it is.
+    Two readings decide it, because neither is enough alone.
+
+    Where the detail sits tells a dial from a caseback and from a size-guide
+    diagram: a watch is busy in the middle and quiet around it, while a caseback
+    and a diagram are evenly busy. But a watch photographed small on a marble
+    slab reads as busy-in-the-middle too, since the stone sits outside the
+    centre crop. So the ground is read as well, from the photograph as the shop
+    published it: a watch on a plain ground may lead, a watch on a surface may
+    not. How much of the frame the watch fills cannot be used for this — a white
+    Armani Exchange on white measures 5.7% full and is the best photograph in
+    its listing.
 
     The comparison is within the listing rather than against a fixed bar. A bar
     is the wrong instrument: 174 listings had their best photograph at 10 to 12
@@ -79,12 +85,12 @@ def ordered(images: list[dict], scores: dict[str, tuple[float, float]] | None = 
         url = image.get("url") or ""
         kind = image.get("kind") or ""
         scene = SHOT_ORDER.get(kind, 5) >= SHOT_ORDER["wrist"]
-        busy, fill = scores.get(url, (0.0, 0.0))
+        busy, studio = scores.get(url, (0.0, False))
         return (
-            1 if scene else 0,                        # scenes last
-            0 if fill >= MIN_FRAME_FILL else 1,       # then anything too small to lead
-            -busy,                                    # then the busiest centre: the dial
-            index,                                    # then the shop's own order
+            1 if scene else 0,        # scenes last
+            0 if studio else 1,       # then anything shot on a surface rather than a plain ground
+            -busy,                    # then the picture whose detail is in the middle: the dial
+            index,                    # then the shop's own order
         )
 
     return [image for _, image in sorted(enumerate(images), key=rank)]
@@ -171,6 +177,7 @@ async def run_tidy(
     *,
     limit: int | None = None,
     dry_run: bool = False,
+    reorder_only: bool = False,
     on_each: Callable[[str, dict], None] | None = None,
 ) -> dict[str, Any]:
     data_dir = Path(config.data_dir)
@@ -201,7 +208,7 @@ async def run_tidy(
             # is stored, so this needs no list of which fault applied to which
             # picture.
             for image in images:
-                if not image.get("hasAlpha"):
+                if reorder_only or not image.get("hasAlpha"):
                     continue
                 if dry_run:
                     rematted += 1
@@ -210,15 +217,30 @@ async def run_tidy(
                     rematted += 1
                     changed = True
 
-            scores: dict[str, tuple[float, float]] = {}
+            scores: dict[str, tuple[float, bool]] = {}
             for image in images:
                 file = Path(config.image_dir) / product["sku"] / (image.get("url") or "").rsplit("/", 1)[-1]
-                if file.exists():
-                    try:
-                        with Image.open(file) as stored:
-                            scores[image.get("url") or ""] = (dial_score(stored), frame_fill(stored))
-                    except Exception:  # noqa: BLE001
-                        pass
+                if not file.exists():
+                    continue
+                try:
+                    with Image.open(file) as stored:
+                        busy = dial_score(stored)
+                except Exception:  # noqa: BLE001
+                    continue
+                # Read from the photograph as the shop published it, because the
+                # stored copy sits on the shop's own canvas and its ground says
+                # nothing about where the watch was actually shot.
+                studio = True
+                source = image.get("sourceUrl")
+                if source:
+                    got = await http.get_binary(source, MAX_ASSET_BYTES)
+                    if got:
+                        try:
+                            with open_bounded(got[0]) as original:
+                                studio = analyse_background(original).is_plain
+                        except Exception:  # noqa: BLE001
+                            pass
+                scores[image.get("url") or ""] = (busy, studio)
             new_order = ordered(images, scores)
             if [i.get("url") for i in new_order] != [i.get("url") for i in images]:
                 images = new_order

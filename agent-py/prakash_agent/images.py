@@ -194,11 +194,18 @@ def dial_score(image) -> float:
     with its engraving around the rim, and a bracelet or a clasp is smooth metal
     — both are quiet in the centre where a dial is busy.
 
+    What is measured is how much of the picture's detail sits in the middle
+    rather than how much detail there is, because the second reading promoted a
+    size-guide diagram — rulers, a credit card, annotation text — to the front of
+    an Armani Exchange listing. A diagram is busy everywhere; a watch is busy in
+    the middle and quiet around it.
+
     The grader's own label cannot be used for this. Asked about an Alba AG8Q32X1
     it called the caseback a product shot at 0.22 and the dial a product shot at
-    0.14, so ordering by what it said put the back of the watch on the card. This
-    reads the picture instead. Measured on the listings that showed the fault:
-    dials 16.7 and 21.8, casebacks 7.9 and 8.5, bracelet shots 6.3 to 6.9.
+    0.14, so ordering by what it said put the back of the watch on the card.
+
+    Measured on the pictures that showed each fault: real dials 3.81, 4.41 and
+    6.81; a caseback 1.57; a size-guide diagram 1.76.
     """
     from PIL import ImageFilter, ImageStat
 
@@ -212,7 +219,11 @@ def dial_score(image) -> float:
             (width - side) // 2, (height - side) // 2,
             (width + side) // 2, (height + side) // 2,
         ))
-        return float(ImageStat.Stat(centre.filter(ImageFilter.FIND_EDGES)).mean[0])
+        busy_centre = ImageStat.Stat(centre.filter(ImageFilter.FIND_EDGES)).mean[0]
+        busy_frame = ImageStat.Stat(grey.filter(ImageFilter.FIND_EDGES)).mean[0]
+        if busy_frame <= 0.01:
+            return 0.0
+        return float(busy_centre / busy_frame)
     except Exception:  # noqa: BLE001
         return 0.0
 
