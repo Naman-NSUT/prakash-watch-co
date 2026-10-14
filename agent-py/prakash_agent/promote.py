@@ -85,6 +85,9 @@ async def _official_photographs(
                     oriented,
                     size=config.image_canvas,
                     background=config.image_background,
+                    # Both of these take product photography off a shop's own
+                    # gallery, which is product shots; a scene would not be
+                    # cut out even if one arrived. See images.CUTOUT_SHOTS.
                     attempt_cutout=config.image_cutout,
                     vision_background=None,
                 )

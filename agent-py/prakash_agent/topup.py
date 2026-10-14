@@ -260,6 +260,9 @@ async def top_up_product(
                     oriented,
                     size=config.image_canvas,
                     background=config.image_background,
+                    # Both of these take product photography off a shop's own
+                    # gallery, which is detail shots; a scene would not be
+                    # cut out even if one arrived. See images.CUTOUT_SHOTS.
                     attempt_cutout=config.image_cutout,
                     vision_background=None,
                 )

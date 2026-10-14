@@ -28,6 +28,11 @@ PLAIN_STDDEV_LIMIT = 14.0
 #: How far the four corners may differ before the background is read as a gradient.
 CORNER_AGREEMENT_LIMIT = 20.0
 
+#: Variation along the border itself. Looser than a single corner, because a soft
+#: studio vignette is still a plain background, and tight enough that a sleeve, a
+#: hand or a table edge crossing the frame fails it.
+BORDER_STDDEV_LIMIT = 18.0
+
 #: A flood that leaves more than this much of the frame standing has not really
 #: taken hold — usually a gradient that stopped the fill partway.
 MAX_KEPT_FRACTION = 0.82
@@ -73,10 +78,44 @@ def analyse_background(image: Image.Image) -> BackgroundReport:
     spread = max(max(m[c] for m in means) - min(m[c] for m in means) for c in range(3))
 
     colour = tuple(int(round(sum(m[c] for m in means) / len(means))) for c in range(3))
+
+    # The whole border, not only its four corners.
+    #
+    # The fill is seeded from the corners AND the middle of each edge, so the
+    # corners agreeing is not enough: on a model photographed against white, all
+    # four corners were white while the middle of one edge sat on her black
+    # knitwear. The fill started there and took the clothing for background, and
+    # a watch listing went out with a hole through the model's shoulder.
+    #
+    # So a picture counts as plain only if nothing is standing anywhere along the
+    # border — which is the same question as "is this only the watch?". A person,
+    # a table, a prop or a second watch all cross the border somewhere.
+    edge = max(2, min(width, height) // 40)
+    band = [
+        rgb.crop((0, 0, width, edge)),
+        rgb.crop((0, height - edge, width, height)),
+        rgb.crop((0, 0, edge, height)),
+        rgb.crop((width - edge, 0, width, height)),
+    ]
+    border_stats = [ImageStat.Stat(strip) for strip in band]
+    border_flatness = max(max(stat.stddev[:3]) for stat in border_stats)
+    border_drift = max(
+        abs(stat.mean[channel] - colour[channel])
+        for stat in border_stats
+        for channel in range(3)
+    )
+    border_is_clear = (
+        border_flatness <= BORDER_STDDEV_LIMIT and border_drift <= CORNER_AGREEMENT_LIMIT
+    )
+
     return BackgroundReport(
-        is_plain=flatness <= PLAIN_STDDEV_LIMIT and spread <= CORNER_AGREEMENT_LIMIT,
+        is_plain=(
+            flatness <= PLAIN_STDDEV_LIMIT
+            and spread <= CORNER_AGREEMENT_LIMIT
+            and border_is_clear
+        ),
         colour=colour,  # type: ignore[arg-type]
-        stddev=max(flatness, spread),
+        stddev=max(flatness, spread, border_flatness),
         is_light=sum(colour) / 3 >= 128,
     )
 

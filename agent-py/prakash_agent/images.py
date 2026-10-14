@@ -186,6 +186,16 @@ def contradicts(expected: dict[str, str | None], grade: dict) -> str | None:
 
 
 #: Shot types that can be published, ordered by how well they sell a watch.
+#: Shots that may be lifted off their background.
+#:
+#: A product shot is an object on a plinth and the cut-out is the whole point:
+#: the backdrop becomes the shop's decision rather than the photographer's. A
+#: lifestyle or wrist shot is a scene — a person, a sleeve, a bag — and the
+#: matting has no object to find. Asked to cut one out it took the model's black
+#: knitwear for background and tore a hole through her shoulder, which is what
+#: reached the shop's own window. Those are left exactly as the brand shot them.
+CUTOUT_SHOTS = frozenset({"product", "detail"})
+
 SHOT_PRIORITY = {
     "product": 3.0,
     "detail": 2.0,
@@ -572,7 +582,7 @@ async def process_images(
                     oriented,
                     size=config.image_canvas,
                     background=config.image_background,
-                    attempt_cutout=config.image_cutout,
+                    attempt_cutout=config.image_cutout and entry["kind"] in CUTOUT_SHOTS,
                     vision_background=item.get("vision_background"),
                 )
 
