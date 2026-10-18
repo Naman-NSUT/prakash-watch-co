@@ -252,6 +252,11 @@ class WatchProduct(Model):
     tags: list[str] = Field(default_factory=list)
     in_stock: bool = True
     quantity: int | None = None
+    #: Whether this one watch may be bought on the site, overruling its house.
+    #: None — the default and what every listing means unless the shop changed
+    #: it — is "do whatever the brand does". Declared here so an agent run
+    #: round-trips the shop's own decision instead of quietly dropping it.
+    direct_sale: bool | None = None
     attributes: Attributes = Field(default_factory=Attributes)
     specs: list[Spec] = Field(default_factory=list)
     #: Named listing_copy in Python because `copy` shadows a BaseModel method;
@@ -290,6 +295,18 @@ class CatalogEntry(Model):
     tags: list[str] = Field(default_factory=list)
     image: ProductImage | None = None
     tagline: str = ""
+
+    #: What the stock room's own list needs, so it can be drawn from this file
+    #: rather than by opening all 1,900 artifacts on every page load. None of it
+    #: is for the shopfront; it is the three numbers and the flags that tell the
+    #: shop whether a listing is finished.
+    image_count: int = 0
+    spec_count: int = 0
+    confidence: float = 0.0
+    flags: list[str] = Field(default_factory=list)
+    #: True sells it online, false sends the buyer to the counter, None follows
+    #: the house's own setting.
+    direct_sale: bool | None = None
 
 
 class RowResult(Model):

@@ -63,6 +63,13 @@ const nextConfig = {
         { source: "/media/:path*", destination: `${backend}/media/:path*` },
         // A customer's repair ticket is written where the shop reads it.
         { source: "/api/service", destination: `${backend}/api/service` },
+        // And so is an order. This has to run on the back end for two separate
+        // reasons, either of which would be enough: the Razorpay keys live
+        // there and nowhere else, and the order itself is written to the disk —
+        // which this host does not have. Served from here, a customer would pay
+        // and the shop would have no record of it.
+        { source: "/api/checkout", destination: `${backend}/api/checkout` },
+        { source: "/api/checkout/:path*", destination: `${backend}/api/checkout/:path*` },
       ],
       afterFiles: [],
       fallback: [],

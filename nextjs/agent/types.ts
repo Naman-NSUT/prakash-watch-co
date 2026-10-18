@@ -294,6 +294,20 @@ export const CatalogEntrySchema = WatchProductSchema.pick({
   tags: z.array(z.string()).default([]),
   image: ProductImageSchema.nullable(),
   tagline: z.string(),
+
+  /**
+   * What the stock room's own list needs.
+   *
+   * Drawing that list meant opening all 1,900 artifacts on every page load —
+   * 1.7 seconds to show a hundred rows. These four fields are the only things
+   * the table wanted that this record did not already carry, so it can now be
+   * built from this one file like the shopfront is. Defaulted, because an index
+   * written before they existed must still parse.
+   */
+  imageCount: z.number().int().nonnegative().default(0),
+  specCount: z.number().int().nonnegative().default(0),
+  confidence: z.number().default(0),
+  flags: z.array(z.string()).default([]),
 });
 
 /** One generated backdrop from the library the agent writes. */

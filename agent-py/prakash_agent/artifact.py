@@ -461,6 +461,11 @@ def rebuild_index(config: AgentConfig) -> list[dict]:
                 tags=product.tags,
                 image=product.images[0] if product.images else None,
                 tagline=product.listing_copy.tagline,
+                image_count=len(product.images),
+                spec_count=len(product.specs),
+                confidence=product.confidence.overall,
+                flags=list(product.review.flags),
+                direct_sale=product.direct_sale,
             )
         )
 

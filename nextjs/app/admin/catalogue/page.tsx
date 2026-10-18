@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import UploadPanel from "@/components/admin/UploadPanel";
 import RerunPanel from "@/components/admin/RerunPanel";
-import { getAllProducts } from "@/lib/catalog";
+import { getCatalogIndex } from "@/lib/catalog";
 import { Empty, PageHead, formatInr } from "@/components/admin/ui";
 import OpsPager, { OPS_PAGE_SIZE } from "@/components/admin/OpsPager";
 import CatalogueSearch from "@/components/admin/CatalogueSearch";
@@ -18,7 +18,9 @@ export default async function CataloguePage({
   searchParams: Promise<{ status?: string; flag?: string; page?: string; q?: string }>;
 }) {
   const { status, flag, page: pageParam, q } = await searchParams;
-  const products = await getAllProducts();
+  // The index, not the artifacts. Opening all 1,900 of them to draw a hundred
+  // rows cost 1.7 seconds a click; this file carries everything the table shows.
+  const products = await getCatalogIndex();
   // What each house does, so a row can label its default without the shop
   // having to remember which brands it sells online.
   const houses = new Map((await getBrands()).map((house) => [house.slug, house.directSale]));
@@ -32,7 +34,7 @@ export default async function CataloguePage({
       .some((field) => String(field).toLowerCase().includes(needle));
 
   const shown = products.filter(matches).filter((product) => {
-    if (flag) return product.review.flags.includes(flag as never);
+    if (flag) return product.flags.includes(flag);
     if (status === "review") return product.status !== "ready";
     if (status === "live") return product.status === "ready";
     return true;
@@ -48,6 +50,8 @@ export default async function CataloguePage({
   const page = Math.min(Math.max(1, Number(pageParam) || 1), pages);
   const shownPage = ordered.slice((page - 1) * OPS_PAGE_SIZE, page * OPS_PAGE_SIZE);
 
+  const live = products.filter((p) => p.status === "ready").length;
+
   const pageHref = (next: number) => {
     const query = new URLSearchParams();
     if (status) query.set("status", status);
@@ -58,14 +62,33 @@ export default async function CataloguePage({
     return search ? `/admin/catalogue?${search}` : "/admin/catalogue";
   };
 
-  const live = products.filter((p) => p.status === "ready").length;
-
   return (
     <>
       <PageHead
         title="Catalogue"
-        lead="Every listing the agent has produced. Upload a stock sheet and it researches, writes and photographs each watch, then holds it here for your approval."
+        lead={
+          `${live.toLocaleString("en-IN")} of ${products.length.toLocaleString("en-IN")} listings are on the website. ` +
+          `${(products.length - live).toLocaleString("en-IN")} are still waiting for you to approve them, and are shown first below.`
+        }
       />
+
+      {/* The question this page is opened to answer: what is up, and what is
+          not. It was answerable before — the chips carried the counts — but the
+          list itself opens on the review queue, so a hundred rows marked
+          "Review" read as "nothing has been uploaded". Said plainly here
+          instead, above everything else on the page. */}
+      <div className="ops-split">
+        <Link href="/admin/catalogue?status=live" className="ops-split-half" data-tone="good">
+          <span className="ops-split-figure mono">{live.toLocaleString("en-IN")}</span>
+          <span className="ops-split-label">On the website</span>
+          <span className="ops-split-note">Customers can see and search these</span>
+        </Link>
+        <Link href="/admin/catalogue?status=review" className="ops-split-half" data-tone="warn">
+          <span className="ops-split-figure mono">{(products.length - live).toLocaleString("en-IN")}</span>
+          <span className="ops-split-label">Not uploaded yet</span>
+          <span className="ops-split-note">Held until you approve each one</span>
+        </Link>
+      </div>
 
       <Suspense fallback={<div className="ops-search" />}>
         <CatalogueSearch initial={q ?? ""} total={products.length} />
@@ -86,11 +109,11 @@ export default async function CataloguePage({
       <nav aria-label="Filter listings" style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "20px 0 12px" }}>
         <Link href="/admin/catalogue" className="ops-chip" data-tone={!status && !flag ? "good" : "mute"}>All {products.length}</Link>
         <Link href="/admin/catalogue?status=review" className="ops-chip" data-tone={status === "review" ? "warn" : "mute"}>
-          Awaiting review {products.length - live}
+          Not uploaded {products.length - live}
         </Link>
-        <Link href="/admin/catalogue?status=live" className="ops-chip" data-tone={status === "live" ? "good" : "mute"}>Live {live}</Link>
+        <Link href="/admin/catalogue?status=live" className="ops-chip" data-tone={status === "live" ? "good" : "mute"}>On the website {live}</Link>
         <Link href="/admin/catalogue?flag=provisional-image" className="ops-chip" data-tone={flag === "provisional-image" ? "warn" : "mute"}>
-          Unconfirmed photo {products.filter((p) => p.review.flags.includes("provisional-image")).length}
+          Unconfirmed photo {products.filter((p) => p.flags.includes("provisional-image")).length}
         </Link>
       </nav>
 
@@ -116,8 +139,8 @@ export default async function CataloguePage({
                 <tr key={product.sku}>
                   <td>
                     <span style={{ position: "relative", display: "block", width: 34, height: 34, background: "var(--well)", border: "1px solid var(--line)" }}>
-                      {product.images[0] && (
-                        <Image src={product.images[0].url} alt="" fill sizes="34px" style={{ objectFit: "contain", padding: 2 }} />
+                      {product.image && (
+                        <Image src={product.image.url} alt="" fill sizes="34px" style={{ objectFit: "contain", padding: 2 }} />
                       )}
                     </span>
                   </td>
@@ -129,7 +152,7 @@ export default async function CataloguePage({
                   </td>
                   <td>
                     <span style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                      {product.review.flags.slice(0, 2).map((f) => (
+                      {product.flags.slice(0, 2).map((f) => (
                         <span key={f} className="ops-chip" data-tone={f === "provisional-image" ? "warn" : "mute"} style={{ fontSize: 8 }}>
                           {f.replace(/-/g, " ")}
                         </span>
@@ -141,10 +164,10 @@ export default async function CataloguePage({
                       ? <span style={{ color: "var(--faint)" }}>not priced</span>
                       : formatInr(product.price.selling)}
                   </td>
-                  <td className="ops-num" style={{ color: product.images.length ? "var(--body)" : "var(--bad)" }}>{product.images.length}</td>
-                  <td className="ops-num">{product.specs.length}</td>
-                  <td className="ops-num" style={{ color: product.confidence.overall > 0.7 ? "var(--accent)" : "var(--dim)" }}>
-                    {(product.confidence.overall * 100).toFixed(0)}%
+                  <td className="ops-num" style={{ color: product.imageCount ? "var(--body)" : "var(--bad)" }}>{product.imageCount}</td>
+                  <td className="ops-num">{product.specCount}</td>
+                  <td className="ops-num" style={{ color: product.confidence > 0.7 ? "var(--accent)" : "var(--dim)" }}>
+                    {(product.confidence * 100).toFixed(0)}%
                   </td>
                   <td>
                     <SellCell
@@ -155,8 +178,8 @@ export default async function CataloguePage({
                   </td>
                   <td>
                     {product.status === "ready"
-                      ? <span className="ops-chip" data-tone="good">Live</span>
-                      : <span className="ops-chip" data-tone="warn">Review</span>}
+                      ? <span className="ops-chip" data-tone="good">On the website</span>
+                      : <span className="ops-chip" data-tone="warn">Not uploaded</span>}
                   </td>
                 </tr>
               ))}

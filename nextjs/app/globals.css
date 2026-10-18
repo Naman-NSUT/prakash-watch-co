@@ -1950,3 +1950,17 @@ a.banner-card:hover { border-color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .nav-search { transition: none; }
 }
+
+/* --- What is up, and what is not --------------------------------------------
+   The first thing the stock room is opened to find out. Two halves rather than
+   a sentence, because the comparison is the answer: a shop wants to see the
+   two numbers against each other, and reach either list in one press. */
+.ops-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: var(--ops-3) 0 var(--ops-4); }
+@media (max-width: 620px) { .ops-split { grid-template-columns: 1fr; } }
+.ops-split-half { display: block; padding: 20px 22px; background: var(--card); transition: background-color .25s; }
+.ops-split-half:hover { background: var(--card-hover); }
+.ops-split-figure { display: block; font-size: 30px; line-height: 1; }
+.ops-split-half[data-tone="good"] .ops-split-figure { color: var(--accent); }
+.ops-split-half[data-tone="warn"] .ops-split-figure { color: var(--warn); }
+.ops-split-label { display: block; margin-top: 10px; font-size: 14px; color: var(--text); }
+.ops-split-note { display: block; margin-top: 4px; font-size: 11.5px; font-weight: 300; color: var(--dim); }
