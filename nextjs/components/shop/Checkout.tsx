@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBag } from "./Cart";
 
 /**
@@ -34,12 +34,33 @@ export default function Checkout() {
   const [busy, setBusy] = useState(false);
 
   // Razorpay's own script, loaded once and only on this page.
+  //
+  // Waited for rather than hoped for: it is fetched asynchronously, and a
+  // customer who fills the form quickly could press Pay before it arrived and
+  // be told to check a connection that was never the problem.
+  const script = useRef<Promise<boolean> | null>(null);
+
+  function loadRazorpay(): Promise<boolean> {
+    if (window.Razorpay) return Promise.resolve(true);
+    if (script.current) return script.current;
+    script.current = new Promise<boolean>((resolve) => {
+      const tag = document.createElement("script");
+      tag.src = "https://checkout.razorpay.com/v1/checkout.js";
+      tag.async = true;
+      tag.onload = () => resolve(Boolean(window.Razorpay));
+      tag.onerror = () => {
+        script.current = null;
+        resolve(false);
+      };
+      document.body.appendChild(tag);
+    });
+    return script.current;
+  }
+
   useEffect(() => {
-    if (window.Razorpay) return;
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    document.body.appendChild(script);
+    void loadRazorpay();
+    // Loaded once for the life of the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const total = bag.items.reduce((sum, line) => sum + line.price * line.quantity, 0);
@@ -66,12 +87,21 @@ export default function Checkout() {
         setErrors(payload.errors ?? ["That did not work. Please try again."]);
         return;
       }
-      if (!window.Razorpay) {
-        setErrors(["The payment window could not load. Please check your connection and try again."]);
+      if (!(await loadRazorpay())) {
+        setErrors([
+          "The payment window would not load. Your order is saved — telephone the boutique on +91 98996 45897 " +
+            "with the number above and we will take the payment there.",
+        ]);
         return;
       }
 
-      const checkout = new window.Razorpay({
+      const Razorpay = window.Razorpay;
+      if (!Razorpay) {
+        setErrors(["The payment window would not open. Please telephone the boutique and we will take the order."]);
+        return;
+      }
+
+      const checkout = new Razorpay({
         key: payload.keyId,
         order_id: payload.razorpayOrderId,
         amount: payload.amountPaise,

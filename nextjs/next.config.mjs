@@ -91,15 +91,24 @@ const nextConfig = {
           "default-src 'self'",
           // next/font inlines its faces; the framework needs inline styles.
           "style-src 'self' 'unsafe-inline'",
-          // Next's runtime evaluates its own chunks.
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-          // The back end, when the photographs are loaded from it directly.
-          `img-src 'self' data: blob:${backendUrl ? ` ${backendUrl.origin}` : ""}`,
+          // Next's runtime evaluates its own chunks. Razorpay's checkout is the
+          // one script from anywhere else, and it has to be named here or the
+          // payment window cannot load at all — which is exactly what happened:
+          // the policy said 'self' and the customer was told to check their
+          // connection, which was fine.
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com",
+          // The back end, when the photographs are loaded from it directly, and
+          // Razorpay's own marks inside its window.
+          `img-src 'self' data: blob: https://*.razorpay.com${backendUrl ? ` ${backendUrl.origin}` : ""}`,
           "font-src 'self' data:",
-          "connect-src 'self'",
+          // Checkout talks to Razorpay's API and its logging host while it is open.
+          "connect-src 'self' https://*.razorpay.com",
+          // The payment window itself is an iframe Razorpay serves.
+          "frame-src https://*.razorpay.com",
           "frame-ancestors 'none'",
           "base-uri 'self'",
-          "form-action 'self'",
+          // A card submission posts to Razorpay, not back to the shop.
+          "form-action 'self' https://*.razorpay.com",
           "object-src 'none'",
         ].join("; "),
       },
