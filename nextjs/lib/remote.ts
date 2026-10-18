@@ -50,7 +50,14 @@ export async function remoteJson<T>(path: string): Promise<T> {
   const pending = (async () => {
     const response = await fetch(`${BACKEND}${path}`, {
       headers: TOKEN ? { "x-pwc-token": TOKEN } : undefined,
-      cache: "no-store",
+      // Vercel's own data cache rather than no-store, for the same window the
+      // in-memory one uses. The difference is where it lives: the map above is
+      // per instance and dies with it, so a customer arriving on a cold
+      // instance while the back end restarts — which it does on every deploy,
+      // a persistent disk cannot be handed over live — had nothing to fall back
+      // on and saw an error page. This cache is shared and durable, and keeps
+      // serving the last good answer while a revalidation is failing.
+      next: { revalidate: Math.round(FRESH_FOR_MS / 1000) },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (response.status === 404) return null;

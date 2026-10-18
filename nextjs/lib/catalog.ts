@@ -182,12 +182,34 @@ export async function getCollectionSummaries(): Promise<CollectionSummary[]> {
  */
 let indexMemo: { signature: string; entries: CatalogEntry[] } | null = null;
 
+/**
+ * The last catalogue this instance saw, kept against the back end going away.
+ *
+ * The back end restarts on every deploy — a persistent disk cannot be handed
+ * from one instance to the next, so Render stops the old one first — and a
+ * customer who arrives during those two minutes reaches a Vercel instance that
+ * may have been started in the same moment and so has nothing cached. Without
+ * this it would rethrow, and the shop would show an error page because its
+ * stock room was being updated.
+ *
+ * Stale stock beats no shop. The figures might be a few minutes old; the
+ * alternative is a customer who thinks the business has gone under.
+ */
+let lastGoodIndex: CatalogEntry[] | null = null;
+
 export const getCatalogIndex = cache(async function getCatalogIndex(): Promise<CatalogEntry[]> {
   if (isRemote()) {
-    const entries = (await remoteJson<CatalogEntry[] | null>("/api/public/catalog")) ?? [];
-    return entries.map((entry) =>
-      entry.image ? { ...entry, image: { ...entry.image, url: mediaUrl(entry.image.url) } } : entry,
-    );
+    try {
+      const entries = (await remoteJson<CatalogEntry[] | null>("/api/public/catalog")) ?? [];
+      const resolved = entries.map((entry) =>
+        entry.image ? { ...entry, image: { ...entry.image, url: mediaUrl(entry.image.url) } } : entry,
+      );
+      if (resolved.length) lastGoodIndex = resolved;
+      return resolved;
+    } catch (error) {
+      if (lastGoodIndex) return lastGoodIndex;
+      throw error;
+    }
   }
   const path = join(config.dataDir, "index.json");
   try {
