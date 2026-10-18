@@ -11,6 +11,7 @@
  * Whitelisted rather than filtered, so a new private file added later is not
  * public until someone decides it should be.
  */
+import { getFirm } from "@/lib/firm";
 import { getCatalogIndex, getProduct, PUBLISHED_STATUS, readBackdropList } from "@/lib/catalog";
 import { readBrandNotes } from "@/lib/brands";
 import { liveOffers } from "@/lib/offers";
@@ -106,6 +107,13 @@ export async function GET(
     case "banners":
       // Only the live ones: a scheme written for next Diwali is not public yet.
       return json(await liveBanners());
+    case "firm": {
+      // The front page needs the shop's handle and its following; it has no
+      // business with the GSTIN, the PAN or the signatory, which are for
+      // printed records. So only those two cross.
+      const firm = await getFirm();
+      return json({ instagram: firm.instagram });
+    }
     default:
       return json({ errors: ["Not found."] }, 404);
   }

@@ -11,6 +11,7 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { loadConfig } from "@/agent/config";
+import { isRemote, remoteJson } from "@/lib/remote";
 
 const FirmSchema = z.object({
   name: z.string().default("Prakash Watch Co."),
@@ -31,14 +32,31 @@ const FirmSchema = z.object({
    */
   instagram: z
     .object({
-      handle: z.string().default(""),
-      followers: z.number().nonnegative().default(0),
+      handle: z.string().default("prakashwatchco"),
+      // The shop's own stated figure, and the floor the tile falls back to. It
+      // defaults to a real number rather than zero because zero renders as a
+      // dash on the front page, and a dash where a following should be reads
+      // as a shop with none.
+      followers: z.number().nonnegative().default(74000),
     })
-    .default({ handle: "", followers: 0 }),
+    .default({ handle: "prakashwatchco", followers: 74000 }),
 });
 export type Firm = z.infer<typeof FirmSchema>;
 
 export async function getFirm(): Promise<Firm> {
+  // On the shop front there is no disk to read, so the few public particulars
+  // come from the back end. Everything else on this record — the GSTIN, the
+  // PAN, the signatory — belongs to printed documents, which are only ever
+  // produced where the disk is, so nothing is lost by the front end getting a
+  // partial answer and the schema's defaults for the rest.
+  if (isRemote()) {
+    try {
+      const remote = await remoteJson<unknown>("/api/public/firm");
+      return FirmSchema.parse(remote ?? {});
+    } catch {
+      return FirmSchema.parse({});
+    }
+  }
   try {
     const path = join(loadConfig().dataDir, "..", "firm.json");
     return FirmSchema.parse(JSON.parse(await fs.readFile(path, "utf8")));

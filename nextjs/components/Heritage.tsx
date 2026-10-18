@@ -16,7 +16,9 @@ export default async function Heritage() {
     { n: "04", l: "Boutiques in Delhi NCR", href: "" },
     { n: "20+", l: "Authorized brands", href: "/brands" },
     {
-      n: following.count > 0 ? roundFollowing(following.count) : "—",
+      // Never a dash: a blank figure where a following should be reads as a
+      // shop with none, which is worse than a number a few weeks old.
+      n: roundFollowing(following.count || 74000),
       l: "Following on Instagram",
       href: following.url,
     },
