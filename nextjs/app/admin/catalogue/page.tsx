@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import UploadPanel from "@/components/admin/UploadPanel";
 import RerunPanel from "@/components/admin/RerunPanel";
 import { getCatalogIndex } from "@/lib/catalog";
@@ -139,8 +138,17 @@ export default async function CataloguePage({
                 <tr key={product.sku}>
                   <td>
                     <span style={{ position: "relative", display: "block", width: 34, height: 34, background: "var(--well)", border: "1px solid var(--line)" }}>
+                      {/* A 34px thumbnail does not need the image optimiser,
+                          and asking for one generated 122KB of srcsets across a
+                          hundred rows. */}
                       {product.image && (
-                        <Image src={product.image.url} alt="" fill sizes="34px" style={{ objectFit: "contain", padding: 2 }} />
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={product.image.url}
+                          alt=""
+                          loading="lazy"
+                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", padding: 2 }}
+                        />
                       )}
                     </span>
                   </td>

@@ -171,6 +171,17 @@ export async function getCollectionSummaries(): Promise<CollectionSummary[]> {
  * a single read for the duration of one render, and forgets it afterwards, so a
  * run of the agent is still picked up on the next request.
  */
+/**
+ * The parsed index, kept between requests and not only within one.
+ *
+ * cache() collapses the reads inside a single render and forgets them
+ * afterwards, so every page load re-read and re-parsed 3.3MB — a second of work
+ * before a row was drawn. Keyed on the file's own modification time, so an
+ * agent run, a hand edit or an approval is picked up on the next request and
+ * nothing else invalidates it.
+ */
+let indexMemo: { signature: string; entries: CatalogEntry[] } | null = null;
+
 export const getCatalogIndex = cache(async function getCatalogIndex(): Promise<CatalogEntry[]> {
   if (isRemote()) {
     const entries = (await remoteJson<CatalogEntry[] | null>("/api/public/catalog")) ?? [];
@@ -178,8 +189,15 @@ export const getCatalogIndex = cache(async function getCatalogIndex(): Promise<C
       entry.image ? { ...entry, image: { ...entry.image, url: mediaUrl(entry.image.url) } } : entry,
     );
   }
+  const path = join(config.dataDir, "index.json");
   try {
-    return JSON.parse(await fs.readFile(join(config.dataDir, "index.json"), "utf8")) as CatalogEntry[];
+    const stamp = await fs.stat(path);
+    const signature = `${stamp.mtimeMs}:${stamp.size}`;
+    if (indexMemo && indexMemo.signature === signature) return indexMemo.entries;
+
+    const entries = JSON.parse(await fs.readFile(path, "utf8")) as CatalogEntry[];
+    indexMemo = { signature, entries };
+    return entries;
   } catch {
     return [];
   }
