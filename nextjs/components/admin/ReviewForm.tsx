@@ -52,6 +52,16 @@ const FACET_LABELS: Record<string, Record<string, string>> = {
   caseSize: { "under-36": "Under 36 mm", "36-40": "36 – 40 mm", "40-44": "40 – 44 mm", "over-44": "Over 44 mm" },
 };
 
+/** Takes the photograph at `from` and puts it at `to`, closing the gap behind it. */
+function move<T>(list: T[], from: number, to: number): T[] {
+  const target = Math.max(0, Math.min(list.length - 1, to));
+  if (target === from) return list;
+  const next = [...list];
+  const [moved] = next.splice(from, 1);
+  next.splice(target, 0, moved);
+  return next;
+}
+
 export default function ReviewForm({ product }: { product: WatchProduct }) {
   const router = useRouter();
 
@@ -214,22 +224,45 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
                 >
                   <Image src={image.url} alt={image.alt} fill sizes="132px" style={{ objectFit: "contain", padding: 8 }} />
                 </div>
-                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                  {index !== 0 && (
-                    <MiniButton
-                      onClick={() =>
-                        setImages((previous) => [previous[index], ...previous.filter((_, i) => i !== index)])
-                      }
-                    >
-                      Make first
-                    </MiniButton>
-                  )}
+                {/* Any position, not only the front.
+                    "Make first" could promote a photograph and nothing else, so
+                    deciding that the caseback should be third meant removing
+                    pictures and adding them back in the order wanted. The
+                    number says where this one sits and changes it directly;
+                    the arrows nudge it one place either way, which is what the
+                    hand reaches for when two are the wrong way round. */}
+                <div style={{ display: "flex", gap: 4, marginTop: 6, alignItems: "center" }}>
+                  <MiniButton
+                    onClick={() => setImages((previous) => move(previous, index, index - 1))}
+                    disabled={index === 0}
+                    label="Move earlier"
+                  >
+                    ←
+                  </MiniButton>
+                  <select
+                    className="ops-field"
+                    value={index + 1}
+                    aria-label={`Position of this photograph, ${index + 1} of ${images.length}`}
+                    onChange={(event) => setImages((previous) => move(previous, index, Number(event.target.value) - 1))}
+                    style={{ padding: "3px 4px", fontSize: 10, width: 46, textAlign: "center" }}
+                  >
+                    {images.map((_, slot) => (
+                      <option key={slot} value={slot + 1}>{slot + 1}</option>
+                    ))}
+                  </select>
+                  <MiniButton
+                    onClick={() => setImages((previous) => move(previous, index, index + 1))}
+                    disabled={index === images.length - 1}
+                    label="Move later"
+                  >
+                    →
+                  </MiniButton>
                   <MiniButton onClick={() => setImages((previous) => previous.filter((_, i) => i !== index))}>
                     Remove
                   </MiniButton>
                 </div>
                 <div className="mono" style={{ fontSize: 8.5, color: "var(--faint)", marginTop: 5, letterSpacing: "0.08em" }}>
-                  {image.kind.toUpperCase()} · MATCH {(image.matchScore * 100).toFixed(0)}%
+                  {index === 0 ? "SHOP FRONT · " : ""}{image.kind.toUpperCase()} · MATCH {(image.matchScore * 100).toFixed(0)}%
                 </div>
               </div>
             ))}
@@ -437,22 +470,37 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function MiniButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function MiniButton({
+  onClick,
+  children,
+  disabled = false,
+  label,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  /** For the arrows, whose glyph is not a word a screen reader can read out. */
+  label?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
       className="mono"
       style={{
         flex: 1,
         background: "transparent",
         border: "1px solid var(--line)",
-        color: "var(--dim)",
+        color: disabled ? "var(--faint)" : "var(--dim)",
         padding: "5px 4px",
         fontSize: 8,
         letterSpacing: "0.1em",
         textTransform: "uppercase",
-        cursor: "pointer",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.45 : 1,
       }}
     >
       {children}

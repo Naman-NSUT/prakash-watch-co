@@ -34,7 +34,7 @@ export default function Hero() {
         </p>
         <div style={{ display: "flex", gap: 14, marginTop: 38, flexWrap: "wrap" }}>
           <a className="btn btn-solid" href="#collection">Browse the collection</a>
-          <a className="btn btn-ghost" href="#service">Book a service</a>
+          <a className="btn btn-ghost" href="#service">Book for repair & services</a>
         </div>
       </div>
 

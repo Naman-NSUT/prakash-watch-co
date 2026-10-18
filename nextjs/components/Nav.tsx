@@ -25,7 +25,7 @@ const LINKS: { href: string; label: string; brands?: true }[] = [
   { href: "/brands", label: "Brands", brands: true },
   { href: "/watch-finder", label: "Watch Finder" },
   { href: "/offers", label: "Offers" },
-  { href: "/service", label: "Service" },
+  { href: "/service", label: "Repair & Services" },
   { href: "/#boutiques", label: "Boutiques" },
 ];
 

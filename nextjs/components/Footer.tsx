@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Footer() {
@@ -31,17 +32,29 @@ export default function Footer() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 15, fontWeight: 300, color: "var(--body)" }}>
           <span className="kicker" style={{ letterSpacing: "0.24em" }}>Explore</span>
-          <a href="#collection">Collection</a>
-          <a href="#service">Service & repair</a>
+          <Link href="/collections">Collection</Link>
+          <Link href="/service">Repair &amp; services</Link>
+          <Link href="/brands">Brands</Link>
           <a href="#boutiques">Boutiques</a>
+        </div>
+        {/* The terms a customer is entitled to find before they buy, not after.
+            Kept in their own column so they are easy to reach and obviously not
+            marketing. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 15, fontWeight: 300, color: "var(--body)" }}>
+          <span className="kicker" style={{ letterSpacing: "0.24em" }}>The small print</span>
+          <Link href="/legal/terms">Terms of sale</Link>
+          <Link href="/legal/privacy">Privacy</Link>
+          <Link href="/legal/returns">Returns &amp; refunds</Link>
+          <Link href="/legal/shipping">Shipping &amp; delivery</Link>
+          <Link href="/legal/warranty">Warranty &amp; service</Link>
         </div>
       </div>
       <div className="mono" style={{
         display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--line2)",
         paddingTop: 22, fontSize: 10, letterSpacing: "0.2em", color: "var(--faint)", textTransform: "uppercase",
       }}>
-        <span>PRAKASH WATCH CO. — DELHI NCR</span>
-        <span>DEMO CONCEPT · CONTENT INDICATIVE</span>
+        <span>PRAKASH WATCH CO. — DELHI NCR · SINCE 1976</span>
+        <span>ALL PRICES INCLUDE GST</span>
       </div>
     </footer>
   );

@@ -339,11 +339,27 @@ def prepare(
             source = "cutout" if cutout is not None else None
 
     if cutout is None:
-        # Publish the photograph as taken, but still letterbox it onto the same
-        # square canvas as everything else — a grid of mismatched crops reads as
-        # careless even when each individual picture is fine.
+        # Publish the photograph as taken, but on the same square canvas as
+        # everything else — a grid of mismatched crops reads as careless even
+        # when each individual picture is fine.
+        #
+        # Scaled to the canvas rather than thumbnailed onto it. thumbnail() only
+        # ever shrinks, so a photograph smaller than the canvas was left at its
+        # own size in the middle of it: a Tissot lifestyle shot came out 800px
+        # on a 1600px frame, three quarters of it transparent, and the page's
+        # own backdrop showed through the gap — the watch appeared to float in a
+        # small window off to one side.
         fitted = image.convert("RGBA")
-        fitted.thumbnail((size, size), Image.Resampling.LANCZOS)
+        scale = size / max(fitted.width, fitted.height)
+        if scale != 1:
+            fitted = fitted.resize(
+                (max(1, round(fitted.width * scale)), max(1, round(fitted.height * scale))),
+                Image.Resampling.LANCZOS,
+            )
+
+        # And the bars beside a photograph that is not square are the shop's own
+        # ground, not a hole. Transparent padding is only right for a cut-out,
+        # where the backdrop behind it is the point.
         if background == "transparent":
             canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         else:
