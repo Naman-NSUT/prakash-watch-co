@@ -57,25 +57,40 @@ async function remember(count: number): Promise<void> {
   }
 }
 
+/**
+ * Meta serves this from two hosts depending on how the token was obtained, and
+ * the shop should not have to know which it has.
+ *
+ * A token from Instagram Login answers on graph.instagram.com; one from
+ * Facebook Login, where the account is linked to a Page, answers on
+ * graph.facebook.com. The field is the same either way — followers_count is a
+ * field on the user node, not an endpoint of its own — so both are tried and
+ * whichever answers is used.
+ */
+const META_HOSTS = ["https://graph.instagram.com", "https://graph.facebook.com"] as const;
+
 async function fromInstagram(): Promise<number | null> {
   const id = process.env.INSTAGRAM_USER_ID;
   const token = process.env.INSTAGRAM_TOKEN;
   if (!id || !token) return null;
 
-  try {
-    const response = await fetch(
-      `https://graph.instagram.com/v21.0/${encodeURIComponent(id)}?fields=followers_count&access_token=${encodeURIComponent(token)}`,
-      { signal: AbortSignal.timeout(6000), cache: "no-store" },
-    );
-    if (!response.ok) return null;
-    const payload = await response.json();
-    const count = Number(payload?.followers_count);
-    return Number.isFinite(count) && count > 0 ? count : null;
-  } catch {
-    // Meta is down, the token has expired, or the network refused. The stored
-    // figure stands rather than the page showing nothing.
-    return null;
+  for (const host of META_HOSTS) {
+    try {
+      const response = await fetch(
+        `${host}/v21.0/${encodeURIComponent(id)}?fields=followers_count&access_token=${encodeURIComponent(token)}`,
+        { signal: AbortSignal.timeout(6000), cache: "no-store" },
+      );
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const count = Number(payload?.followers_count);
+      if (Number.isFinite(count) && count > 0) return count;
+    } catch {
+      // This host is down, refused the token, or the network failed. Try the
+      // other; if neither answers the stored figure stands rather than the
+      // page showing nothing.
+    }
   }
+  return null;
 }
 
 export async function getFollowing(): Promise<Following> {
