@@ -37,9 +37,9 @@ const FirmSchema = z.object({
       // defaults to a real number rather than zero because zero renders as a
       // dash on the front page, and a dash where a following should be reads
       // as a shop with none.
-      followers: z.number().nonnegative().default(74000),
+      followers: z.number().nonnegative().default(42000),
     })
-    .default({ handle: "prakashwatchco", followers: 74000 }),
+    .default({ handle: "prakashwatchco", followers: 42000 }),
 });
 export type Firm = z.infer<typeof FirmSchema>;
 

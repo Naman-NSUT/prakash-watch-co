@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Reveal from "./Reveal";
 import { getFollowing, roundFollowing } from "@/lib/social";
+import { getSiteCopy } from "@/lib/site-copy";
 
 /**
  * The counted figure replaces the typed one where it can be had.
@@ -11,33 +12,42 @@ import { getFollowing, roundFollowing } from "@/lib/social";
  * so the tile is never empty and never wrong for long.
  */
 export default async function Heritage() {
-  const following = await getFollowing();
+  const [following, copy] = await Promise.all([getFollowing(), getSiteCopy()]);
+  const words = copy.heritage;
   const stats = [
-    { n: "04", l: "Boutiques in Delhi NCR", href: "" },
-    { n: "20+", l: "Authorized brands", href: "/brands" },
+    { n: words.boutiques, l: "Boutiques in Delhi NCR", href: "" },
+    { n: words.brands, l: "Authorized brands", href: "/brands" },
     {
       // Never a dash: a blank figure where a following should be reads as a
       // shop with none, which is worse than a number a few weeks old.
-      n: roundFollowing(following.count || 74000),
+      n: roundFollowing(following.count || 42000),
       l: "Following on Instagram",
       href: following.url,
     },
-    { n: "1:1", l: "Every sale, one advisor", href: "" },
+    { n: words.advisor, l: "Every sale, one advisor", href: "" },
   ];
   return (
     <section id="heritage" style={{ position: "relative", padding: "var(--section-y) var(--gutter)", background: "var(--panel)", borderTop: "1px solid var(--line2)" }}>
       <div style={{ display: "grid", gridTemplateColumns: "var(--cols-2)", gap: "var(--gap-xl)", alignItems: "center" }}>
         <Reveal>
           <span className="kicker">02 — Heritage</span>
-          <div className="serif" style={{ margin: "26px 0 0", fontSize: "clamp(96px, 15vw, 230px)", lineHeight: 0.8, letterSpacing: "-0.04em" }}>1976</div>
-          <p style={{ maxWidth: 480, margin: "42px 0 0", fontSize: 17, lineHeight: 1.7, fontWeight: 300, color: "var(--body)", textWrap: "pretty" }}>
-            One counter in Sadar Bazar, Gurgaon. Fifty years later the family runs four multi-brand
-            boutiques across Delhi NCR, an authorized service centre, and a following of more than
-            seventy thousand people who come to us before they buy.
-          </p>
-          <p style={{ maxWidth: 480, margin: "22px 0 0", fontSize: 17, lineHeight: 1.7, fontWeight: 300, color: "var(--body)", textWrap: "pretty" }}>
-            The trade changed. The habit did not: know the movement, price it honestly, stand behind it afterwards.
-          </p>
+          <div className="serif" style={{ margin: "26px 0 0", fontSize: "clamp(96px, 15vw, 230px)", lineHeight: 0.8, letterSpacing: "-0.04em" }}>{words.year}</div>
+          {words.story.map((paragraph, index) => (
+            <p
+              key={paragraph.slice(0, 40)}
+              style={{
+                maxWidth: 480,
+                margin: `${index === 0 ? 42 : 22}px 0 0`,
+                fontSize: 17,
+                lineHeight: 1.7,
+                fontWeight: 300,
+                color: "var(--body)",
+                textWrap: "pretty",
+              }}
+            >
+              {paragraph}
+            </p>
+          ))}
         </Reveal>
         <Reveal style={{ display: "grid", gap: 1, background: "var(--line)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
@@ -47,7 +57,7 @@ export default async function Heritage() {
             {stats.slice(2).map((s) => <Stat key={s.l} {...s} />)}
           </div>
           <div style={{ background: "var(--card)", padding: "var(--card-pad)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
-            <span style={{ fontSize: 14.5, fontWeight: 300, color: "var(--body)" }}>Warranty and after-sales handled in house</span>
+            <span style={{ fontSize: 14.5, fontWeight: 300, color: "var(--body)" }}>{words.assurance}</span>
             <span className="mono" style={{ fontSize: 10.5, letterSpacing: "0.2em", color: "var(--accent)" }}>VERIFIED</span>
           </div>
         </Reveal>

@@ -12,6 +12,7 @@
  * public until someone decides it should be.
  */
 import { getFirm } from "@/lib/firm";
+import { getSiteCopy } from "@/lib/site-copy";
 import { getCatalogIndex, getProduct, PUBLISHED_STATUS, readBackdropList } from "@/lib/catalog";
 import { readBrandNotes } from "@/lib/brands";
 import { liveOffers } from "@/lib/offers";
@@ -107,6 +108,8 @@ export async function GET(
     case "banners":
       // Only the live ones: a scheme written for next Diwali is not public yet.
       return json(await liveBanners());
+    case "copy":
+      return json(await getSiteCopy());
     case "firm": {
       // The front page needs the shop's handle and its following; it has no
       // business with the GSTIN, the PAN or the signatory, which are for

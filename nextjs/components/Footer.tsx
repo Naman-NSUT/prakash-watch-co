@@ -28,7 +28,7 @@ export default function Footer() {
           <span className="kicker" style={{ letterSpacing: "0.24em" }}>Reach us</span>
           <a href="mailto:prakashwatchco@gmail.com">prakashwatchco@gmail.com</a>
           <a href="tel:+919899645897">+91 98996 45897</a>
-          <a href="https://www.instagram.com/prakashwatchco/" target="_blank" rel="noreferrer">Instagram — 74K</a>
+          <a href="https://www.instagram.com/prakashwatchco/" target="_blank" rel="noreferrer">Instagram</a>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 15, fontWeight: 300, color: "var(--body)" }}>
           <span className="kicker" style={{ letterSpacing: "0.24em" }}>Explore</span>
