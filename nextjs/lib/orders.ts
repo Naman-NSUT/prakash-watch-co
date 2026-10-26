@@ -67,6 +67,23 @@ export const OrderSchema = z.object({
   }),
 
   /**
+   * The parcel, once there is one.
+   *
+   * A waybill is taken from the courier's pool when the shop marks the order
+   * packed, and the number is what the customer follows. Status and the last
+   * scan are copied here when the courier is asked, so the orders list can be
+   * read without calling them for every row.
+   */
+  shipment: z
+    .object({
+      waybill: z.string().default(""),
+      status: z.string().default(""),
+      lastScanAt: z.string().default(""),
+      checkedAt: z.string().default(""),
+    })
+    .prefault({}),
+
+  /**
    * placed    — the customer filled the form; no money yet
    * paid      — Razorpay captured it, and the stock has moved
    * packed    — the shop has it ready
@@ -134,6 +151,7 @@ export async function createOrder(input: {
     gstAmount,
     total,
     payment: { orderId: "", paymentId: "", method: "" },
+    shipment: { waybill: "", status: "", lastScanAt: "", checkedAt: "" },
     status: "placed",
     note: "",
   };

@@ -211,6 +211,8 @@ def dial_score(image) -> float:
 
     try:
         grey = image.convert("L")
+        # Same rim, same reason: it is not part of the picture.
+        grey = grey.crop((2, 2, max(3, grey.width - 2), max(3, grey.height - 2)))
         width, height = grey.size
         side = int(min(width, height) * 0.30)
         if side < 8:
@@ -259,6 +261,78 @@ def frame_fill(image) -> float:
 #: Below this the watch is a small object in a large picture, whatever else is
 #: in the frame. Such a photograph can sit in a gallery; it should not lead one.
 MIN_FRAME_FILL = 0.20
+
+
+def subject_extent(image) -> float:
+    """How much of the frame the watch occupies, measured by its edges.
+
+    Not by colour: frame_fill() counts pixels that differ from the corner, and
+    a white Armani Exchange on a white ground measured 5.7% full while being
+    the best photograph in its listing. Edges do not care what colour the watch
+    is — a white case on white still has an outline, a bezel and printing.
+
+    This is what tells a dial from an edge-on profile. A Tissot photographed
+    side-on is a narrow sliver of case, detail concentrated dead centre, which
+    scores higher than the dial on busyness alone: 5.36 against 2.26. By extent
+    it is 7% of the frame against the dial's 27%.
+    """
+    from PIL import ImageFilter, ImageStat
+
+    def span(weights: list[float], share: float = 0.04) -> int:
+        """How many rows (or columns) hold the middle of the edge energy.
+
+        A plain bounding box is useless here: one stray bright pixel in a corner
+        stretches it to the whole frame, which is what made a profile shot and a
+        size-guide both measure 100%. Trimming a few percent off each end finds
+        where the watch actually is.
+        """
+        total = sum(weights)
+        if total <= 0:
+            return 0
+        edge = total * share
+        running = 0.0
+        first = 0
+        for index, value in enumerate(weights):
+            running += value
+            if running >= edge:
+                first = index
+                break
+        running = 0.0
+        last = len(weights) - 1
+        for index in range(len(weights) - 1, -1, -1):
+            running += weights[index]
+            if running >= edge:
+                last = index
+                break
+        return max(0, last - first + 1)
+
+    try:
+        # FIND_EDGES lights up the outermost pixel of every image — its kernel
+        # has nothing beyond the border to compare against — so a 2px rim is
+        # cropped away first. Left in, every column registered energy and every
+        # picture measured as filling the whole frame.
+        grey = image.convert("L")
+        grey = grey.crop((2, 2, max(3, grey.width - 2), max(3, grey.height - 2)))
+        edges = grey.filter(ImageFilter.FIND_EDGES)
+        width, height = edges.size
+        floor = max(6.0, ImageStat.Stat(edges).mean[0] * 1.6)
+        mask = edges.point(lambda value: 255 if value >= floor else 0)
+
+        rows = [sum(mask.crop((0, y, width, y + 1)).getdata()) for y in range(0, height, max(1, height // 120))]
+        columns = [sum(mask.crop((x, 0, x + 1, height)).getdata()) for x in range(0, width, max(1, width // 120))]
+        if not rows or not columns:
+            return 0.0
+
+        tall = span(rows) / len(rows)
+        wide = span(columns) / len(columns)
+        return float(tall * wide)
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+#: Under this the watch is a sliver — a profile, a clasp, a single lug — and
+#: whatever else is true of it, it is not the picture a card should lead with.
+MIN_SUBJECT_EXTENT = 0.12
 
 
 #: Shots that may be lifted off their background.

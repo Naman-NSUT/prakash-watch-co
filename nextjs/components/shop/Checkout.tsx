@@ -32,6 +32,33 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  /**
+   * Whether the courier reaches the PIN the customer has typed.
+   *
+   * Checked while they are still filling the form, because finding out after
+   * the money has gone is the worst moment to learn it. An unknown answer is
+   * never shown as a refusal — the shop would rather take the order and
+   * arrange the delivery by telephone.
+   */
+  const [reach, setReach] = useState<{ deliverable: boolean; district?: string; state?: string } | null>(null);
+
+  useEffect(() => {
+    const pincode = form.pincode.trim();
+    if (!/^\d{6}$/.test(pincode)) {
+      setReach(null);
+      return;
+    }
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/checkout/serviceable?pincode=${pincode}`);
+        const payload = await response.json();
+        setReach(payload.known ? payload : null);
+      } catch {
+        setReach(null);
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [form.pincode]);
 
   // Razorpay's own script, loaded once and only on this page.
   //
@@ -204,6 +231,13 @@ export default function Checkout() {
             {field("state", "State")}
             {field("pincode", "PIN code", { inputMode: "numeric" })}
           </div>
+          {reach && (
+            <p className={reach.deliverable ? "checkout-reach" : "checkout-reach checkout-reach-no"}>
+              {reach.deliverable
+                ? `Delivers to ${[reach.district, reach.state].filter(Boolean).join(", ")}.`
+                : "Our courier does not reach this PIN code. Place the order anyway and we will telephone you to arrange it."}
+            </p>
+          )}
         </div>
       </section>
 

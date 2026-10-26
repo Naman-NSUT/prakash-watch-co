@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Empty, PageHead, formatInr } from "@/components/admin/ui";
 import OrderStatus from "@/components/admin/OrderStatus";
+import ParcelCell from "@/components/admin/ParcelCell";
+import CourierDesk from "@/components/admin/CourierDesk";
 import { listOrders } from "@/lib/orders";
+import { getCourierSettings, withoutToken } from "@/lib/courier";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Orders — Stock room" };
@@ -17,6 +20,7 @@ export const metadata: Metadata = { title: "Orders — Stock room" };
  */
 export default async function OrdersPage() {
   const orders = await listOrders();
+  const courier = withoutToken(await getCourierSettings());
   const paid = orders.filter((order) => order.status !== "placed" && order.status !== "cancelled");
   const takings = paid.reduce((sum, order) => sum + order.total, 0);
 
@@ -30,6 +34,8 @@ export default async function OrdersPage() {
             : `${paid.length} paid, ${formatInr(takings)} taken. Prices include GST; the split is on each order.`
         }
       />
+
+      <CourierDesk initial={courier} />
 
       {orders.length === 0 ? (
         <Empty
@@ -45,6 +51,7 @@ export default async function OrdersPage() {
                 <th>Customer</th>
                 <th>Watches</th>
                 <th style={{ textAlign: "right" }}>Total</th>
+                <th>Parcel</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -78,6 +85,13 @@ export default async function OrdersPage() {
                     <span className="mono" style={{ display: "block", fontSize: 9, color: "var(--faint)", marginTop: 3 }}>
                       incl. {formatInr(order.gstAmount)} GST
                     </span>
+                  </td>
+                  <td>
+                    {order.status === "placed" ? (
+                      <span className="mono" style={{ fontSize: 9, color: "var(--faint)" }}>—</span>
+                    ) : (
+                      <ParcelCell id={order.id} waybill={order.shipment.waybill} status={order.shipment.status} />
+                    )}
                   </td>
                   <td>
                     {order.status === "placed" ? (
