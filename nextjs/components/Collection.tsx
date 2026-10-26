@@ -40,7 +40,7 @@ export default function Collection({ families }: { families: CollectionSummary[]
             style={{
               display: "grid", gridTemplateColumns: "76px 1.5fr 1fr 150px", alignItems: "center", gap: 24,
               padding: "30px 8px", borderBottom: "1px solid var(--line)",
-              transition: "background-color .4s, padding-left .4s",
+              transition: "background-color .4s",
             }}
           >
             <span className="mono" style={{ fontSize: 11, color: "var(--faint)" }}>{family.no}</span>

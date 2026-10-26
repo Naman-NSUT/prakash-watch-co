@@ -308,6 +308,12 @@ class CatalogEntry(Model):
     #: the house's own setting.
     direct_sale: bool | None = None
 
+    #: When the listing was first written and last touched. Carried here so the
+    #: stock room can put the newest work at the top without opening 1,900
+    #: artifacts to find out which is newest.
+    created_at: str = ""
+    updated_at: str = ""
+
 
 class RowResult(Model):
     row_number: int

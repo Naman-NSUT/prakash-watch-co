@@ -72,7 +72,19 @@ a:hover { color: var(--accent-soft); }
 .btn-solid:hover { color: var(--bg); background: var(--accent-soft); }
 .btn-ghost { border: 1px solid var(--border); color: var(--body); }
 
-.row:hover { background: var(--card); padding-left: 22px !important; }
+/* The indent on hover is a transform rather than padding.
+   Animating padding-left made the browser lay the row out again on every frame
+   of the glide; a transform is composited and touches no layout at all. The
+   last cell — the stock count, right-aligned — deliberately stays put, so the
+   row's content slides under a figure that holds its column instead of the
+   whole row drifting into the gutter. */
+.row:hover { background: var(--card); }
+.row > * { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.row:hover > *:not(:last-child) { transform: translateX(22px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .row > * { transition: none; }
+}
 .hover-card { transition: background-color 0.45s; }
 .hover-card:hover { background: var(--card-hover) !important; }
 
@@ -1983,3 +1995,92 @@ a.banner-card:hover { border-color: var(--accent); }
 .legal-more > div { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 14px; }
 .legal-more a { font-size: 14.5px; font-weight: 300; color: var(--accent-soft); }
 .legal-more a:hover { color: var(--accent); }
+
+/* The order chips, under the filters: the same shape, because they are the same
+   kind of choice, but on their own line so the two cannot be mistaken for one
+   list of eleven things. */
+.ops-sorts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 16px; }
+.ops-sorts .ops-sublabel { margin-right: 4px; }
+
+/* The order chips, on their own line under the filters: same shape, because it
+   is the same kind of choice, but separated so the two cannot read as one list
+   of eleven things. */
+.ops-sorts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 16px; }
+.ops-sorts .ops-sublabel { margin-right: 4px; }
+
+/* The courier's answer, under the address. Said quietly: it is information
+   while the form is being filled, not a verdict on the order. */
+.checkout-reach { margin: 12px 0 0; font-size: 12.5px; line-height: 1.6; font-weight: 300; color: var(--accent); }
+.checkout-reach-no { color: var(--warn); }
+
+/* --- A photograph at the size it was taken ----------------------------------
+   A watch is bought on its detail, and a 520px square shows none of it. The
+   whole viewport, a dark ground so the eye goes to the watch, and the picture
+   magnified where it is pressed. */
+.gallery-open { display: block; width: 100%; padding: 0; border: 1px solid var(--line); cursor: zoom-in; }
+.gallery-magnify {
+  position: absolute; right: 14px; bottom: 14px; z-index: 2;
+  display: grid; place-items: center; width: 32px; height: 32px;
+  border-radius: 999px; background: var(--panel); border: 1px solid var(--border);
+  color: var(--muted); opacity: 0; transition: opacity .3s;
+}
+.gallery-open:hover .gallery-magnify,
+.gallery-open:focus-visible .gallery-magnify { opacity: 1; }
+
+.lightbox { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; }
+.lightbox-scrim { position: absolute; inset: 0; border: none; background: var(--scrim); backdrop-filter: blur(3px); cursor: zoom-out; }
+
+.lightbox-bar {
+  position: absolute; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+}
+.lightbox-count { font-size: 10px; letter-spacing: .2em; color: var(--panel); text-transform: uppercase; }
+.lightbox-close { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px;
+  background: var(--panel); color: var(--text); }
+.lightbox-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.lightbox-stage {
+  position: relative; z-index: 1;
+  width: min(94vw, 1100px); height: min(78vh, 1100px);
+  cursor: zoom-in; overflow: hidden;
+}
+.lightbox-stage[data-zoomed="true"] { cursor: zoom-out; }
+.lightbox-stage img { transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+
+.lightbox-arrow {
+  position: absolute; top: 50%; z-index: 3; transform: translateY(-50%);
+  display: grid; place-items: center; width: 46px; height: 46px; border-radius: 999px;
+  background: var(--panel); color: var(--text);
+}
+.lightbox-arrow[data-side="left"] { left: max(12px, 3vw); }
+.lightbox-arrow[data-side="right"] { right: max(12px, 3vw); }
+.lightbox-arrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.lightbox-film {
+  position: absolute; z-index: 3; left: 0; right: 0;
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 0 16px;
+}
+.lightbox-film button {
+  position: relative; width: 56px; height: 56px; flex: none;
+  background: var(--panel); border: 1px solid transparent; opacity: .55; transition: opacity .25s, border-color .25s;
+}
+.lightbox-film button[data-on="true"] { opacity: 1; border-color: var(--accent); }
+.lightbox-film button:hover { opacity: 1; }
+
+.lightbox-hint {
+  position: absolute; z-index: 3; left: 0; right: 0;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  text-align: center; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--panel); opacity: .75;
+}
+
+@media (max-width: 700px) {
+  .lightbox-stage { width: 100vw; height: 62vh; }
+  .lightbox-arrow { width: 40px; height: 40px; }
+  .lightbox-film button { width: 44px; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-stage img, .gallery-magnify { transition: none; }
+}

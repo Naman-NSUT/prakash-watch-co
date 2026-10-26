@@ -308,6 +308,9 @@ export const CatalogEntrySchema = WatchProductSchema.pick({
   specCount: z.number().int().nonnegative().default(0),
   confidence: z.number().default(0),
   flags: z.array(z.string()).default([]),
+  /** When the listing was written and last touched, for ordering the stock room. */
+  createdAt: z.string().default(""),
+  updatedAt: z.string().default(""),
 });
 
 /** One generated backdrop from the library the agent writes. */

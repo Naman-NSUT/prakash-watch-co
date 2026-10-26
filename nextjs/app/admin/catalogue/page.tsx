@@ -14,9 +14,9 @@ export const dynamic = "force-dynamic";
 export default async function CataloguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; flag?: string; page?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; flag?: string; page?: string; q?: string; sort?: string }>;
 }) {
-  const { status, flag, page: pageParam, q } = await searchParams;
+  const { status, flag, page: pageParam, q, sort } = await searchParams;
   // The index, not the artifacts. Opening all 1,900 of them to draw a hundred
   // rows cost 1.7 seconds a click; this file carries everything the table shows.
   const products = await getCatalogIndex();
@@ -39,10 +39,58 @@ export default async function CataloguePage({
     return true;
   });
 
-  // Anything needing a decision floats up; a list sorted by name buries the work.
-  const ordered = [...shown].sort(
-    (a, b) => Number(a.status === "ready") - Number(b.status === "ready") || a.brand.localeCompare(b.brand),
-  );
+  /**
+   * How the list is ordered.
+   *
+   * The default still floats what needs a decision to the top, because that is
+   * the work and a list sorted by name buries it. But a stock room also wants
+   * to see what came in this morning, or what the dearest pieces are, and
+   * neither question could be asked before.
+   *
+   * Newest reads the date the listing was written rather than when it was last
+   * touched: an agent pass that re-renders a photograph should not make a watch
+   * from March look like this morning's work. "Recently changed" is the other
+   * question and has its own order.
+   */
+  const SORTS = {
+    decisions: "What needs deciding",
+    newest: "Most recent first",
+    oldest: "Oldest first",
+    touched: "Recently changed",
+    dear: "Price, high to low",
+    cheap: "Price, low to high",
+    brand: "Brand A\u2013Z",
+    thin: "Fewest photographs",
+  } as const;
+  type SortKey = keyof typeof SORTS;
+  const order: SortKey = (sort && sort in SORTS ? sort : "decisions") as SortKey;
+
+  const priceOf = (entry: (typeof shown)[number]) => entry.price.selling ?? 0;
+  const when = (value: string) => (value ? Date.parse(value) || 0 : 0);
+
+  const ordered = [...shown].sort((a, b) => {
+    switch (order) {
+      case "newest":
+        return when(b.createdAt) - when(a.createdAt);
+      case "oldest":
+        return when(a.createdAt) - when(b.createdAt);
+      case "touched":
+        return when(b.updatedAt) - when(a.updatedAt);
+      case "dear":
+        return priceOf(b) - priceOf(a);
+      case "cheap":
+        return priceOf(a) - priceOf(b);
+      case "brand":
+        return a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title);
+      case "thin":
+        return a.imageCount - b.imageCount || a.brand.localeCompare(b.brand);
+      default:
+        return (
+          Number(a.status === "ready") - Number(b.status === "ready") ||
+          a.brand.localeCompare(b.brand)
+        );
+    }
+  });
 
   // A hundred at a time: rendering all 1,899 took several seconds a click.
   const pages = Math.max(1, Math.ceil(ordered.length / OPS_PAGE_SIZE));
@@ -56,6 +104,7 @@ export default async function CataloguePage({
     if (status) query.set("status", status);
     if (flag) query.set("flag", flag);
     if (q) query.set("q", q);
+    if (order !== "decisions") query.set("sort", order);
     if (next > 1) query.set("page", String(next));
     const search = query.toString();
     return search ? `/admin/catalogue?${search}` : "/admin/catalogue";
@@ -114,6 +163,51 @@ export default async function CataloguePage({
         <Link href="/admin/catalogue?flag=provisional-image" className="ops-chip" data-tone={flag === "provisional-image" ? "warn" : "mute"}>
           Unconfirmed photo {products.filter((p) => p.flags.includes("provisional-image")).length}
         </Link>
+      </nav>
+
+      <div className="ops-sorts" style={{ justifyContent: "space-between" }}>
+        <span className="ops-note" style={{ margin: 0 }}>
+          {ordered.length.toLocaleString("en-IN")} listing{ordered.length === 1 ? "" : "s"} shown
+        </span>
+        {/* Downloads what is on the screen, not the whole catalogue: a shop
+            looking at the 264 held for review and getting all 1,900 would be a
+            quietly wrong answer. */}
+        <a
+          className="ops-btn"
+          href={`/api/admin/catalogue/export${(() => {
+            const query = new URLSearchParams();
+            if (status) query.set("status", status);
+            if (flag) query.set("flag", flag);
+            if (q) query.set("q", q);
+            const search = query.toString();
+            return search ? `?${search}` : "";
+          })()}`}
+          download
+        >
+          Download this list
+        </a>
+      </div>
+
+      <nav aria-label="Order the list" className="ops-sorts">
+        <span className="ops-sublabel" style={{ marginTop: 0 }}>Order</span>
+        {(Object.keys(SORTS) as SortKey[]).map((key) => {
+          const query = new URLSearchParams();
+          if (status) query.set("status", status);
+          if (flag) query.set("flag", flag);
+          if (q) query.set("q", q);
+          if (key !== "decisions") query.set("sort", key);
+          const search = query.toString();
+          return (
+            <Link
+              key={key}
+              href={search ? `/admin/catalogue?${search}` : "/admin/catalogue"}
+              className="ops-chip"
+              data-tone={order === key ? "good" : "mute"}
+            >
+              {SORTS[key]}
+            </Link>
+          );
+        })}
       </nav>
 
       {ordered.length === 0 ? (

@@ -466,6 +466,8 @@ def rebuild_index(config: AgentConfig) -> list[dict]:
                 confidence=product.confidence.overall,
                 flags=list(product.review.flags),
                 direct_sale=product.direct_sale,
+                created_at=product.meta.created_at,
+                updated_at=product.meta.updated_at,
             )
         )
 

@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
+import Lightbox from "./Lightbox";
 import type { Backdrop } from "@/agent/types";
 import { lightWash } from "@/lib/backdrop-light";
 
@@ -32,6 +33,8 @@ export default function Gallery({
   backdrop?: Backdrop;
 }) {
   const [active, setActive] = useState(0);
+  // Null when closed; the index being viewed when open.
+  const [enlarged, setEnlarged] = useState<number | null>(null);
   const current = images[active];
 
   if (!current) {
@@ -56,8 +59,11 @@ export default function Gallery({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div
-        className={backdrop && current.hasAlpha ? "card-stage" : undefined}
+      <button
+        type="button"
+        onClick={() => setEnlarged(active)}
+        aria-label={`See ${title} larger`}
+        className={backdrop && current.hasAlpha ? "card-stage gallery-open" : "gallery-open"}
         style={{
           position: "relative",
           aspectRatio: "1 / 1",
@@ -80,7 +86,28 @@ export default function Gallery({
           blurDataURL={current.blurDataURL ?? undefined}
           style={{ objectFit: "contain", padding: 30 }}
         />
-      </div>
+        <span className="gallery-magnify" aria-hidden>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.6-3.6M11 8.4v5.2M8.4 11h5.2" />
+          </svg>
+        </span>
+      </button>
+
+      {enlarged !== null && (
+        <Lightbox
+          images={images}
+          title={title}
+          index={enlarged}
+          onClose={() => setEnlarged(null)}
+          onIndex={(next) => {
+            setEnlarged(next);
+            // The strip underneath follows, so closing leaves the page where
+            // the customer left off rather than back at the first photograph.
+            setActive(next);
+          }}
+        />
+      )}
 
       {images.length > 1 && (
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
