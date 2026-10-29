@@ -69,7 +69,8 @@ GRADE_SCHEMA = {
                     "type": "object",
                     "additionalProperties": False,
                     "required": [
-                        "index", "is_watch", "matches_model", "shot_type", "background",
+                        "index", "is_watch", "matches_model", "shot_type", "view", "background",
+                        "view_confidence",
                         "observed_dial_colour", "observed_strap", "observed_display",
                         "quality", "has_watermark", "reason",
                     ],
@@ -83,6 +84,20 @@ GRADE_SCHEMA = {
                         "shot_type": {
                             "type": "string",
                             "enum": ["product", "wrist", "detail", "lifestyle", "packaging", "logo", "irrelevant"],
+                        },
+                        "view": {
+                            "type": "string",
+                            "enum": ["front", "three-quarter", "side", "back", "unclear"],
+                            "description": (
+                                "Camera angle of the watch itself. front = the dial is squarely visible; "
+                                "three-quarter = the dial is clearly visible and dominant at an angle; "
+                                "side = the dial is mostly edge-on; back = caseback, clasp or underside; "
+                                "unclear = none can be determined."
+                            ),
+                        },
+                        "view_confidence": {
+                            "type": "number",
+                            "description": "0 to 1: confidence in the camera-view classification only.",
                         },
                         "background": {
                             "type": "string",
@@ -355,6 +370,31 @@ SHOT_PRIORITY = {
     "irrelevant": 0.0,
 }
 
+# A catalogue card must show the dial. This is deliberately stronger than the
+# quality and source bonuses below: a perfect official side photograph is still
+# the wrong cover when a usable front view exists in the same gallery.
+VIEW_SCORE = {
+    "front": 4.0,
+    "three-quarter": 2.0,
+    "unclear": 0.0,
+    "side": -2.0,
+    "back": -3.0,
+}
+
+# A guessed angle is worse than keeping the existing gallery order. The model
+# has an explicit "unclear" answer, but the numeric threshold catches replies
+# where it selected an angle while also saying it was unsure.
+MIN_VIEW_CONFIDENCE = 0.70
+
+# Used again after files are encoded, and by tidy.py on later maintenance runs.
+COVER_VIEW_ORDER = {
+    "front": 0,
+    "three-quarter": 1,
+    "unclear": 2,
+    "side": 3,
+    "back": 4,
+}
+
 PUBLISHABLE_KINDS = {"product", "wrist", "detail", "lifestyle", "packaging"}
 
 
@@ -531,7 +571,10 @@ async def _grade(
         + (f".\nConfirmed from the brand's own sources — {known}" if known else "")
         + "\n\nGrade each image below. Be strict: a different colourway, a different model from the same "
         "family, a retailer's logo, a size chart or a photo of the box is not a usable product shot.\n\n"
-        "Report the dial colour, strap and display you can actually SEE in each picture. Describe what is "
+        "Report the camera view, your confidence in that view, the dial colour, strap and display you can "
+        "actually SEE in each picture. "
+        "A front view shows the dial squarely; a three-quarter view still shows the dial clearly; a side "
+        "view is edge-on; a back view shows the caseback, clasp or underside. Describe what is "
         "in front of you, not what the description above says — those readings are checked against the "
         "specifications, so an honest 'blue' on a watch listed as black is far more useful than agreement.\n\n"
         "Return one entry per image, using the IMAGE number given."
@@ -577,6 +620,13 @@ async def _grade(
             "is_watch": bool(entry.get("is_watch")),
             "matches_model": clamp01(entry.get("matches_model")),
             "shot_type": entry.get("shot_type") or "irrelevant",
+            "view": (
+                entry.get("view")
+                if entry.get("view") in COVER_VIEW_ORDER
+                and clamp01(entry.get("view_confidence")) >= MIN_VIEW_CONFIDENCE
+                else "unclear"
+            ),
+            "view_confidence": clamp01(entry.get("view_confidence")),
             "background": entry.get("background") or "plain",
             "observed_dial_colour": str(entry.get("observed_dial_colour", "")),
             "observed_strap": str(entry.get("observed_strap", "")),
@@ -625,7 +675,14 @@ async def process_images(
         if grade is None:
             # Manual images are published even without a grade — the shop chose them.
             if item["manual"]:
-                scored.append({"item": item, "score": 2.0, "kind": "product", "match": 0.5})
+                scored.append({
+                    "item": item,
+                    "score": 2.0,
+                    "kind": "product",
+                    "view": "unclear",
+                    "view_confidence": 0.0,
+                    "match": 0.5,
+                })
             continue
 
         if not grade["is_watch"] or grade["shot_type"] not in PUBLISHABLE_KINDS:
@@ -641,6 +698,8 @@ async def process_images(
                 "item": item,
                 "score": grade["matches_model"] + grade["quality"],
                 "kind": grade["shot_type"] if grade["shot_type"] in SHOT_PRIORITY else "other",
+                "view": grade["view"],
+                "view_confidence": grade["view_confidence"],
                 "match": grade["matches_model"],
             })
             continue
@@ -655,6 +714,8 @@ async def process_images(
                     "item": item,
                     "score": grade["matches_model"] + grade["quality"] - 0.5,
                     "kind": grade["shot_type"] if grade["shot_type"] in SHOT_PRIORITY else "other",
+                    "view": grade["view"],
+                    "view_confidence": grade["view_confidence"],
                     "match": grade["matches_model"],
                 })
                 continue
@@ -662,6 +723,7 @@ async def process_images(
         item["vision_background"] = grade["background"]
         score = (
             SHOT_PRIORITY.get(grade["shot_type"], 0.0) * 1.5
+            + VIEW_SCORE.get(grade["view"], 0.0)
             + grade["matches_model"] * 2
             + grade["quality"]
             + (3.0 if item["manual"] else 0.0)
@@ -676,7 +738,14 @@ async def process_images(
             + (0.8 if grade["background"] == "plain" else 0.0)
             - (0.6 if grade["background"] == "busy" else 0.0)
         )
-        scored.append({"item": item, "score": score, "kind": grade["shot_type"], "match": grade["matches_model"]})
+        scored.append({
+            "item": item,
+            "score": score,
+            "kind": grade["shot_type"],
+            "view": grade["view"],
+            "view_confidence": grade["view_confidence"],
+            "match": grade["matches_model"],
+        })
 
     scored.sort(key=lambda entry: entry["score"], reverse=True)
     scored = scored[: config.max_images]
@@ -714,6 +783,8 @@ async def process_images(
                     height=item["height"],
                     alt=alt,
                     kind=entry["kind"],
+                    view=entry["view"],
+                    view_confidence=entry["view_confidence"],
                     blur_data_url=None,
                     source_url=item["url"],
                     source_page=item["source_page"],
@@ -759,6 +830,8 @@ async def process_images(
                         height=main.height,
                         alt=alt,
                         kind=entry["kind"],
+                        view=entry["view"],
+                        view_confidence=entry["view_confidence"],
                         blur_data_url=f"data:image/webp;base64,{blur_encoded}",
                         source_url=item["url"],
                         source_page=item["source_page"],
@@ -777,12 +850,11 @@ async def process_images(
     backdrop_id: str | None = None
     # The front of the watch leads the gallery.
     #
-    # Ranking by the grader's confidence is what put a caseback on a card: asked
-    # about a Tissot Ballade it scored the back 0.95 and the dial 0.05. So the
-    # order is settled by reading the pictures — a dial is busy in the middle
-    # where a caseback and a bracelet are quiet — and a scene goes last whatever
-    # it scored. Among equals the order they arrived in is kept, which is the
-    # shop's own gallery order.
+    # Camera view is decided by the same vision call that verifies the reference.
+    # It outranks the older pixel heuristics: crowns and pushers make a profile
+    # shot busy enough to resemble a dial, and engraving can make a caseback
+    # busier than the front. The heuristics remain useful only as tie-breakers for
+    # old artifacts whose stored view is "unclear".
     if len(images) > 1:
         faces: dict[str, tuple[float, float]] = {}
         for image in images:
@@ -797,6 +869,7 @@ async def process_images(
             image for _, image in sorted(
                 enumerate(images),
                 key=lambda pair: (
+                    COVER_VIEW_ORDER.get(pair[1].view, COVER_VIEW_ORDER["unclear"]),
                     1 if pair[1].kind in ("wrist", "lifestyle", "packaging") else 0,
                     0 if faces.get(pair[1].url, (0.0, 0.0))[1] >= MIN_FRAME_FILL else 1,
                     -faces.get(pair[1].url, (0.0, 0.0))[0],

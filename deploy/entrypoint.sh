@@ -24,7 +24,7 @@ fi
 # the agent has discovered a new brand's site, or the shop has edited a backdrop,
 # the copy on the disk is the real one and the image's copy is merely stale.
 mkdir -p "$DATA/catalog" "$DATA/media" "$DATA/runs" "$DATA/uploads" \
-         "$DATA/repairs" "$DATA/bills" "$DATA/.cache"
+         "$DATA/repairs" "$DATA/bills" "$DATA/.cache" "$DATA/.migrations"
 for file in backdrops.json brands.json; do
   if [ ! -f "$DATA/$file" ]; then
     cp "/app/seed/$file" "$DATA/$file"
@@ -34,6 +34,24 @@ done
 # An empty catalogue must still be a valid one, or every shop page errors
 # instead of showing "nothing listed yet".
 [ -f "$DATA/catalog/index.json" ] || echo "[]" > "$DATA/catalog/index.json"
+
+# Existing galleries predate camera-angle classification. Run the audited,
+# resumable migration once on the persistent catalogue. It works in the
+# background so a deploy does not keep the shop offline while the vision model
+# inspects every watch; the storefront index changes only after the full pass.
+COVER_MIGRATION="$DATA/.migrations/cover-view-v1.done"
+if [ ! -f "$COVER_MIGRATION" ]; then
+  (
+    cd /app/agent
+    echo "starting cover-view catalogue migration"
+    if python -m prakash_agent.cover_audit --apply; then
+      date -u +%Y-%m-%dT%H:%M:%SZ > "$COVER_MIGRATION"
+      echo "cover-view catalogue migration complete"
+    else
+      echo "WARNING: cover-view catalogue migration did not finish; it will resume after restart" >&2
+    fi
+  ) &
+fi
 
 # ---------------------------------------------------------------------------
 # The agent

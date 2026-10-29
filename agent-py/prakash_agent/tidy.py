@@ -19,24 +19,23 @@ from __future__ import annotations
 
 import base64
 import json
+from collections.abc import Callable
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from PIL import Image
 
 from .artifact import artifact_path, rebuild_index
+from .background import analyse_background
 from .cache import Cache
 from .config import AgentConfig
 from .http_client import HttpClient
-from .background import analyse_background
 from .images import (
-    CUTOUT_SHOTS,
+    COVER_VIEW_ORDER,
     MAX_ASSET_BYTES,
-    MIN_FRAME_FILL,
     dial_score,
-    frame_fill,
     open_bounded,
     prepare_background,
 )
@@ -50,11 +49,10 @@ SHOT_ORDER = {"product": 0, "detail": 1, "packaging": 2, "wrist": 3, "lifestyle"
 def ordered(images: list[dict], scores: dict[str, tuple[float, bool]] | None = None) -> list[dict]:
     """The gallery in the order a shop would lay it out.
 
-    The front of the watch leads. Which photograph that is comes from the
-    picture — a dial is busy in the middle where a caseback and a bracelet are
-    quiet — because the label cannot be trusted for it: on an Alba AG8Q32X1 the
-    caseback and the dial were both called product shots, and the caseback was
-    the more confident of the two.
+    The front of the watch leads. New listings carry the camera view reported by
+    the vision grader, which distinguishes front and three-quarter photographs
+    from side and back views. Older listings have an "unclear" view and retain
+    the measured dial/studio fallback below.
 
     Two readings decide it, because neither is enough alone.
 
@@ -75,8 +73,9 @@ def ordered(images: list[dict], scores: dict[str, tuple[float, bool]] | None = N
     terms — only busier than this watch's own caseback and bracelet, which it
     always is.
 
-    A scene is always last whatever it scores, and among equals the order the
-    shop's own gallery used is kept.
+    A face-on photograph always beats a side or back view. Among photographs of
+    the same camera view, a clean product shot beats a scene, and the shop's own
+    order settles any remaining tie.
     """
     scores = scores or {}
 
@@ -84,10 +83,12 @@ def ordered(images: list[dict], scores: dict[str, tuple[float, bool]] | None = N
         index, image = pair
         url = image.get("url") or ""
         kind = image.get("kind") or ""
+        view = image.get("view") or "unclear"
         scene = SHOT_ORDER.get(kind, 5) >= SHOT_ORDER["wrist"]
         busy, studio = scores.get(url, (0.0, False))
         return (
-            1 if scene else 0,        # scenes last
+            COVER_VIEW_ORDER.get(view, COVER_VIEW_ORDER["unclear"]),
+            1 if scene else 0,        # among equal views, scenes last
             0 if studio else 1,       # then anything shot on a surface rather than a plain ground
             -busy,                    # then the picture whose detail is in the middle: the dial
             index,                    # then the shop's own order

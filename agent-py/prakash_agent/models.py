@@ -17,6 +17,7 @@ Status = Literal["ready", "needs_review", "failed"]
 Gender = Literal["men", "women", "unisex"]
 SourceKind = Literal["official", "retailer", "marketplace", "editorial", "other"]
 ImageKind = Literal["product", "wrist", "detail", "lifestyle", "packaging", "other"]
+ImageView = Literal["front", "three-quarter", "side", "back", "unclear"]
 
 REVIEW_FLAGS = (
     "no-images",
@@ -150,6 +151,13 @@ class ProductImage(Model):
     height: int
     alt: str = ""
     kind: ImageKind = "product"
+    #: Camera angle used to choose the catalogue cover. Old artifacts default to
+    #: unclear and keep their existing order until they are researched again.
+    view: ImageView = "unclear"
+    #: Confidence in the camera angle, separate from match_score (which answers
+    #: whether the photograph shows the correct reference). Old artifacts have
+    #: not been angle-audited, so zero is the honest default.
+    view_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     #: Explicit alias — to_camel would render this "blurDataUrl".
     blur_data_url: str | None = Field(default=None, alias="blurDataURL")
     source_url: str = ""
