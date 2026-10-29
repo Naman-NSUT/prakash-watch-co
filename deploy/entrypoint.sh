@@ -44,7 +44,7 @@ if [ ! -f "$COVER_MIGRATION" ]; then
   (
     cd /app/agent
     echo "starting cover-view catalogue migration"
-    if python -m prakash_agent.cover_audit --apply --concurrency 3; then
+    if python -m prakash_agent.cover_audit --apply --concurrency 8; then
       date -u +%Y-%m-%dT%H:%M:%SZ > "$COVER_MIGRATION"
       echo "cover-view catalogue migration complete"
     else
