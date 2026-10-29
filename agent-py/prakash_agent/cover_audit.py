@@ -164,6 +164,7 @@ async def run_cover_audit(
     limit: int | None = None,
     only: set[str] | None = None,
     force: bool = False,
+    concurrency: int = 3,
 ) -> dict[str, Any]:
     files = sorted(path for path in Path(config.data_dir).glob("*.json") if path.name != "index.json")
     if only:
@@ -191,6 +192,7 @@ async def run_cover_audit(
             "updatedAt": now_iso(),
             "total": len(files),
             "processed": processed,
+            "concurrency": concurrency,
             "classified": changed,
             "galleriesReordered": reordered,
             "noConfidentFront": no_front,
@@ -222,7 +224,88 @@ async def run_cover_audit(
         except OSError as status_error:
             print(f"Could not publish cover-audit media status: {status_error}", flush=True)
 
+    last_reported = 0
+
+    def progress(number: int) -> None:
+        nonlocal last_reported
+        if number == len(files) or number - last_reported >= 10:
+            last_reported = number
+            publish_status("running", number)
+            print(
+                f"[{number}/{len(files)}] reordered {reordered}; no front {no_front}; "
+                f"missing files {missing_files}; spent ${llm.spent_usd:.4f}",
+                flush=True,
+            )
+
+    async def settle(
+        number: int,
+        path: Path,
+        product: WatchProduct,
+        before: list[str],
+        previous: dict[str, tuple[str, float]],
+        task: asyncio.Task[tuple[dict[int, dict[str, Any]], float, list[int]]],
+    ) -> None:
+        nonlocal changed, reordered, missing_files, no_front
+        grades, cost, missing = await task
+        missing_files += len(missing)
+        for index, image in enumerate(product.images):
+            grade = grades.get(index)
+            if grade is None:
+                continue
+            image.view = grade["view"]
+            image.view_confidence = grade["confidence"]
+
+        has_face = any(image.view in {"front", "three-quarter"} for image in product.images)
+        if has_face and len(product.images) > 1:
+            dumped = [image.dump() for image in product.images]
+            product.images = [type(product.images[0]).model_validate(image) for image in ordered(dumped)]
+        elif not has_face:
+            no_front += 1
+
+        after = [image.url for image in product.images]
+        did_reorder = before != after
+        did_change = did_reorder or any(
+            previous.get(image.url) != (image.view, image.view_confidence)
+            for image in product.images
+        )
+        if grades:
+            changed += 1
+        if did_reorder:
+            reordered += 1
+
+        if apply and grades:
+            write_json(path, product.dump())
+
+        item = {
+            "sku": product.sku,
+            "status": "updated" if grades else "unreadable-images",
+            "reordered": did_reorder,
+            "changed": did_change,
+            "before": before[0] if before else None,
+            "after": after[0] if after else None,
+            "views": [
+                {"url": image.url, "view": image.view, "confidence": image.view_confidence}
+                for image in product.images
+            ],
+            "missing": missing,
+            "costUsd": round(cost, 6),
+        }
+        results.append(item)
+        with checkpoint_path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(item, ensure_ascii=False) + "\n")
+        progress(number)
+
     publish_status("running", 0)
+    pending: list[
+        tuple[
+            int,
+            Path,
+            WatchProduct,
+            list[str],
+            dict[str, tuple[str, float]],
+            asyncio.Task[tuple[dict[int, dict[str, Any]], float, list[int]]],
+        ]
+    ] = []
     try:
         await llm.prepare()
         for number, path in enumerate(files, start=1):
@@ -235,17 +318,20 @@ async def run_cover_audit(
                 failures += 1
                 with checkpoint_path.open("a", encoding="utf-8") as stream:
                     stream.write(json.dumps(item, ensure_ascii=False) + "\n")
+                progress(number)
                 continue
 
             if not product.images:
                 item = {"sku": product.sku, "status": "no-images"}
                 results.append(item)
                 skipped += 1
+                progress(number)
                 continue
             if not force and all(image.view_confidence > 0 for image in product.images):
                 item = {"sku": product.sku, "status": "already-audited"}
                 results.append(item)
                 skipped += 1
+                progress(number)
                 continue
             if config.budget_usd and llm.spent_usd >= config.budget_usd:
                 raise RuntimeError(f"Cover audit reached its ${config.budget_usd:.2f} budget.")
@@ -255,61 +341,13 @@ async def run_cover_audit(
                 image.url: (image.view, image.view_confidence)
                 for image in product.images
             }
-            grades, cost, missing = await classify_views(product, config, llm)
-            missing_files += len(missing)
-            for index, image in enumerate(product.images):
-                grade = grades.get(index)
-                if grade is None:
-                    continue
-                image.view = grade["view"]
-                image.view_confidence = grade["confidence"]
+            task = asyncio.create_task(classify_views(product, config, llm))
+            pending.append((number, path, product, before, previous, task))
+            if len(pending) >= max(1, concurrency):
+                await settle(*pending.pop(0))
 
-            has_face = any(image.view in {"front", "three-quarter"} for image in product.images)
-            if has_face and len(product.images) > 1:
-                dumped = [image.dump() for image in product.images]
-                product.images = [type(product.images[0]).model_validate(image) for image in ordered(dumped)]
-            elif not has_face:
-                no_front += 1
-
-            after = [image.url for image in product.images]
-            did_reorder = before != after
-            did_change = did_reorder or any(
-                previous.get(image.url) != (image.view, image.view_confidence)
-                for image in product.images
-            )
-            if grades:
-                changed += 1
-            if did_reorder:
-                reordered += 1
-
-            if apply and grades:
-                write_json(path, product.dump())
-
-            item = {
-                "sku": product.sku,
-                "status": "updated" if grades else "unreadable-images",
-                "reordered": did_reorder,
-                "changed": did_change,
-                "before": before[0] if before else None,
-                "after": after[0] if after else None,
-                "views": [
-                    {"url": image.url, "view": image.view, "confidence": image.view_confidence}
-                    for image in product.images
-                ],
-                "missing": missing,
-                "costUsd": round(cost, 6),
-            }
-            results.append(item)
-            with checkpoint_path.open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps(item, ensure_ascii=False) + "\n")
-
-            if number == 1 or number % 10 == 0 or number == len(files):
-                publish_status("running", number)
-                print(
-                    f"[{number}/{len(files)}] reordered {reordered}; no front {no_front}; "
-                    f"missing files {missing_files}; spent ${llm.spent_usd:.4f}",
-                    flush=True,
-                )
+        for context in pending:
+            await settle(*context)
     except Exception as error:
         publish_status("failed", len(results), str(error))
         raise
@@ -352,6 +390,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-cache", action="store_true", help="Ignore cached model replies")
     parser.add_argument("--model", help="Override the vision model")
     parser.add_argument("--budget", type=float, help="Maximum model spend in USD")
+    parser.add_argument("--concurrency", type=int, default=3, help="Galleries classified at once")
     return parser
 
 
@@ -372,6 +411,7 @@ def main(argv: list[str] | None = None) -> int:
                 limit=args.limit,
                 only=only,
                 force=args.force,
+                concurrency=max(1, args.concurrency),
             )
         )
     except (OpenRouterError, RuntimeError) as error:
