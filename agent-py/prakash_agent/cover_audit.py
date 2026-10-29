@@ -24,7 +24,8 @@ from PIL.PngImagePlugin import PngInfo
 from .artifact import rebuild_index
 from .cache import Cache
 from .config import AgentConfig, load_config
-from .images import COVER_VIEW_ORDER, MIN_VIEW_CONFIDENCE, open_bounded
+from .http_client import HttpClient
+from .images import COVER_VIEW_ORDER, MAX_ASSET_BYTES, MIN_VIEW_CONFIDENCE, open_bounded
 from .models import WatchProduct
 from .openrouter import OpenRouterClient, OpenRouterError
 from .tidy import ordered
@@ -67,9 +68,9 @@ def _stored_path(config: AgentConfig, product: WatchProduct, url: str) -> Path:
     return Path(config.image_dir) / product.sku / name
 
 
-def _preview(path: Path) -> str | None:
+def _preview_bytes(data: bytes) -> str | None:
     try:
-        with open_bounded(path.read_bytes(), 1024) as image:
+        with open_bounded(data, 1024) as image:
             image.thumbnail((512, 512), Image.Resampling.LANCZOS)
             buffer = BytesIO()
             image.convert("RGB").save(buffer, format="JPEG", quality=70)
@@ -78,10 +79,19 @@ def _preview(path: Path) -> str | None:
     return base64.b64encode(buffer.getvalue()).decode("ascii")
 
 
+def _preview(path: Path) -> str | None:
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return None
+    return _preview_bytes(data)
+
+
 async def classify_views(
     product: WatchProduct,
     config: AgentConfig,
     llm: OpenRouterClient,
+    http: HttpClient,
 ) -> tuple[dict[int, dict[str, Any]], float, list[int]]:
     """Return confident camera views keyed by the original gallery position."""
     parts: list[dict[str, Any]] = [
@@ -104,6 +114,16 @@ async def classify_views(
     missing: list[int] = []
     for index, image in enumerate(product.images):
         encoded = _preview(_stored_path(config, product, image.url))
+        if encoded is None:
+            candidates = [image.source_url]
+            if image.url.startswith(("http://", "https://")):
+                candidates.append(image.url)
+            for candidate in dict.fromkeys(url for url in candidates if url):
+                downloaded = await http.get_binary(candidate, MAX_ASSET_BYTES)
+                if downloaded:
+                    encoded = _preview_bytes(downloaded[0])
+                if encoded is not None:
+                    break
         if encoded is None:
             missing.append(index)
             continue
@@ -182,6 +202,7 @@ async def run_cover_audit(
 
     cache = Cache(Path(config.cache_dir), enabled=config.cache)
     llm = OpenRouterClient(config, cache)
+    http = HttpClient(config, cache)
     results: list[dict[str, Any]] = []
     changed = reordered = skipped = missing_files = failures = no_front = 0
 
@@ -341,7 +362,7 @@ async def run_cover_audit(
                 image.url: (image.view, image.view_confidence)
                 for image in product.images
             }
-            task = asyncio.create_task(classify_views(product, config, llm))
+            task = asyncio.create_task(classify_views(product, config, llm, http))
             pending.append((number, path, product, before, previous, task))
             if len(pending) >= max(1, concurrency):
                 await settle(*pending.pop(0))
@@ -353,6 +374,7 @@ async def run_cover_audit(
         raise
     finally:
         await llm.aclose()
+        await http.aclose()
 
     if apply and changed:
         rebuild_index(config)
