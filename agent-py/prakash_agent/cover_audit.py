@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 from .artifact import rebuild_index
 from .cache import Cache
@@ -184,24 +185,42 @@ async def run_cover_audit(
     changed = reordered = skipped = missing_files = failures = no_front = 0
 
     def publish_status(state: str, processed: int, error: str | None = None) -> None:
-        write_json(
-            status_path,
-            {
-                "state": state,
-                "startedAt": stamp,
-                "updatedAt": now_iso(),
-                "total": len(files),
-                "processed": processed,
-                "classified": changed,
-                "galleriesReordered": reordered,
-                "noConfidentFront": no_front,
-                "missingImageFiles": missing_files,
-                "skipped": skipped,
-                "failures": failures,
-                "costUsd": round(llm.spent_usd, 6),
-                "error": error,
-            },
-        )
+        payload = {
+            "state": state,
+            "startedAt": stamp,
+            "updatedAt": now_iso(),
+            "total": len(files),
+            "processed": processed,
+            "classified": changed,
+            "galleriesReordered": reordered,
+            "noConfidentFront": no_front,
+            "missingImageFiles": missing_files,
+            "skipped": skipped,
+            "failures": failures,
+            "costUsd": round(llm.spent_usd, 6),
+            "error": error,
+        }
+        write_json(status_path, payload)
+
+        # The shop's existing /media route can expose images but deliberately
+        # refuses JSON. A two-pixel PNG gives operations a safe progress beacon
+        # without adding a public API: the counters live in PNG metadata and the
+        # pixel colour shows running/complete/failed at a glance. No SKU, source
+        # URL, path or credential is included.
+        try:
+            public = {key: value for key, value in payload.items() if key != "error"}
+            metadata = PngInfo()
+            metadata.add_text("coverAudit", json.dumps(public, separators=(",", ":")))
+            colour = {"running": "#d79a2b", "complete": "#2f8f5b", "failed": "#b54141"}.get(
+                state, "#777777"
+            )
+            media = Path(config.image_dir)
+            media.mkdir(parents=True, exist_ok=True)
+            temporary = media / ".cover-audit-status.png.tmp"
+            Image.new("RGB", (2, 2), colour).save(temporary, format="PNG", pnginfo=metadata)
+            temporary.replace(media / "cover-audit-status.png")
+        except OSError as status_error:
+            print(f"Could not publish cover-audit media status: {status_error}", flush=True)
 
     publish_status("running", 0)
     try:
