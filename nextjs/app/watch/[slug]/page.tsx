@@ -9,8 +9,14 @@ import CatalogCard from "@/components/CatalogCard";
 import { getProduct, getCatalogIndex, getBackdrops, COLLECTION_META } from "@/lib/catalog";
 import { formatInr } from "@/agent/format";
 import { brandSlug, getBrand } from "@/lib/brands";
+import { backdropVisual } from "@/lib/backdrop-light";
 
-export const dynamic = "force-dynamic";
+// Render each listing on demand, then keep the finished page at Vercel's edge
+// for the same short window as its product data. A cold Render service should
+// never make a repeat visitor wait just to open a watch they already saw in the
+// catalogue.
+export const revalidate = 300;
+export const dynamic = "force-static";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -47,7 +53,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
   const sellsOnline = product.directSale ?? house?.directSale ?? false;
 
   const backdrops = await getBackdrops();
-  const backdrop = product.backdropId ? backdrops.get(product.backdropId) : undefined;
+  const backdrop = backdropVisual(product.backdropId ? backdrops.get(product.backdropId) : undefined);
 
   const related = (await getCatalogIndex())
     .filter((entry) => entry.status === "ready" && entry.sku !== product.sku && entry.collection === product.collection)
@@ -204,12 +210,12 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
                 }, {}),
               ).map(([section, specs]) => (
                 <div key={section} style={{ marginTop: 26 }}>
-                  <h3
+                  <h2
                     className="serif"
                     style={{ margin: "0 0 2px", fontSize: 21, fontWeight: 400, color: "var(--text)" }}
                   >
                     {section}
-                  </h3>
+                  </h2>
                   <dl style={{ margin: 0, borderTop: "1px solid var(--line)" }}>
                     {specs.map((spec) => {
                       // Where a figure came from is the shop's working note, not the
@@ -268,7 +274,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
 
       {related.length > 0 && (
         <section style={{ padding: "0 var(--gutter) 130px" }}>
-          <span className="kicker">Also in {family?.name ?? "the collection"}</span>
+          <h2 className="kicker" style={{ margin: 0 }}>Also in {family?.name ?? "the collection"}</h2>
           <div
             style={{
               display: "grid",
@@ -281,7 +287,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
               <CatalogCard
                 key={entry.sku}
                 entry={entry}
-                backdrop={entry.backdropId ? backdrops.get(entry.backdropId) : undefined}
+                backdrop={backdropVisual(entry.backdropId ? backdrops.get(entry.backdropId) : undefined)}
               />
             ))}
           </div>

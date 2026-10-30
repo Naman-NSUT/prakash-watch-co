@@ -26,7 +26,7 @@ export default async function Marquee() {
               putting nineteen of them through the optimiser to draw them at
               one size buys nothing. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={brand.logo!} alt={key === "a" ? brand.name : ""} loading="lazy" />
+          <img src={brand.logo!} alt={key === "a" ? brand.name : ""} width="96" height="36" loading="lazy" />
         </span>
       ))}
     </div>

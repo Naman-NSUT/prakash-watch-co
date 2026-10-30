@@ -1,11 +1,24 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import type { Backdrop, CatalogEntry } from "@/agent/types";
+import { useRouter } from "next/navigation";
+import type { CatalogEntry } from "@/agent/types";
 import { formatInr } from "@/agent/format";
-import { lightWash } from "@/lib/backdrop-light";
+import { lightWash, type BackdropVisual } from "@/lib/backdrop-light";
+import { mediaPreviewUrl } from "@/lib/media";
 
 /** One watch in the collections grid, in the house style. */
-export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; backdrop?: Backdrop }) {
+export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; backdrop?: BackdropVisual }) {
+  const router = useRouter();
+  const href = `/watch/${entry.slug}`;
+
+  // Start the product request only when somebody shows intent to open this
+  // card. Prefetching every visible card makes a catalogue page fan out into
+  // dozens of back-end requests; waiting until the click makes the shop feel
+  // slow. Pointer, keyboard and touch intent cover the useful middle ground.
+  const warmProduct = () => router.prefetch(href);
+
   // A cut-out watch is published on transparency, so the card supplies the
   // backdrop the agent matched to its colour. An uncut photograph brings its own.
   //
@@ -17,7 +30,11 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
 
   return (
     <Link
-      href={`/watch/${entry.slug}`}
+      href={href}
+      prefetch={false}
+      onPointerEnter={warmProduct}
+      onFocus={warmProduct}
+      onTouchStart={warmProduct}
       className="hover-card"
       style={{
         display: "flex",
@@ -48,7 +65,7 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
 
         {entry.image ? (
           <Image
-            src={entry.image.url}
+            src={mediaPreviewUrl(entry.image.url, 960)}
             alt={entry.image.alt}
             fill
             sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"

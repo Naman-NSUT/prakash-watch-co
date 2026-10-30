@@ -12,9 +12,11 @@ import SortSelect from "@/components/shop/SortSelect";
 import { getCatalogIndex, getBackdrops } from "@/lib/catalog";
 import { applyFilters, parseFilters, sortEntries, PAGE_SIZE } from "@/lib/filters";
 import { isPriced } from "@/agent/types";
+import { backdropVisual } from "@/lib/backdrop-light";
 
-// Artifacts change whenever the agent runs or an edit is saved.
-export const dynamic = "force-dynamic";
+// Query-string filters keep this route dynamic; its catalogue data is shared at
+// the edge for this short window instead of being pulled from Render each time.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Collection — Prakash Watch Co.",
@@ -123,7 +125,7 @@ export default async function CollectionsPage({
                   <CatalogCard
                     key={entry.sku}
                     entry={entry}
-                    backdrop={entry.backdropId ? backdrops.get(entry.backdropId) : undefined}
+                    backdrop={backdropVisual(entry.backdropId ? backdrops.get(entry.backdropId) : undefined)}
                   />
                 ))}
               </div>

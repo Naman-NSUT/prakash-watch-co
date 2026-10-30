@@ -91,6 +91,10 @@ export async function POST(
         height: resized.height ?? EDGE,
         alt: product.title,
         kind: "product",
+        // A shop upload has not gone through the vision grader. Its position is
+        // chosen by the person uploading it, so keep the angle explicitly unknown.
+        view: "unclear",
+        viewConfidence: 0,
         blurDataURL: null,
         sourceUrl: "",
         sourcePage: null,

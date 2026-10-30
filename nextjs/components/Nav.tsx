@@ -78,7 +78,7 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
         }}
         className="site-nav"
       >
-        <Link href="/" className="nav-wordmark" style={{ display: "flex", flexDirection: "column", lineHeight: 0.95 }}>
+        <Link href="/" prefetch={false} className="nav-wordmark" style={{ display: "flex", flexDirection: "column", lineHeight: 0.95 }}>
           <span className="serif" style={{ fontSize: 25 }}>Prakash</span>
           <span className="mono" style={{ fontSize: 9.5, letterSpacing: "0.42em", color: "var(--muted)", textTransform: "uppercase" }}>
             Watch Co.
@@ -95,26 +95,26 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
           {LINKS.map((link) =>
             link.brands && brands.length > 0 ? (
               <span key={link.href} className="nav-brands">
-                <Link href={link.href} aria-haspopup="true">
+                <Link href={link.href} prefetch={false} aria-haspopup="true">
                   {link.label}
                   <span aria-hidden className="nav-caret">&#8964;</span>
                 </Link>
                 <span className="nav-brands-panel" role="group" aria-label="Brands we carry">
                   <span className="nav-brands-grid">
                     {brands.map((brand) => (
-                      <Link key={brand.slug} href={`/brands/${brand.slug}`} className="nav-brand-link">
+                      <Link key={brand.slug} href={`/brands/${brand.slug}`} prefetch={false} className="nav-brand-link">
                         {brand.name}
                         <span className="mono nav-brand-count">{brand.count}</span>
                       </Link>
                     ))}
                   </span>
-                  <Link href="/brands" className="nav-brands-all">
+                  <Link href="/brands" prefetch={false} className="nav-brands-all">
                     All houses &#8594;
                   </Link>
                 </span>
               </span>
             ) : (
-              <Link key={link.href} href={link.href}>
+              <Link key={link.href} href={link.href} prefetch={false}>
                 {link.label}
               </Link>
             ),
@@ -175,11 +175,11 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
                 {brandsOpen && (
                   <div className="nav-panel-brands">
                     {brands.map((brand) => (
-                      <Link key={brand.slug} href={`/brands/${brand.slug}`}>
+                      <Link key={brand.slug} href={`/brands/${brand.slug}`} prefetch={false}>
                         {brand.name}
                       </Link>
                     ))}
-                    <Link href="/brands" className="nav-panel-brands-all">
+                    <Link href="/brands" prefetch={false} className="nav-panel-brands-all">
                       All houses &#8594;
                     </Link>
                   </div>
@@ -189,6 +189,7 @@ export default function Nav({ brands = [] }: { brands?: NavBrand[] }) {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 className="nav-panel-link"
                 style={{ transitionDelay: open ? `${90 + i * 55}ms` : "0ms" }}
               >

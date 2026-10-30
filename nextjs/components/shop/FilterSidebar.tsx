@@ -55,6 +55,7 @@ export default function FilterSidebar({
           {active > 0 && (
             <Link
               href={base ?? "/collections"}
+              prefetch={false}
               className="mono"
               style={{ fontSize: 9, letterSpacing: "0.14em", color: "var(--accent-soft)", textTransform: "uppercase" }}
             >
@@ -98,6 +99,7 @@ export default function FilterSidebar({
                 <Link
                   key={option.value}
                   href={toggledHref(state, group.key, option.value, base)}
+                  prefetch={false}
                   scroll={false}
                   className="facet-option"
                   data-selected={option.selected}
@@ -167,7 +169,7 @@ function Group({
 
 function Toggle({ href, label, selected }: { href: string; label: string; selected: boolean }) {
   return (
-    <Link href={href} scroll={false} className="facet-option" data-selected={selected}>
+    <Link href={href} prefetch={false} scroll={false} className="facet-option" data-selected={selected}>
       <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span className="facet-box" aria-hidden>
           {selected && (

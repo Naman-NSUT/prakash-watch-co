@@ -1,3 +1,5 @@
+import type { Backdrop } from "@/agent/types";
+
 /**
  * Linen counterparts for the photographic backdrops.
  *
@@ -37,4 +39,11 @@ const FALLBACK = "radial-gradient(120% 100% at 50% 42%, #faf7f2 0%, #e6e0d6 72%)
 export function lightWash(backdropId: string | null | undefined): string {
   if (!backdropId) return FALLBACK;
   return WASH[backdropId] ?? FALLBACK;
+}
+
+/** The stage fields a browser actually draws; omit the unused, nonexistent file URL. */
+export type BackdropVisual = Pick<Backdrop, "id" | "css">;
+
+export function backdropVisual(backdrop: Backdrop | undefined): BackdropVisual | undefined {
+  return backdrop ? { id: backdrop.id, css: backdrop.css } : undefined;
 }

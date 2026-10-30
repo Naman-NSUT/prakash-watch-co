@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GalleryImage } from "./Gallery";
+import { mediaPreviewUrl } from "@/lib/media";
 
 /**
  * A photograph at the size it was taken.
@@ -142,7 +143,7 @@ export default function Lightbox({
                 aria-current={slot === index}
                 data-on={slot === index}
               >
-                <Image src={thumb.url} alt="" fill sizes="56px" style={{ objectFit: "contain", padding: 4 }} />
+                <Image src={mediaPreviewUrl(thumb.url, 160)} alt="" fill sizes="56px" style={{ objectFit: "contain", padding: 4 }} />
               </button>
             ))}
           </div>

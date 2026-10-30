@@ -6,8 +6,10 @@ import Footer from "@/components/Footer";
 import { getBrands } from "@/lib/brands";
 import { getBackdrops } from "@/lib/catalog";
 import { formatInr } from "@/agent/format";
+import { mediaPreviewUrl } from "@/lib/media";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Brands — Prakash Watch Co.",
@@ -79,7 +81,7 @@ export default async function BrandsPage() {
                     }}
                   >
                     {brand.image ? (
-                      <Image src={brand.image} alt="" fill sizes="112px" style={{ objectFit: "contain", padding: 16 }} />
+                      <Image src={mediaPreviewUrl(brand.image, 320)} alt="" fill sizes="112px" style={{ objectFit: "contain", padding: 16 }} />
                     ) : (
                       <span className="mono" style={{ fontSize: 9, letterSpacing: "0.2em", color: "var(--faint)" }}>
                         {String(i + 1).padStart(2, "0")}

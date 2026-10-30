@@ -118,6 +118,7 @@ export default function BrandRail({ brands }: { brands: BrandSummary[] }) {
 
           <Link
             href="/brands"
+            prefetch={false}
             className="brand-chip"
             style={{ scrollSnapAlign: "start", flex: "none", textAlign: "center", width: 148 }}
           >
@@ -163,11 +164,12 @@ function BrandChip({ brand }: { brand: BrandSummary }) {
   return (
     <Link
       href={`/brands/${brand.slug}`}
+      prefetch={false}
       className="brand-chip"
       // The label that used to sit under the disc is gone, so the chip keeps a
       // little floor of its own for the badge that hangs off the disc's edge.
       style={{ scrollSnapAlign: "start", flex: "none", width: 148, textAlign: "center", paddingBottom: 22 }}
-      aria-label={brand.name}
+      aria-label={brand.badge ? `${brand.name} — ${brand.badge}` : brand.name}
     >
       <span style={{ position: "relative", display: "block" }}>
         <span
@@ -237,8 +239,8 @@ function RailButton({ dir, enabled, onClick }: { dir: "prev" | "next"; enabled: 
       disabled={!enabled}
       aria-label={dir === "prev" ? "Previous brands" : "Next brands"}
       style={{
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         borderRadius: 999,
         border: "1px solid var(--border)",
         background: "transparent",

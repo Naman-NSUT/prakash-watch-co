@@ -36,6 +36,7 @@ export default function Collection({ families }: { families: CollectionSummary[]
           <Link
             key={family.id}
             href={`/collections?family=${family.id}`}
+            prefetch={false}
             className="row index-row"
             style={{
               display: "grid", gridTemplateColumns: "76px 1.5fr 1fr 150px", alignItems: "center", gap: 24,

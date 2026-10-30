@@ -115,6 +115,15 @@ const nextConfig = {
     ];
     return [
       { source: "/:path*", headers: base },
+      ...(backend
+        ? [{
+            source: "/media/:path*",
+            headers: [
+              { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+              { key: "Vercel-CDN-Cache-Control", value: "public, s-maxage=31536000, stale-while-revalidate=86400" },
+            ],
+          }]
+        : []),
       {
         // Told to browsers only once the site is genuinely on HTTPS; harmless
         // before that because the header is ignored over plain HTTP.

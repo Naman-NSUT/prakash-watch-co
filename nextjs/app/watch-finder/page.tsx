@@ -7,7 +7,8 @@ import { FILTER_GROUPS } from "@/lib/filters";
 import { isPriced } from "@/agent/types";
 import type { CatalogEntry } from "@/agent/types";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Watch Finder — Prakash Watch Co.",

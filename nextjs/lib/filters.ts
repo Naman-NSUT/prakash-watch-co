@@ -28,9 +28,10 @@ export interface FilterState {
  *
  * Without this the collection rendered all 1,672 listings into one response —
  * 9.5 MB of HTML, five seconds to build, and on a phone over mobile data a page
- * nobody waits for. Twelve rows of four is a long scroll and a small payload.
+ * nobody waits for. Six rows of four keeps the first image batch modest while
+ * pagination still makes every listing reachable.
  */
-export const PAGE_SIZE = 48;
+export const PAGE_SIZE = 24;
 
 /** One filterable dimension: where its value lives, and how to label it. */
 export interface FilterGroup {

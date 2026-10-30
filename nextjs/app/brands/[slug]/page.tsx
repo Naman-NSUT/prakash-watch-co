@@ -17,8 +17,9 @@ import { getBrand, getBrands, brandSlug } from "@/lib/brands";
 import { mediaUrl } from "@/lib/remote";
 import { formatInr } from "@/agent/format";
 import { isPriced } from "@/agent/types";
+import { backdropVisual } from "@/lib/backdrop-light";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,
@@ -187,7 +188,7 @@ export default async function BrandPage({
                   <CatalogCard
                     key={entry.sku}
                     entry={entry}
-                    backdrop={entry.backdropId ? backdrops.get(entry.backdropId) : undefined}
+                    backdrop={backdropVisual(entry.backdropId ? backdrops.get(entry.backdropId) : undefined)}
                   />
                 ))}
               </div>

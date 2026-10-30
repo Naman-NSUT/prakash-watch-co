@@ -34,7 +34,7 @@ export default function Pager({
   return (
     <nav className="pager" aria-label="Pages of results">
       {page > 1 ? (
-        <Link href={buildHref({ ...state, page: page - 1 }, base)} className="pager-step" rel="prev">
+        <Link href={buildHref({ ...state, page: page - 1 }, base)} prefetch={false} className="pager-step" rel="prev">
           ← Previous
         </Link>
       ) : (
@@ -50,7 +50,7 @@ export default function Pager({
                 {number}
               </span>
             ) : (
-              <Link href={buildHref({ ...state, page: number }, base)} className="pager-no">
+              <Link href={buildHref({ ...state, page: number }, base)} prefetch={false} className="pager-no">
                 {number}
               </Link>
             )}
@@ -59,7 +59,7 @@ export default function Pager({
       </span>
 
       {page < pages ? (
-        <Link href={buildHref({ ...state, page: page + 1 }, base)} className="pager-step" rel="next">
+        <Link href={buildHref({ ...state, page: page + 1 }, base)} prefetch={false} className="pager-step" rel="next">
           Next →
         </Link>
       ) : (

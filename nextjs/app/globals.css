@@ -11,9 +11,9 @@
   --border: #cdc2ae;
   --text: #221e17;
   --body: #544b3f;
-  --muted: #706557;
-  --dim: #8d8274;
-  --faint: #998e80;
+  --muted: #62594f;
+  --dim: #685f54;
+  --faint: #706557;
   --accent: oklch(0.47 0.09 88);
   --accent-soft: oklch(0.54 0.09 92);
   --well: #ece5d8;
@@ -257,8 +257,8 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
     align-content: center;
     justify-items: end;
     gap: 6px;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -316,6 +316,8 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
   transform: translateY(14px);
   transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+.nav-panel-trigger { min-height: 44px; }
+.nav-wordmark { min-height: 44px; justify-content: center; }
 .nav-panel[data-open="true"] .nav-panel-link { opacity: 1; transform: none; }
 .nav-panel-link .serif { font-size: clamp(30px, 9vw, 44px); line-height: 1.05; letter-spacing: -0.01em; }
 .nav-panel-no { font-size: 9.5px; letter-spacing: 0.22em; color: var(--faint); }
@@ -827,9 +829,9 @@ html[data-theme="copper"] {
   --border: #2c2725;
   --text: #f6f2ee;
   --body: #a49b94;
-  --muted: #8f8680;
-  --dim: #6e6660;
-  --faint: #665e59;
+  --muted: #968d86;
+  --dim: #8f8680;
+  --faint: #887f78;
   --accent: oklch(0.72 0.14 34);
   --accent-soft: oklch(0.78 0.12 40);
 
@@ -1377,6 +1379,9 @@ html:not([data-theme="copper"]) .card-stage {
 }
 
 .pager-step {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -1389,8 +1394,11 @@ html:not([data-theme="copper"]) .card-stage {
 .pager-numbers { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
 .pager-no {
-  min-width: 34px;
-  padding: 7px 4px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 7px 6px;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
   text-align: center;
@@ -1419,8 +1427,8 @@ html:not([data-theme="copper"]) .card-stage {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   background: none;
@@ -1514,6 +1522,7 @@ html:not([data-theme="copper"]) .card-stage {
 
 .home-search-go {
   flex: 0 0 auto;
+  min-height: 44px;
   padding: 14px 30px;
   border: 0;
   background: var(--accent);
@@ -1900,7 +1909,7 @@ a.banner-card:hover { border-color: var(--accent); }
   padding: 18px 0; border-bottom: 1px solid var(--line); }
 .checkout-shot { display: block; width: 76px; height: 76px; background: var(--well); border: 1px solid var(--line); }
 .checkout-shot img { width: 100%; height: 100%; object-fit: contain; }
-.checkout-step { width: 26px; height: 26px; border: 1px solid var(--border); color: var(--body); font-size: 14px; line-height: 1; }
+.checkout-step { width: 44px; height: 44px; border: 1px solid var(--border); color: var(--body); font-size: 16px; line-height: 1; }
 .checkout-step:hover { border-color: var(--accent); color: var(--accent); }
 .checkout-remove { font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); margin-left: 6px; }
 .checkout-remove:hover { color: var(--bad); }
@@ -1925,7 +1934,7 @@ a.banner-card:hover { border-color: var(--accent); }
    to be told what to look for. */
 .nav-icon {
   position: relative; display: inline-grid; place-items: center;
-  width: 34px; height: 34px; color: var(--body);
+  width: 44px; height: 44px; color: var(--body);
   transition: color .25s;
 }
 .nav-icon:hover { color: var(--accent); }

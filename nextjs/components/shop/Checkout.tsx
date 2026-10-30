@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useBag } from "./Cart";
+import { mediaPreviewUrl } from "@/lib/media";
 
 /**
  * The bag, the address, and the payment, on one page.
@@ -197,7 +198,7 @@ export default function Checkout() {
         {bag.items.map((line) => (
           <article key={line.sku} className="checkout-line">
             <span className="checkout-shot">
-              {line.image ? <img src={line.image} alt="" /> : null}
+              {line.image ? <img src={mediaPreviewUrl(line.image, 160)} alt="" /> : null}
             </span>
             <div style={{ minWidth: 0 }}>
               <Link href={`/watch/${line.slug}`} className="serif" style={{ fontSize: 19, color: "var(--text)" }}>

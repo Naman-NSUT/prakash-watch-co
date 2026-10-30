@@ -11,8 +11,10 @@ import Footer from "@/components/Footer";
 import { getCollectionSummaries } from "@/lib/catalog";
 import { getBrands } from "@/lib/brands";
 
-// The index reflects whatever the agent last ingested.
-export const dynamic = "force-dynamic";
+// The index reflects agent changes within five minutes, while repeat visits are
+// served from the edge instead of rebuilding the entire home page from Render.
+export const dynamic = "force-static";
+export const revalidate = 300;
 
 export default async function Home() {
   const [families, brands] = await Promise.all([getCollectionSummaries(), getBrands()]);

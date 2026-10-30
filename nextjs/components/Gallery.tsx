@@ -2,8 +2,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import Lightbox from "./Lightbox";
-import type { Backdrop } from "@/agent/types";
-import { lightWash } from "@/lib/backdrop-light";
+import { lightWash, type BackdropVisual } from "@/lib/backdrop-light";
+import { mediaPreviewUrl } from "@/lib/media";
 
 /**
  * Only what a picture needs to be drawn.
@@ -30,9 +30,10 @@ export default function Gallery({
 }: {
   images: GalleryImage[];
   title: string;
-  backdrop?: Backdrop;
+  backdrop?: BackdropVisual;
 }) {
   const [active, setActive] = useState(0);
+  const [mainReady, setMainReady] = useState(false);
   // Null when closed; the index being viewed when open.
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const current = images[active];
@@ -77,13 +78,16 @@ export default function Gallery({
       >
         <Image
           key={current.url}
-          src={current.url}
+          src={mediaPreviewUrl(current.url, 960)}
           alt={current.alt || title}
           fill
           priority
+          fetchPriority="high"
           sizes="(max-width: 900px) 100vw, 46vw"
           placeholder={current.blurDataURL ? "blur" : "empty"}
           blurDataURL={current.blurDataURL ?? undefined}
+          onLoad={() => setMainReady(true)}
+          onError={() => setMainReady(true)}
           style={{ objectFit: "contain", padding: 30 }}
         />
         <span className="gallery-magnify" aria-hidden>
@@ -129,13 +133,17 @@ export default function Gallery({
                 transition: "border-color .35s",
               }}
             >
-              <Image
-                src={image.url}
-                alt=""
-                fill
-                sizes="78px"
-                style={{ objectFit: "contain", padding: 6, opacity: index === active ? 1 : 0.6 }}
-              />
+              {mainReady ? (
+                <Image
+                  src={mediaPreviewUrl(image.url, 160)}
+                  alt=""
+                  fill
+                  sizes="78px"
+                  loading="lazy"
+                  fetchPriority="low"
+                  style={{ objectFit: "contain", padding: 6, opacity: index === active ? 1 : 0.6 }}
+                />
+              ) : null}
             </button>
           ))}
         </div>

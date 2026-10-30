@@ -31,6 +31,7 @@ export default function ActiveFilters({ state, base }: { state: FilterState; bas
         <Link
           key={chip.label}
           href={chip.href}
+          prefetch={false}
           scroll={false}
           className="mono"
           style={{

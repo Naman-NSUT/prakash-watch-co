@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import WhatsApp from "@/components/WhatsApp";
@@ -11,9 +11,23 @@ const sans = Jost({ weight: ["300", "400", "500", "600"], subsets: ["latin"], va
 const mono = JetBrains_Mono({ weight: ["400", "500"], subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.prakashwatchco.in"),
   title: "Prakash Watch Co. — Time, kept well. Since 1976",
   description:
     "Authorized multi-brand watch boutiques across Delhi NCR since 1976. Tissot, Seiko, Citizen, Casio, Titan and more — sold, set and serviced in house.",
+  applicationName: "Prakash Watch Co.",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.svg", shortcut: "/favicon.ico" },
+  openGraph: {
+    siteName: "Prakash Watch Co.",
+    type: "website",
+    locale: "en_IN",
+  },
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: "#f1ece2",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -84,6 +84,10 @@ export const ProductImageSchema = z.object({
   height: z.number().int().positive(),
   alt: z.string(),
   kind: z.enum(["product", "wrist", "detail", "lifestyle", "packaging", "other"]),
+  /** Camera angle used to choose the catalogue cover image. */
+  view: z.enum(["front", "three-quarter", "side", "back", "unclear"]).default("unclear"),
+  /** Confidence in the camera angle; old listings have not been audited. */
+  viewConfidence: z.number().min(0).max(1).default(0),
   /** Low-res inline placeholder for next/image blurDataURL. */
   blurDataURL: z.string().nullable(),
   /** Where the file came from, kept for rights review. */

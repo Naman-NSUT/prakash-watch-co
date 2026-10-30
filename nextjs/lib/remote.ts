@@ -18,6 +18,8 @@
  *   goes blank for those seconds is worse than one a few minutes out of date.
  */
 import "server-only";
+import { unstable_cache } from "next/cache";
+import { gzipSync, gunzipSync } from "node:zlib";
 
 const BACKEND = (process.env.PWC_BACKEND_URL ?? "").replace(/\/+$/, "");
 const TOKEN = process.env.PWC_PUBLIC_API_TOKEN ?? "";
@@ -30,6 +32,9 @@ const TOKEN = process.env.PWC_PUBLIC_API_TOKEN ?? "";
  */
 const FRESH_FOR_MS = 5 * 60_000;
 const TIMEOUT_MS = 15_000;
+const CATALOG_PATH = "/api/public/catalog";
+const CATALOG_ATTEMPTS = 3;
+const CATALOG_TIMEOUT_MS = 5_000;
 
 export function isRemote(): boolean {
   return BACKEND.length > 0;
@@ -37,6 +42,64 @@ export function isRemote(): boolean {
 
 type Slot = { at: number; value?: unknown; pending?: Promise<unknown> };
 const slots = new Map<string, Slot>();
+
+async function fetchJson<T>(path: string, timeoutMs = TIMEOUT_MS, sharedCache = true): Promise<T> {
+  const response = await fetch(`${BACKEND}${path}`, {
+    headers: TOKEN ? { "x-pwc-token": TOKEN } : undefined,
+    // Product records, brand notes and the other small public answers fit in
+    // Vercel's shared data cache. Keeping them there means a new function does
+    // not have to wake Render before it can draw a watch page. The catalogue is
+    // handled separately below because its uncompressed answer is larger than
+    // one cache item.
+    ...(sharedCache
+      ? { next: { revalidate: Math.round(FRESH_FOR_MS / 1000) } }
+      : { cache: "no-store" as const }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (response.status === 404) return null as T;
+  if (!response.ok) throw new Error(`The back end answered ${response.status} for ${path}.`);
+  return response.json() as Promise<T>;
+}
+
+async function fetchCatalog(): Promise<unknown[]> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= CATALOG_ATTEMPTS; attempt += 1) {
+    try {
+      const value = await fetchJson<unknown>(CATALOG_PATH, CATALOG_TIMEOUT_MS, false);
+      if (!Array.isArray(value) || value.length === 0) {
+        throw new Error("The back end returned an empty catalogue.");
+      }
+      return value;
+    } catch (error) {
+      lastError = error;
+      if (attempt < CATALOG_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
+ * The catalogue is about 3 MB as JSON, larger than a single Vercel data-cache
+ * item. Compressing it brings it comfortably under the limit. More importantly,
+ * the cache is filled only after the answer has been parsed and proved non-empty:
+ * a booting back end can no longer replace 1,637 watches with a cached `[]`.
+ */
+const cachedCatalog = unstable_cache(
+  async () => gzipSync(JSON.stringify(await fetchCatalog())).toString("base64"),
+  ["pwc-public-catalog-gzip-v1", BACKEND],
+  { revalidate: Math.round(FRESH_FOR_MS / 1000) },
+);
+
+async function readCatalog(): Promise<unknown[]> {
+  const packed = await cachedCatalog();
+  const value = JSON.parse(gunzipSync(Buffer.from(packed, "base64")).toString("utf8")) as unknown;
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error("The cached catalogue is empty or invalid.");
+  }
+  return value;
+}
 
 /** A JSON answer from the back end's public API, or null when it says 404. */
 export async function remoteJson<T>(path: string): Promise<T> {
@@ -48,21 +111,8 @@ export async function remoteJson<T>(path: string): Promise<T> {
   if (slot?.pending) return slot.pending as Promise<T>;
 
   const pending = (async () => {
-    const response = await fetch(`${BACKEND}${path}`, {
-      headers: TOKEN ? { "x-pwc-token": TOKEN } : undefined,
-      // Vercel's own data cache rather than no-store, for the same window the
-      // in-memory one uses. The difference is where it lives: the map above is
-      // per instance and dies with it, so a customer arriving on a cold
-      // instance while the back end restarts — which it does on every deploy,
-      // a persistent disk cannot be handed over live — had nothing to fall back
-      // on and saw an error page. This cache is shared and durable, and keeps
-      // serving the last good answer while a revalidation is failing.
-      next: { revalidate: Math.round(FRESH_FOR_MS / 1000) },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (response.status === 404) return null;
-    if (!response.ok) throw new Error(`The back end answered ${response.status} for ${path}.`);
-    return response.json();
+    if (path === CATALOG_PATH) return readCatalog();
+    return fetchJson(path);
   })();
   slots.set(path, { ...slot, at: slot?.at ?? 0, pending });
 
@@ -82,11 +132,10 @@ export async function remoteJson<T>(path: string): Promise<T> {
 }
 
 /**
- * A photograph's address, made absolute when the photographs live on the back
- * end. Listings store "/media/…", which on Vercel would point at a host that has
- * none; absolute, the image optimiser fetches it from Render once and serves
- * every later request for it from Vercel's cache.
+ * Keep catalogue photographs on this origin. On Vercel, /media is rewritten to
+ * the back end and cached at the edge; sending browsers to Render directly
+ * bypasses that cache and makes every visitor pay the back end's latency.
  */
 export function mediaUrl(url: string): string {
-  return isRemote() && url.startsWith("/media/") ? `${BACKEND}${url}` : url;
+  return url;
 }

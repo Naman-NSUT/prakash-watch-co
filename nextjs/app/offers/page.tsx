@@ -4,7 +4,8 @@ import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import { liveOffers, KIND_LABELS, type Offer } from "@/lib/offers";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Offers — Prakash Watch Co.",
