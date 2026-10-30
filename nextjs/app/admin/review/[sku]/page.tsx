@@ -12,6 +12,9 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
   const { sku } = await params;
   const product = await getProduct(sku);
   if (!product) notFound();
+  const modelNameSource = product.modelNameSourceIndex === null
+    ? null
+    : product.sources[product.modelNameSourceIndex] ?? null;
 
   return (
     <main style={{ padding: "34px 34px 90px", display: "grid", gridTemplateColumns: "minmax(0, 1.7fr) minmax(280px, 1fr)", gap: 44, alignItems: "start" }}>
@@ -28,6 +31,14 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
             <div className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", color: "var(--faint)", marginTop: 8 }}>
               REF {product.modelNumber.toUpperCase()} · SHEET ROW {product.meta.sheetRow}
             </div>
+            {modelNameSource && (
+              <div className="mono" style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--faint)", marginTop: 7, textTransform: "uppercase" }}>
+                Name from{" "}
+                <a href={modelNameSource.url} target="_blank" rel="noreferrer nofollow" style={{ color: "var(--muted)" }}>
+                  {modelNameSource.publisher}
+                </a>
+              </div>
+            )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -144,10 +155,36 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
                     rel="noreferrer nofollow"
                     style={{ fontSize: 12.5, fontWeight: 300, color: "var(--body)", wordBreak: "break-word" }}
                   >
-                    [{source.index}] {source.publisher}
+                    [{source.index}] {source.title || source.publisher}
                   </a>
-                  <div className="mono" style={{ fontSize: 8.5, letterSpacing: "0.12em", color: "var(--faint)", marginTop: 3, textTransform: "uppercase" }}>
-                    {source.kind}
+                  <div className="mono" style={{ fontSize: 8.5, letterSpacing: "0.1em", color: "var(--faint)", marginTop: 4, textTransform: "uppercase" }}>
+                    {source.publisher} · {source.kind}
+                  </div>
+                  <div
+                    className="mono"
+                    style={{
+                      display: "inline-block",
+                      fontSize: 8,
+                      letterSpacing: "0.1em",
+                      color: source.trustTier !== null && source.trustTier <= 2 ? "var(--accent)" : source.trustTier === 3 ? "var(--warn)" : "var(--faint)",
+                      border: "1px solid var(--line2)",
+                      padding: "3px 5px",
+                      marginTop: 5,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {source.trustTier === 1
+                      ? "Indian official"
+                      : source.trustTier === 2
+                        ? "Approved Indian dealer"
+                        : source.trustTier === 3
+                          ? source.indianListing
+                            ? "Unapproved Indian source"
+                            : "Non-Indian · review"
+                          : "Legacy source"}
+                  </div>
+                  <div style={{ fontSize: 9.5, lineHeight: 1.45, color: "var(--faint)", marginTop: 5, wordBreak: "break-all" }}>
+                    {source.url}
                   </div>
                 </li>
               ))}

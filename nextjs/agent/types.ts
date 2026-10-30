@@ -62,6 +62,10 @@ export const SourceSchema = z.object({
   publisher: z.string(),
   /** official = brand's own site, retailer = authorised seller, other = anything else. */
   kind: z.enum(["official", "retailer", "marketplace", "editorial", "other"]),
+  /** 1 = Indian brand site, 2 = approved Indian dealer, 3 = review required. */
+  trustTier: z.union([z.literal(1), z.literal(2), z.literal(3)]).nullable().default(null),
+  /** Whether this exact URL belongs to the Indian market. */
+  indianListing: z.boolean().nullable().default(null),
   fetchedAt: z.string(),
 });
 export type Source = z.infer<typeof SourceSchema>;
@@ -187,6 +191,8 @@ export const WatchProductSchema = z.object({
   brand: z.string(),
   modelNumber: z.string(),
   modelName: z.string().nullable(),
+  /** Citation for a researched model name; null when supplied by the shop. */
+  modelNameSourceIndex: z.number().int().nonnegative().nullable().default(null),
   title: z.string(),
 
   price: z.object({

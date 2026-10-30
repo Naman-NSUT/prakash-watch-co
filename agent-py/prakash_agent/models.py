@@ -143,6 +143,11 @@ class Source(Model):
     title: str = ""
     publisher: str = ""
     kind: SourceKind = "other"
+    #: Trust is recorded at research time so the review screen explains why a
+    #: source can or cannot support automatic publication. None marks a legacy
+    #: artifact created before provenance classification was persisted.
+    trust_tier: Literal[1, 2, 3] | None = None
+    indian_listing: bool | None = None
     fetched_at: str = ""
 
 
@@ -260,6 +265,9 @@ class WatchProduct(Model):
     brand: str
     model_number: str
     model_name: str | None = None
+    #: Source for a researched model name. None means the shop supplied it, the
+    #: watch has no marketed name, or this is an older artifact.
+    model_name_source_index: int | None = None
     title: str
     price: Price
     #: What the shop paid per unit, when the sheet says. Needed for gross profit,

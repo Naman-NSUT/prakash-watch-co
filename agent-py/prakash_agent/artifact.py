@@ -176,10 +176,17 @@ def build_product(
     attributes = to_attributes(facts.facts, facts.functions)
     # The stock list is authoritative. Research only ever fills a gap the shop
     # left blank — it never overrides something the shop typed.
-    model_name = normalise_model_name(row.model_name, row.brand, row.model_number) or normalise_model_name(
+    supplied_model_name = normalise_model_name(row.model_name, row.brand, row.model_number)
+    researched_model_name = normalise_model_name(
         facts.model_name,
         row.brand,
         row.reference or row.model_number,
+    )
+    model_name = supplied_model_name or researched_model_name
+    model_name_source_index = (
+        facts.model_name_source_index
+        if not supplied_model_name and researched_model_name
+        else None
     )
 
     section_of = {field: name for name, fields in FACT_GROUPS for field in fields}
@@ -298,6 +305,7 @@ def build_product(
         brand=row.brand,
         model_number=row.model_number,
         model_name=model_name,
+        model_name_source_index=model_name_source_index,
         title=f"{row.brand} {model_name}" if model_name else f"{row.brand} {row.model_number}",
         # Commercial data comes from the stock list only. Nothing researched on the
         # web can change what the shop charges or what it has on the shelf.
@@ -386,6 +394,7 @@ def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProdu
     if supplied_model_name and not product.model_name:
         changes.append("model name filled in")
         product.model_name = supplied_model_name
+        product.model_name_source_index = None
         product.title = f"{product.brand} {supplied_model_name}"
 
     if not changes:

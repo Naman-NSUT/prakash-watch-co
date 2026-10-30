@@ -100,9 +100,17 @@ BRANDS: dict[str, BrandSite] = {
 #: India's authorised watch retailers and the marketplaces the trade actually uses.
 #: These carry Indian references at Indian prices, which is what matters here.
 INDIA_RETAILERS: tuple[str, ...] = (
+    # Dealers explicitly approved by the shop. Keep these in sync with
+    # trust.TRUSTED_DEALERS so a .com address is still recognised as an Indian
+    # listing rather than being judged by its suffix.
+    "rameshwatch.com",
     "helioswatchstore.com",
     "ethoswatches.com",
     "kamalwatch.com",
+    "justintime.in",
+    "watchfactory.in",
+    "casiostore.bhawar.com",
+    "avikya.in",
     "justwatches.in",
     "titanworld.com",
     "watchesindia.com",

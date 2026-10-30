@@ -19,6 +19,7 @@ from .config import AgentConfig
 from .http_client import HttpClient
 from .models import Candidate, ScrapedPage, SheetRow, Source
 from .openrouter import OpenRouterClient
+from .trust import tier
 from .util import now_iso, squish, truncate, uniq_by
 
 # Marketplaces: rich spec tables, but listings are often third-party or wrong.
@@ -123,30 +124,25 @@ def host_of(url: str | None) -> str | None:
         return None
 
 
-def _same_site(a: str, b: str) -> bool:
-    left = a.lower().removeprefix("www.")
-    right = b.lower().removeprefix("www.")
-    return left == right or left.endswith(f".{right}") or right.endswith(f".{left}")
-
-
-def classify_domain(url: str, brand: str, official_host: str | None = None) -> str:
+def classify_domain(url: str, brand: str) -> str:
     host = (host_of(url) or "").lower()
     if not host:
         return "other"
 
-    # The brand's own Indian site, and the site named in the sheet header, are
-    # authoritative by definition.
-    if is_brand_site(url, brand):
+    # Trust is decided centrally and includes the Indian locale path. A hostname
+    # typed in a sheet is a search hint, not permission to publish claims from it.
+    source_tier = tier(url, brand)
+    if source_tier == 1:
         return "official"
-    if official_host and _same_site(host, official_host):
-        return "official"
+    if source_tier == 2:
+        return "retailer"
 
     brand_token = re.sub(r"[^a-z0-9]", "", brand.lower())
     if len(brand_token) >= 4 and brand_token in re.sub(r"[^a-z0-9]", "", host):
-        # The brand's own site, but another market's edition of it — casio.com/intl
-        # rather than casio.com/in. It describes the global reference, which is
-        # often not the one sold here, so it does not get to speak as the brand.
-        return "official" if is_indian_url(url, brand) else "editorial"
+        # A brand-looking hostname that is not in the trusted registry is useful
+        # evidence, but it cannot label itself official. The trust tier above is
+        # the only route to that label.
+        return "editorial"
     if any(h in host for h in MARKETPLACE_HOSTS):
         return "marketplace"
     if any(h in host for h in RETAILER_HOSTS):
@@ -163,7 +159,6 @@ def rank_candidates(hits: list[dict[str, str]], row: SheetRow, india_only: bool 
     results *worse*, returning news and category pages instead of the product — so
     the market filter is applied here instead, where it is exact.
     """
-    official_host = host_of(row.brand_site)
     scored: list[Candidate] = []
 
     for hit in hits:
@@ -207,7 +202,7 @@ def rank_candidates(hits: list[dict[str, str]], row: SheetRow, india_only: bool 
             if brand_token and brand_token not in haystack_all:
                 continue
 
-        kind = classify_domain(url, row.brand, official_host)
+        kind = classify_domain(url, row.brand)
         score = float(KIND_WEIGHT[kind])
         # India first regardless of mode: an Indian page outranks a foreign one of
         # the same type, so the sources actually read describe the Indian article.
@@ -485,13 +480,20 @@ async def gather_evidence(
         if not page.text and not page.spec_pairs:
             continue
 
+        source_tier = tier(page.url, row.brand)
         sources.append(
             Source(
                 index=len(sources),
                 url=page.url,
                 title=page.title or candidate.title,
                 publisher=(host_of(page.url) or "unknown").removeprefix("www."),
-                kind=candidate.kind,
+                kind=(
+                    "official" if source_tier == 1
+                    else "retailer" if source_tier == 2
+                    else candidate.kind
+                ),
+                trust_tier=source_tier,
+                indian_listing=is_indian_url(page.url, row.brand),
                 fetched_at=now_iso(),
             )
         )

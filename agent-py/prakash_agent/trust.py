@@ -20,7 +20,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from .brands import BRANDS, _norm
+from .brands import BRANDS, _norm, is_indian_url
 
 #: Tier 2. Named by the shop, one at a time, because it buys from them.
 TRUSTED_DEALERS: tuple[str, ...] = (
@@ -98,6 +98,29 @@ def _matches(host: str, domain: str) -> bool:
     return bool(host) and bool(domain) and (host == domain or host.endswith(f".{domain}"))
 
 
+def _matches_url(url: str, domain: str) -> bool:
+    """Match a trusted entry including its market path, when it has one.
+
+    Comparing only hostnames made ``tissotwatches.com/en-us`` look like the
+    approved ``/en-in`` storefront. The path is part of the source identity for
+    global brands, so crossing that locale boundary must send a listing to review.
+    """
+    without_scheme = (url or "").lower().strip().split("//", 1)[-1]
+    url_host, _, url_path = without_scheme.partition("/")
+    url_host = url_host.removeprefix("www.").split(":")[0]
+
+    domain_host, _, domain_path = domain.lower().strip().partition("/")
+    domain_host = domain_host.removeprefix("www.")
+    if not _matches(url_host, domain_host):
+        return False
+    if not domain_path:
+        return True
+
+    path = f"/{url_path}"
+    prefix = f"/{domain_path.rstrip('/')}"
+    return path == prefix or path.startswith(f"{prefix}/") or path.startswith(f"{prefix}?")
+
+
 @lru_cache(maxsize=1)
 def _registry_domains() -> dict[str, tuple[str, ...]]:
     """Every brand's official domains, as the registry on disk records them.
@@ -142,13 +165,19 @@ def official_domains(brand: str) -> tuple[str, ...]:
 
 
 def tier(url: str, brand: str) -> int:
-    """1 the brand itself, 2 a vouched dealer, 3 everything else."""
+    """1 Indian brand site, 2 approved Indian dealer, 3 review required."""
     host = host_of(url)
     if not host:
         return 3
-    if any(_matches(host, domain) for domain in official_domains(brand)):
+    if (
+        any(_matches_url(url, domain) for domain in official_domains(brand))
+        and is_indian_url(url, brand)
+    ):
         return 1
-    if any(_matches(host, dealer) for dealer in TRUSTED_DEALERS):
+    if (
+        any(_matches(host, dealer) for dealer in TRUSTED_DEALERS)
+        and is_indian_url(url, brand)
+    ):
         return 2
     return 3
 

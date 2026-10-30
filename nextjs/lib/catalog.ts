@@ -422,7 +422,12 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
     ...product,
     ...(patch.status !== undefined ? { status: patch.status } : {}),
     ...(patch.title !== undefined ? { title: patch.title } : {}),
-    ...(patch.modelName !== undefined ? { modelName: patch.modelName } : {}),
+    ...(patch.modelName !== undefined
+      ? {
+          modelName: patch.modelName,
+          ...(patch.modelName !== product.modelName ? { modelNameSourceIndex: null } : {}),
+        }
+      : {}),
     ...(patch.collection !== undefined ? { collection: patch.collection } : {}),
     ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
     ...(patch.inStock !== undefined ? { inStock: patch.inStock } : {}),

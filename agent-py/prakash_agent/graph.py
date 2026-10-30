@@ -34,7 +34,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
 from .artifact import apply_sheet_update, artifact_path, build_product, rebuild_index, write_artifact
-from .brands import blocks_bots, is_brand_site
+from .brands import blocks_bots, is_brand_site, is_indian_url
 from .cache import Cache
 from .config import AgentConfig, load_config
 from .enrich import extract_facts, fallback_copy, write_copy
@@ -59,6 +59,7 @@ from .report import write_report
 from .registry import BrandRegistry, ensure as ensure_brand
 from .sourcebook import record as record_sources
 from .storefront import find_prices, find_product, resolve_reference, walk_order
+from .trust import tier
 from .resolve import translate_code
 from .research import (
     CONFIDENT_SCORE,
@@ -356,13 +357,20 @@ def build_watch_graph(deps: Deps):
                 continue
 
             host = page.url.split("/")[2] if "//" in page.url else "unknown"
+            source_tier = tier(page.url, row.brand)
             sources.append(
                 Source(
                     index=len(sources),
                     url=page.url,
                     title=page.title or candidate.title,
                     publisher=host.removeprefix("www."),
-                    kind=candidate.kind,
+                    kind=(
+                        "official" if source_tier == 1
+                        else "retailer" if source_tier == 2
+                        else candidate.kind
+                    ),
+                    trust_tier=source_tier,
+                    indian_listing=is_indian_url(page.url, row.brand),
                     fetched_at=now_iso(),
                 )
             )

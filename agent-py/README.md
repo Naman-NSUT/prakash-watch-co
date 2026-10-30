@@ -109,6 +109,12 @@ storefronts to keep out. An Indian page always outranks a foreign one, and a
 brand's own site only counts as the brand speaking when it is the Indian locale —
 `casio.com/intl` does not get to answer for `casio.com/in`.
 
+Every source record keeps its full URL, page title, fetch time, Indian-market
+classification and trust tier. Tier 1 is the brand's Indian storefront and tier 2
+is a dealer the shop has explicitly approved. A tier 3 page may be retained as
+evidence, but `unverified-source` blocks the listing and puts it in the review
+queue. The same weakest-link rule applies to an image's recorded source page.
+
 Two things were measured rather than assumed:
 
 - **Most Indian brand sites refuse bots.** casio.com/in, titan.co.in, fastrack.in,
@@ -149,7 +155,7 @@ Watch specifications are exactly what a language model invents fluently. A shop 
 - **Everything is cited.** Each fact carries the index of the page it was read from; facts whose citation does not resolve are dropped before assembly. A missing spec is correct, an invented one is not.
 - **The copywriter only sees confirmed facts** and cannot mention a specification no source stated.
 - **References are checked, not assumed.** Search returns neighbours constantly — `T127.407.11.041.00` surfaces `…051.00`, `EFR-539DE-8AV` surfaces `EFR-539DE-3AV`. Candidates are scored on normalised reference matching (brands strip separators in URLs, so `T127.407.11.041.00` → `t1274071104100` is a strong signal), and Indian-market suffixes (`AV`, `UDF`, `K1`) are normalised so a regional reference still matches the global page.
-- **Sources are ranked by trust:** official brand site → known retailer → marketplace → editorial.
+- **Sources are ranked by trust:** Indian official brand site → approved Indian dealer → review-only evidence.
 - **Images are looked at.** Candidates are downloaded, de-duplicated with a perceptual hash, then graded by a vision model. In testing this rejected payment-logo strips, a dealer certificate, and a Baby-G photo on an Edifice listing.
 - **Prices are sanity-checked** against any rupee price found on the page.
 
