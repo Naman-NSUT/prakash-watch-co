@@ -3,12 +3,8 @@
 The hierarchy arrived after most of the catalogue was built, so listings went up
 under the older, looser rule: one vouched source anywhere excused everything,
 and photographs were never examined at all. This walks the whole catalogue,
-records the current decision on every source, and withdraws live listings whose
-weakest source fails it.
-
-Withdrawing is not deleting. The listing keeps its research, its photographs and
-its price; it moves to the review queue with the hosts that disqualified it named
-in its notes, and the shop can publish it with one click after looking.
+records the current decision on every source, and flags evidence that needs a
+closer look without hiding the watch from customers.
 """
 
 from __future__ import annotations
@@ -106,12 +102,8 @@ def run_audit(
                 notes.append(note)
                 changed = True
 
-            if product.get("status") == "ready":
-                product["status"] = "needs_review"
-                changed = True
-                withdrawn.append({"sku": product["sku"], "brand": brand, "hosts": strangers})
-                if on_each:
-                    on_each(product["sku"], strangers)
+            if on_each:
+                on_each(product["sku"], strangers)
 
         if commit and changed:
             write_json(path, product)

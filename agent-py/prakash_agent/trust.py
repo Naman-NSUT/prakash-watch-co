@@ -9,9 +9,8 @@ it the other two. They are separated here:
   index   shops consulted ONLY to translate a shop code into the brand's
           reference, and which never supply a fact, a photograph or a price
 
-A listing may be published when everything it was built from — every source and
-every photograph — comes from tier 1 or tier 2. Anything else is held for a
-person to look at before the shop's name goes on it.
+New facts and photographs are accepted only from tier 1 or tier 2. Older evidence
+from anywhere else is flagged for replacement without hiding the listing.
 """
 
 from __future__ import annotations

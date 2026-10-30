@@ -1,8 +1,8 @@
 """Artifact assembly.
 
 Turns the research, enrichment and image stages into one validated WatchProduct,
-scores how much of it is actually backed by a source, and decides whether a human
-needs to look before it goes live.
+scores how much of it is actually backed by a source, and records quality warnings
+for the stock room while keeping every valid listing visible.
 """
 
 from __future__ import annotations
@@ -34,23 +34,6 @@ from .util import format_inr, make_sku, normalise_model_name, now_iso, read_json
 
 #: Specifications a shopper expects; used to score how complete a listing is.
 CORE_FIELDS = ("movement", "case_material", "case_diameter_mm", "water_resistance", "crystal", "strap_material")
-
-#: Flags that hold a listing back from the shop's website. A missing price is
-#: deliberately NOT among them: a brand master carries no prices, and the shop
-#: would rather show the watch with what is known and quote at the counter than
-#: not show it at all. The flag is still raised — it is worth knowing — it simply
-#: does not block.
-BLOCKING_FLAGS = (
-    "no-sources",
-    "model-mismatch",
-    "no-images",
-    "few-images",
-    "unverified-copy",
-    "provisional-image",
-    # Read off a shop outside the house's own list. Held, not discarded.
-    "unverified-source",
-)
-
 
 def _untrusted(brand: str, sources, images) -> list[str]:
     """Hosts a listing leans on that are neither the brand nor a vouched dealer.
@@ -295,7 +278,7 @@ def build_product(
         flag("no-price")
         notes.append("The sheet carried no price. The listing shows 'price on request' until one is set.")
 
-    status = "needs_review" if (any(f in flags for f in BLOCKING_FLAGS) or overall < 0.55) else "ready"
+    status = "ready"
 
     mrp = row.mrp if (row.mrp and row.price and row.mrp > row.price) else None
 
@@ -422,10 +405,6 @@ def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProdu
         product.review.flags = flags  # type: ignore[assignment]
         product.review.notes = [n for n in product.review.notes if "Price taken from" not in n]
         changes.append("price is now the shop's own")
-        # The status may have hinged on a flag that has just gone.
-        blocking = any(f in flags for f in BLOCKING_FLAGS)
-        product.status = "needs_review" if (blocking or product.confidence.overall < 0.55) else "ready"
-
     product.meta.updated_at = now_iso()
     return product, changes
 

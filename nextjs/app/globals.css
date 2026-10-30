@@ -244,11 +244,11 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 }
 
 /* --- Navigation ------------------------------------------------------------
-   Five destinations, a wordmark and the est. line will not sit on one phone-width
-   line, so below 900px the links move into a panel. */
+   Five destinations, a wordmark and the est. line stop fitting cleanly on a
+   compact laptop, so below 1080px the links move into a panel. */
 .nav-toggle { display: none; }
 
-@media (max-width: 900px) {
+@media (max-width: 1080px) {
   .site-nav { padding: 20px var(--gutter) !important; }
   .nav-links, .nav-est { display: none !important; }
 
@@ -292,7 +292,7 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .nav-panel[data-open="true"] { opacity: 1; }
 .nav-panel:focus { outline: none; }
 
-@media (max-width: 900px) {
+@media (max-width: 1080px) {
   .nav-panel { display: block; pointer-events: none; }
   .nav-panel[data-open="true"] { pointer-events: auto; }
 }
@@ -1029,8 +1029,8 @@ html:not([data-theme="copper"]) .card-stage {
 .nav-brands > a { display: inline-flex; align-items: center; }
 
 .nav-brands-panel {
-  position: absolute;
-  top: calc(100% + 18px);
+  position: fixed;
+  top: 96px;
   left: 50%;
   translate: -50% 0;
   z-index: 90;
@@ -1051,10 +1051,10 @@ html:not([data-theme="copper"]) .card-stage {
 .nav-brands-panel::before {
   content: "";
   position: absolute;
-  top: -20px;
+  top: -40px;
   left: 0;
   right: 0;
-  height: 20px;
+  height: 40px;
 }
 
 .nav-brands:hover .nav-brands-panel,
@@ -1143,9 +1143,17 @@ html:not([data-theme="copper"]) .card-stage {
 }
 
 /* Six destinations plus a wordmark is a tight line. The gap closes a little on
-   the smaller desks before the whole thing collapses into the panel at 900px. */
+   smaller desks before the whole thing collapses into the compact panel. */
 @media (max-width: 1200px) {
   .nav-links { gap: 24px !important; font-size: 12.5px !important; }
+}
+
+/* A laptop still has room for the full route list, but not for the decorative
+   establishment line as well. Closing the gaps here keeps the wordmark and the
+   first route visually separate until the compact menu takes over. */
+@media (max-width: 1320px) {
+  .nav-links { gap: 22px !important; font-size: 12px !important; }
+  .nav-est { display: none !important; }
 }
 
 /* --- The watch finder -------------------------------------------------------
@@ -1586,7 +1594,7 @@ html:not([data-theme="copper"]) .card-stage {
 
 .nav-est .mono { font-weight: 500; }
 
-@media (max-width: 900px) {
+@media (max-width: 1080px) {
   .nav-wordmark .serif { font-size: 30px !important; }
 }
 

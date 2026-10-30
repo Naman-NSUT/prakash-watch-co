@@ -95,7 +95,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ sku: st
         </Panel>
 
         {product.review.flags.length > 0 && (
-          <Panel title="Why it is held">
+          <Panel title="Quality notes">
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 13 }}>
               {product.review.flags.map((flag) => (
                 <li key={flag}>

@@ -57,21 +57,21 @@ ReviewFlag = Literal[
 ]
 
 REVIEW_FLAG_EXPLANATIONS: dict[str, str] = {
-    "no-images": "No usable photograph was found — the listing cannot go live without one.",
-    "few-images": "Fewer than three distinct photographs. Add more angles before publishing this listing.",
+    "no-images": "No usable photograph was found yet. The storefront uses a placeholder while recovery continues.",
+    "few-images": "Fewer than three distinct photographs. Recovery will keep looking for more trusted angles.",
     "low-image-match": "The photographs may show a different colourway or reference.",
     "no-official-source": "Nothing from the brand's own site — specifications came from resellers.",
     "no-sources": "No page could be read at all. Check the reference number.",
     "unverified-source": (
         "Everything here was read off a shop the house has not vouched for — not the brand's own "
-        "site, and not one of the authorised dealers. Worth your eye before it goes in the window."
+        "site, and not one of the authorised dealers. Replace this evidence when a trusted Indian listing is found."
     ),
     "sparse-specs": "Fewer than four core specifications were confirmed.",
     "model-mismatch": "The pages found appear to describe a different reference.",
     "price-outlier": "A source quotes a very different price — often a sign it describes another reference. The shop's price is unaffected.",
     "unverified-copy": "No specification was confirmed, so the copy is generic.",
     "manual-images-only": "Only the shop's own images were used.",
-    "provisional-image": "No photograph could be confirmed as this exact reference, so the closest one found is shown. Check it before publishing.",
+    "provisional-image": "No photograph could be confirmed as this exact reference, so the closest one found is shown and marked for replacement.",
     "llm-unavailable": "Written without research (dry run or model unavailable).",
     "no-price": "No price yet — the listing shows 'price on request'. Set one when you know it.",
     "estimated-price": "Price taken from what the trade is charging, not from the shop's own sheet. Check it before relying on it.",
@@ -93,7 +93,7 @@ class SheetRow(Model):
     brand: str
     model_number: str
     #: None when the sheet is a brand master with no price column at all. Such a
-    #: row is researched and held; it can never be published unpriced.
+    #: row is listed as "price on request" until the shop supplies one.
     price: float | None = None
     mrp: float | None = None
     cost_price: float | None = None
@@ -197,7 +197,7 @@ class Copy(Model):
 
 class Price(Model):
     currency: Literal["INR"] = "INR"
-    #: None until the shop sets one. The storefront never shows an unpriced watch.
+    #: None until the shop sets one. The storefront then says "price on request".
     selling: float | None = None
     mrp: float | None = None
     discount_pct: int | None = None

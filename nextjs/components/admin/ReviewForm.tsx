@@ -435,12 +435,11 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
           <button
             type="button"
             onClick={() => save("ready", "publish")}
-            disabled={busy !== null || images.length < 3}
-            title={images.length < 3 ? "Add at least three photographs before publishing." : undefined}
+            disabled={busy !== null}
             className="btn btn-solid"
-            style={{ border: "none", cursor: images.length < 3 ? "not-allowed" : "pointer", opacity: images.length < 3 ? 0.5 : 1 }}
+            style={{ border: "none", cursor: "pointer" }}
           >
-            {busy === "publish" ? "…" : images.length < 3 ? `Add ${3 - images.length} more to publish` : "Approve and publish"}
+            {busy === "publish" ? "…" : "Approve and publish"}
           </button>
         )}
 

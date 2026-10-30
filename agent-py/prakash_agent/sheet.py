@@ -201,8 +201,8 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
 
         # A tab that only quotes MRP is still usable: MRP becomes the shelf price.
         # A tab with no price at all is usable too — a brand master is a list of
-        # what exists, not of what it costs. Those rows are researched and held
-        # unpriced; nothing without a price can be published.
+        # what exists, not of what it costs. Those rows are researched and listed
+        # as "price on request" until the shop supplies a figure.
         price_field = next((f for f in REQUIRED_ANY_PRICE if f in columns), None)
         mrp_is_price = price_field == "mrp"
 

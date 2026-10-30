@@ -1,4 +1,4 @@
-"""Keep every catalogue gallery between three and five photographs.
+"""Move every catalogue gallery toward three to five photographs.
 
 Every listed watch was matched, once, against a shop that carries that exact
 reference. The page is recorded. So there is nothing to search for and nothing
@@ -31,7 +31,7 @@ from typing import Any, Callable
 
 from PIL import Image
 
-from .artifact import BLOCKING_FLAGS, artifact_path, rebuild_index
+from .artifact import artifact_path, rebuild_index
 from .config import AgentConfig
 from .cache import Cache
 from .http_client import HttpClient
@@ -41,8 +41,8 @@ from .storefront import find_product
 from .trust import tier
 from .util import now_iso, read_json, write_json
 
-#: A published gallery is complete at three, while five is the storage and UI
-#: ceiling. Some source galleries have only three useful angles; those are fine.
+#: Three is the quality target and five is the storage and UI ceiling. A watch
+#: remains visible if its trusted source cannot supply all three angles.
 MIN_GALLERY = 3
 MAX_GALLERY = 5
 
@@ -117,15 +117,13 @@ def source_pages_for(product: dict) -> list[str]:
 
 
 def apply_gallery_policy(product: dict) -> bool:
-    """Cap a gallery and keep incomplete listings out of the shop window.
+    """Cap a gallery and keep its quality warnings current.
 
     The function is intentionally shared by the preflight pass and every top-up
-    result, including failures. That means a source page being offline can never
-    leave a one-image watch published merely because recovery could not finish.
-    A listing that was already in review for another reason stays in review.
+    result, including failures. A weak gallery remains visible while recovery
+    continues, and an explicit manual publication status is left untouched.
     """
     before = json.dumps(product, sort_keys=True, ensure_ascii=False)
-    previous_status = product.get("status")
     review = product.setdefault("review", {})
     previous_flags = list(review.get("flags") or [])
     flags = [flag for flag in previous_flags if flag not in ("no-images", "few-images")]
@@ -153,16 +151,6 @@ def apply_gallery_policy(product: dict) -> bool:
         + image_score * 0.25,
         3,
     )
-
-    blocking = any(flag in BLOCKING_FLAGS for flag in review["flags"])
-    incomplete = len(images) < MIN_GALLERY
-    # Only auto-publish a formerly incomplete listing. A watch held for a human
-    # decision stays held even if its gallery is now complete.
-    recovered = "few-images" in previous_flags and not incomplete
-    if incomplete or blocking or confidence["overall"] < 0.55:
-        product["status"] = "needs_review"
-    elif previous_status == "ready" or recovered:
-        product["status"] = "ready"
 
     meta = product.setdefault("meta", {})
     if json.dumps(product, sort_keys=True, ensure_ascii=False) != before:
@@ -409,10 +397,8 @@ async def run_top_up(
     results: list[TopUpResult] = []
     policy_changes = 0
 
-    # First enforce the public contract without using the network. Rebuilding
-    # here withdraws incomplete galleries immediately; the slower recovery pass
-    # can then work in the background and republish each recovered watch at the
-    # final rebuild.
+    # First normalise every gallery and its warnings without using the network.
+    # The slower recovery pass can then fill missing angles in the background.
     for entry in wanted:
         path = artifact_path(config, entry["sku"])
         product = read_json(path)

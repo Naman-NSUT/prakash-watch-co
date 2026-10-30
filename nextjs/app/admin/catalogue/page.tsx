@@ -116,7 +116,7 @@ export default async function CataloguePage({
         title="Catalogue"
         lead={
           `${live.toLocaleString("en-IN")} of ${products.length.toLocaleString("en-IN")} listings are on the website. ` +
-          `${(products.length - live).toLocaleString("en-IN")} are still waiting for you to approve them, and are shown first below.`
+          `${(products.length - live).toLocaleString("en-IN")} have been explicitly taken off the shop, and are shown first below.`
         }
       />
 
@@ -133,8 +133,8 @@ export default async function CataloguePage({
         </Link>
         <Link href="/admin/catalogue?status=review" className="ops-split-half" data-tone="warn">
           <span className="ops-split-figure mono">{(products.length - live).toLocaleString("en-IN")}</span>
-          <span className="ops-split-label">Not uploaded yet</span>
-          <span className="ops-split-note">Held until you approve each one</span>
+          <span className="ops-split-label">Off the website</span>
+          <span className="ops-split-note">Manually paused from the shop</span>
         </Link>
       </div>
 
@@ -157,7 +157,7 @@ export default async function CataloguePage({
       <nav aria-label="Filter listings" style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "20px 0 12px" }}>
         <Link href="/admin/catalogue" className="ops-chip" data-tone={!status && !flag ? "good" : "mute"}>All {products.length}</Link>
         <Link href="/admin/catalogue?status=review" className="ops-chip" data-tone={status === "review" ? "warn" : "mute"}>
-          Not uploaded {products.length - live}
+          Off website {products.length - live}
         </Link>
         <Link href="/admin/catalogue?status=live" className="ops-chip" data-tone={status === "live" ? "good" : "mute"}>On the website {live}</Link>
         <Link href="/admin/catalogue?flag=provisional-image" className="ops-chip" data-tone={flag === "provisional-image" ? "warn" : "mute"}>

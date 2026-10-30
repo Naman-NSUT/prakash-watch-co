@@ -320,10 +320,10 @@ export default function UploadPanel() {
 
         <p style={{ margin: "0 0 22px", fontSize: 14, lineHeight: 1.65, fontWeight: 300, color: "var(--muted)", maxWidth: 620 }}>
           {mode === "add"
-            ? "Upload the inventory list as .xlsx or .csv. It needs a brand column, a model number column and a price column — the names can be whatever the shop already uses. Anything already listed is left untouched; everything new is researched and written for you, then held for review."
+            ? "Upload the inventory list as .xlsx or .csv. It needs a brand column and a model number column; price may be added later. Anything already listed is left untouched. Every valid new watch is researched and published automatically, with quality gaps flagged here while recovery continues."
             : mode === "update"
               ? "For a revised price list, a discount sheet or a fresh stock count. Rows matching a watch already listed have their price, discount, cost and quantity updated — nothing is researched, nothing is bought, and any row for a watch the shop has not listed yet is set aside rather than added."
-              : "For a single piece that arrived outside the monthly sheet. Give the make, the reference and what the shop charges; the rest is researched and written the same way, and held for review."}
+              : "For a single piece that arrived outside the monthly sheet. Give the make, the reference and what the shop charges; the rest is researched, published automatically and kept under the same quality checks."}
         </p>
       </div>
 

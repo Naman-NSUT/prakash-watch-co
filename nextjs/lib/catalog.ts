@@ -503,20 +503,15 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
       .filter((image): image is NonNullable<typeof image> => Boolean(image));
   }
 
-  // A public product page needs a useful gallery, not a lone card thumbnail.
-  // Apply this centrally so removing a photograph, a direct API edit, and the
-  // admin form all follow the same rule. A human may save an incomplete draft,
-  // but it cannot be published until three distinct photographs remain.
+  // Keep gallery quality visible in the stock room without withdrawing the
+  // watch. Recovery can add more angles later; the best available listing stays
+  // searchable in the meantime.
   const galleryFlags: WatchProduct["review"]["flags"] = next.review.flags.filter(
     (flag) => flag !== "no-images" && flag !== "few-images",
   );
   if (next.images.length === 0) galleryFlags.push("no-images");
   else if (next.images.length < 3) galleryFlags.push("few-images");
   next.review = { ...next.review, flags: galleryFlags };
-  if (next.images.length < 3) {
-    if (patch.status === "ready") throw new Error("Add at least three photographs before publishing.");
-    next.status = "needs_review";
-  }
 
   if (patch.backdropId !== undefined) next.backdropId = patch.backdropId;
 
@@ -572,7 +567,6 @@ export async function addImages(sku: string, images: unknown[]): Promise<WatchPr
     ...product,
     images: combined,
     review: { ...product.review, flags },
-    ...(combined.length < 3 ? { status: "needs_review" as const } : {}),
     meta: { ...product.meta, updatedAt: new Date().toISOString() },
   };
 

@@ -36,10 +36,9 @@ done
 [ -f "$DATA/catalog/index.json" ] || echo "[]" > "$DATA/catalog/index.json"
 
 # Existing artifacts already record every source URL. Classify those URLs under
-# the exact same Indian-market policy as new research, and withdraw any live
-# listing whose weakest source now requires review. This is local JSON work: no
-# network calls, model credit or re-research. Run once before the site starts so
-# there is no window where the old trust decision remains public.
+# the exact same Indian-market policy as new research and retain quality warnings
+# for anything that needs stronger evidence. This is local JSON work: no network
+# calls, model credit or re-research.
 SOURCE_TRUST_MIGRATION="$DATA/.migrations/source-trust-v2.done"
 if [ ! -f "$SOURCE_TRUST_MIGRATION" ]; then
   echo "classifying existing catalogue sources"
@@ -53,7 +52,7 @@ report = run_audit(load_config(), commit=True)
 print(
     "source audit complete — "
     f"{report['checked']} checked, {report['classified']} sources classified, "
-    f"{len(report['withdrawn'])} moved to review"
+    f"{report['flagged']} flagged for stronger evidence"
 )
 PY
   ); then
@@ -63,11 +62,33 @@ PY
   fi
 fi
 
-# Bring old galleries under the same three-to-five-image contract as new rows.
+# Older runs used quality flags as publication gates. Keep those flags for the
+# stock room, but put every valid artifact back on the website once. A later
+# manual "take off the shop" remains respected because this migration is marked.
+PUBLICATION_MIGRATION="$DATA/.migrations/warnings-not-review-v1.done"
+if [ ! -f "$PUBLICATION_MIGRATION" ]; then
+  echo "republishing valid catalogue warnings"
+  if (
+    cd /app/agent
+    python - <<'PY'
+from prakash_agent.config import load_config
+from prakash_agent.publication import publish_all
+
+report = publish_all(load_config())
+print(f"publication migration complete — {report['published']} of {report['checked']} moved live")
+PY
+  ); then
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$PUBLICATION_MIGRATION"
+  else
+    echo "WARNING: publication migration failed; it will retry after restart" >&2
+  fi
+fi
+
+# Bring old galleries under the same three-to-five-image target as new rows.
 # The network pass runs after the site starts and only reads the recorded Indian
-# brand/dealer pages. It first withdraws incomplete listings locally, then fills
-# them toward five. Camera classification follows it so new angles cannot put a
-# caseback ahead of the dial. One coordinator owns catalogue writes at a time.
+# brand/dealer pages. It keeps warnings current while filling galleries toward
+# five. Camera classification follows it so new angles cannot put a caseback
+# ahead of the dial. One coordinator owns catalogue writes at a time.
 GALLERY_MIGRATION="$DATA/.migrations/gallery-3-to-5-v1.done"
 COVER_MIGRATION="$DATA/.migrations/cover-view-v2.done"
 if [ ! -f "$GALLERY_MIGRATION" ] || [ ! -f "$COVER_MIGRATION" ]; then
