@@ -114,6 +114,9 @@ classification and trust tier. Tier 1 is the brand's Indian storefront and tier 
 is a dealer the shop has explicitly approved. A tier 3 page may be retained as
 evidence, but `unverified-source` blocks the listing and puts it in the review
 queue. The same weakest-link rule applies to an image's recorded source page.
+Existing artifacts are classified from their recorded URLs during the one-time
+`source-trust-v2` startup migration, so this rule covers the whole catalogue and
+does not require paid re-research.
 
 Two things were measured rather than assumed:
 

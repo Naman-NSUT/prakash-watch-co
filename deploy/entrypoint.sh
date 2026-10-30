@@ -35,6 +35,34 @@ done
 # instead of showing "nothing listed yet".
 [ -f "$DATA/catalog/index.json" ] || echo "[]" > "$DATA/catalog/index.json"
 
+# Existing artifacts already record every source URL. Classify those URLs under
+# the exact same Indian-market policy as new research, and withdraw any live
+# listing whose weakest source now requires review. This is local JSON work: no
+# network calls, model credit or re-research. Run once before the site starts so
+# there is no window where the old trust decision remains public.
+SOURCE_TRUST_MIGRATION="$DATA/.migrations/source-trust-v2.done"
+if [ ! -f "$SOURCE_TRUST_MIGRATION" ]; then
+  echo "classifying existing catalogue sources"
+  if (
+    cd /app/agent
+    python - <<'PY'
+from prakash_agent.audit import run_audit
+from prakash_agent.config import load_config
+
+report = run_audit(load_config(), commit=True)
+print(
+    "source audit complete — "
+    f"{report['checked']} checked, {report['classified']} sources classified, "
+    f"{len(report['withdrawn'])} moved to review"
+)
+PY
+  ); then
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$SOURCE_TRUST_MIGRATION"
+  else
+    echo "WARNING: source trust migration failed; it will retry after restart" >&2
+  fi
+fi
+
 # Existing galleries predate camera-angle classification. Run the audited,
 # resumable migration once on the persistent catalogue. It works in the
 # background so a deploy does not keep the shop offline while the vision model
