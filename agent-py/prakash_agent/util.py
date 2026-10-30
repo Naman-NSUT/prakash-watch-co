@@ -103,6 +103,45 @@ def squish(value: str | None) -> str:
     return re.sub(r"\s+", " ", value).strip() if value else ""
 
 
+def normalise_model_name(value: str | None, brand: str, model_number: str) -> str | None:
+    """Returns a shopper-facing model name, or None when the value is only identity noise.
+
+    Distributor sheets frequently put the reference in both the model-number and
+    product-name columns. Brand pages do the same with decorated variants such as
+    ``NM1792WM01`` for reference ``1792WM01``. Keeping those as a model name makes
+    the shop repeat the same code as both its headline and its REF line.
+
+    A real range name is retained, including names that contain numbers (PRX 40,
+    5 Sports). Only the known brand/reference and a code-only remainder are removed.
+    """
+    name = squish(value)
+    if not name:
+        return None
+
+    if brand:
+        name = re.sub(re.escape(brand), " ", name, flags=re.IGNORECASE)
+
+    reference = re.sub(r"[^a-z0-9]", "", model_number.lower())
+    if reference:
+        def drop_reference_token(match: re.Match[str]) -> str:
+            token = match.group(0)
+            normal = re.sub(r"[^a-z0-9]", "", token.lower())
+            return " " if reference in normal else token
+
+        name = re.sub(r"[a-z0-9][a-z0-9._/+-]*", drop_reference_token, name, flags=re.IGNORECASE)
+
+    name = re.sub(r"\s+", " ", name)
+    name = re.sub(r"\b(?:for|with|in|and)\s*$", "", name, flags=re.IGNORECASE)
+    name = name.strip(" -–—|:/,")
+    if not re.search(r"[a-z]{2}", name, flags=re.IGNORECASE):
+        return None
+    if re.fullmatch(r"[a-z]{0,6}\d+[a-z0-9._/+-]*", name, flags=re.IGNORECASE):
+        return None
+    if re.fullmatch(r"(?:watch|wristwatch|product|model|men'?s?|women'?s?)(?:\s+(?:watch|wristwatch|product|model|men'?s?|women'?s?))*", name, flags=re.IGNORECASE):
+        return None
+    return name
+
+
 def truncate(value: str, limit: int) -> str:
     return value if len(value) <= limit else value[: limit - 1].rstrip() + "…"
 

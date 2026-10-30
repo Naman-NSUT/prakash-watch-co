@@ -15,7 +15,7 @@ from .config import COLLECTIONS
 from .models import Attributes, Copy, Fact, FactsResult, ScrapedPage, SheetRow, Source
 from .openrouter import OpenRouterClient
 from .research import render_evidence
-from .util import clamp01, format_inr, parse_mm, parse_year, squish, truncate
+from .util import clamp01, format_inr, normalise_model_name, parse_mm, parse_year, squish, truncate
 
 FACT_FIELDS = (
     # Movement
@@ -93,7 +93,7 @@ FACTS_SCHEMA = {
         "type": "object",
         "additionalProperties": False,
         "required": [
-            "matches_reference", "match_confidence", "mismatch_reason", "model_name",
+            "matches_reference", "match_confidence", "mismatch_reason", "model_name", "model_name_source_index",
             "collection", "gender", "facts", "functions", "tags",
         ],
         "properties": {
@@ -106,7 +106,17 @@ FACTS_SCHEMA = {
                 "type": ["string", "null"],
                 "description": "If the sources describe a different watch, say which and how it differs.",
             },
-            "model_name": {"type": ["string", "null"], "description": "Official model name, e.g. 'Gentleman Powermatic 80'."},
+            "model_name": {
+                "type": ["string", "null"],
+                "description": (
+                    "The marketed range/model name only, e.g. 'Gentleman Powermatic 80'. "
+                    "Exclude the brand and reference number. Return null when the page gives only a reference."
+                ),
+            },
+            "model_name_source_index": {
+                "type": ["integer", "null"],
+                "description": "SOURCE block that explicitly states model_name; null when model_name is null.",
+            },
             "collection": {"type": ["string", "null"], "enum": [*COLLECTIONS, None]},
             "gender": {"type": ["string", "null"], "enum": ["men", "women", "unisex", None]},
             "facts": {
@@ -123,7 +133,11 @@ FACTS_SCHEMA = {
                     },
                 },
             },
-            "functions": {"type": "array", "items": {"type": "string"}, "description": "Complications, e.g. 'Date'."},
+            "functions": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Complications explicitly stated by a SOURCE, e.g. 'Date'. Never infer them from appearance.",
+            },
             "tags": {"type": "array", "items": {"type": "string"}, "description": "3-6 short lowercase search tags."},
         },
     },
@@ -136,7 +150,10 @@ COPY_SCHEMA = {
         "additionalProperties": False,
         "required": ["tagline", "short", "long", "bullets", "seo_title", "seo_description", "image_alt"],
         "properties": {
-            "tagline": {"type": "string", "description": "Under 60 characters. No brand name, no price."},
+            "tagline": {
+                "type": "string",
+                "description": "A concrete 4-8 word descriptor under 60 characters. No brand, reference number or price.",
+            },
             "short": {"type": "string", "description": "One sentence under 160 characters for the collection card."},
             "long": {"type": "string", "description": "Two short paragraphs separated by a blank line."},
             "bullets": {"type": "array", "items": {"type": "string"}, "description": "3 to 5 short factual points."},
@@ -161,7 +178,8 @@ Rules, in order of importance:
    Either way, still report any facts that genuinely are about this reference.
 4. Prefer official brand sources over retailers, and retailers over marketplaces and blogs, when they disagree.
 5. Copy values as stated, including units.
-6. Be exhaustive. A brand's own product page lists twenty or thirty specifications, and a shopper comparing our listing against it should not find ours thinner. Fill every field the sources support — battery type and life, accuracy, weight, lug-to-lug, caseback, luminous material, illumination, world time, alarms, stopwatch, countdown timer, calendar, shock resistance, country of manufacture. Rule 1 still governs: report only what a source states, and leave the rest out."""
+6. Be exhaustive. A brand's own product page lists twenty or thirty specifications, and a shopper comparing our listing against it should not find ours thinner. Fill every field the sources support — battery type and life, accuracy, weight, lug-to-lug, caseback, luminous material, illumination, world time, alarms, stopwatch, countdown timer, calendar, shock resistance, country of manufacture. Rule 1 still governs: report only what a source states, and leave the rest out.
+7. model_name is an identity fact, not a title-writing exercise. Return only a marketed range or model name explicitly printed by a source, without the brand or reference number, and cite that SOURCE in model_name_source_index. If every page calls the watch only by its reference, return null for both fields."""
 
 COPY_SYSTEM = """You write product copy for Prakash Watch Co., an authorised multi-brand watch boutique in Delhi NCR, established 1976.
 
@@ -172,7 +190,62 @@ Hard rules:
 2. No hype, no superlatives, no "elevate your style", no exclamation marks, no invented heritage or awards.
 3. Never promise stock, delivery times, discounts or authenticity guarantees beyond what you are told.
 4. British-Indian English. Prices in rupees when mentioned at all.
-5. Write about the watch, not about the buyer's aspirations."""
+5. Write about the watch, not about the buyer's aspirations.
+6. The tagline is a compact catalogue descriptor, ideally 4-8 words (for example "Blue dial automatic watch"). Never use the reference number as the tagline."""
+
+
+def _model_name_supported(name: str, page: ScrapedPage) -> bool:
+    """Checks that a researched model name is actually printed on its cited page."""
+    haystack = " ".join(
+        [
+            page.title,
+            page.description,
+            page.text,
+            " ".join(f"{label} {value}" for label, value in page.spec_pairs),
+        ]
+    ).lower()
+    words = [
+        word
+        for word in re.findall(r"[a-z0-9]+", name.lower())
+        if len(word) >= 2 and word not in {"watch", "watches", "men", "mens", "women", "womens"}
+    ]
+    return bool(words) and all(word in haystack for word in words)
+
+
+def _function_supported(value: str, pages: list[ScrapedPage]) -> bool:
+    """Keeps a complication only when the evidence actually names it."""
+    haystack = " ".join(
+        " ".join(
+            [
+                page.title,
+                page.description,
+                page.text,
+                " ".join(f"{label} {item}" for label, item in page.spec_pairs),
+            ]
+        )
+        for page in pages
+    ).lower()
+    # Retailers use these terms interchangeably; the aliases retain true facts
+    # without allowing an attractive dial photograph to invent a complication.
+    lowered = value.lower()
+    aliases: tuple[str, ...]
+    if "chronograph" in lowered:
+        aliases = ("chronograph", "stopwatch")
+    elif "day" in lowered and "date" in lowered:
+        aliases = ("day-date", "day date", "day and date", "day/date")
+    elif "date" in lowered:
+        aliases = ("date", "calendar")
+    elif "gmt" in lowered or "dual time" in lowered:
+        aliases = ("gmt", "dual time", "world time")
+    elif "alarm" in lowered:
+        aliases = ("alarm",)
+    elif "timer" in lowered:
+        aliases = ("timer", "countdown")
+    elif "moon" in lowered:
+        aliases = ("moonphase", "moon phase")
+    else:
+        aliases = (lowered,)
+    return any(alias in haystack for alias in aliases)
 
 
 async def extract_facts(
@@ -231,15 +304,36 @@ async def extract_facts(
         if field in FACT_FIELDS and value and isinstance(index, int) and 0 <= index < len(sources):
             facts.append(Fact(field=field, value=value, source_index=index))
 
+    proposed_name = normalise_model_name(
+        squish(data.get("model_name")),
+        row.brand,
+        row.reference or row.model_number,
+    )
+    proposed_name_source = data.get("model_name_source_index")
+    if not (
+        proposed_name
+        and isinstance(proposed_name_source, int)
+        and not isinstance(proposed_name_source, bool)
+        and 0 <= proposed_name_source < len(pages)
+        and _model_name_supported(proposed_name, pages[proposed_name_source])
+    ):
+        proposed_name = None
+        proposed_name_source = None
+
     return FactsResult(
         matches_reference=bool(data.get("matches_reference")),
         match_confidence=clamp01(data.get("match_confidence")),
         mismatch_reason=squish(data.get("mismatch_reason")) or None,
-        model_name=squish(data.get("model_name")) or row.model_name,
+        model_name=proposed_name or row.model_name,
+        model_name_source_index=proposed_name_source,
         collection=data.get("collection"),
         gender=data.get("gender"),
         facts=facts,
-        functions=[squish(f) for f in (data.get("functions") or []) if squish(f)][:8],
+        functions=[
+            squish(f)
+            for f in (data.get("functions") or [])
+            if squish(f) and _function_supported(squish(f), pages)
+        ][:8],
         tags=[squish(t).lower() for t in (data.get("tags") or []) if squish(t)][:6],
         cost_usd=cost,
     )

@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
+
+from .util import normalise_model_name
 
 Status = Literal["ready", "needs_review", "failed"]
 Gender = Literal["men", "women", "unisex"]
@@ -108,6 +110,14 @@ class SheetRow(Model):
     #: the shop's own internal code. Research uses this; identity stays with
     #: model_number so a re-uploaded sheet still finds its listing.
     reference: str | None = None
+
+    @model_validator(mode="after")
+    def clean_model_name(self) -> "SheetRow":
+        # A duplicated reference in a sheet's Product Name column is not a model
+        # name. Normalising at the boundary keeps search, copy, image grading and
+        # the final artifact consistent, whichever entry point created the row.
+        self.model_name = normalise_model_name(self.model_name, self.brand, self.model_number)
+        return self
 
 
 class SheetRowError(Model):
@@ -390,6 +400,7 @@ class FactsResult(Model):
     match_confidence: float = 0.0
     mismatch_reason: str | None = None
     model_name: str | None = None
+    model_name_source_index: int | None = None
     collection: str | None = None
     gender: str | None = None
     facts: list[Fact] = Field(default_factory=list)

@@ -30,7 +30,7 @@ from .models import (
     Spec,
     WatchProduct,
 )
-from .util import format_inr, make_sku, now_iso, read_json, write_json
+from .util import format_inr, make_sku, normalise_model_name, now_iso, read_json, write_json
 
 #: Specifications a shopper expects; used to score how complete a listing is.
 CORE_FIELDS = ("movement", "case_material", "case_diameter_mm", "water_resistance", "crystal", "strap_material")
@@ -176,7 +176,11 @@ def build_product(
     attributes = to_attributes(facts.facts, facts.functions)
     # The stock list is authoritative. Research only ever fills a gap the shop
     # left blank — it never overrides something the shop typed.
-    model_name = row.model_name or facts.model_name
+    model_name = normalise_model_name(row.model_name, row.brand, row.model_number) or normalise_model_name(
+        facts.model_name,
+        row.brand,
+        row.reference or row.model_number,
+    )
 
     section_of = {field: name for name, fields in FACT_GROUPS for field in fields}
     # Ordered by section, so the spec sheet reads the way a brand's own page does.
@@ -378,10 +382,11 @@ def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProdu
         product.quantity = row.quantity
         product.in_stock = row.quantity > 0
 
-    if row.model_name and not product.model_name:
+    supplied_model_name = normalise_model_name(row.model_name, row.brand, row.model_number)
+    if supplied_model_name and not product.model_name:
         changes.append("model name filled in")
-        product.model_name = row.model_name
-        product.title = f"{product.brand} {row.model_name}"
+        product.model_name = supplied_model_name
+        product.title = f"{product.brand} {supplied_model_name}"
 
     if not changes:
         return None

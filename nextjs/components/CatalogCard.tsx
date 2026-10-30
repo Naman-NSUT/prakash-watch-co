@@ -7,6 +7,7 @@ import type { CatalogEntry } from "@/agent/types";
 import { formatInr } from "@/agent/format";
 import { lightWash, type BackdropVisual } from "@/lib/backdrop-light";
 import { mediaPreviewUrl } from "@/lib/media";
+import { catalogCardTitle } from "@/lib/catalog-card-title";
 
 /** One watch in the collections grid, in the house style. */
 export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; backdrop?: BackdropVisual }) {
@@ -135,7 +136,7 @@ export default function CatalogCard({ entry, backdrop }: { entry: CatalogEntry; 
         </span>
 
         <h3 className="serif" style={{ margin: 0, fontSize: 25, fontWeight: 400, lineHeight: 1.12 }}>
-          {entry.modelName ?? entry.modelNumber}
+          {catalogCardTitle(entry)}
         </h3>
 
         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, fontWeight: 300, color: "var(--muted)", flex: 1 }}>
