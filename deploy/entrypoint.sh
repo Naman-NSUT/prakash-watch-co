@@ -84,6 +84,32 @@ PY
   fi
 fi
 
+# A watch without a selling price cannot give the customer a trustworthy total
+# or complete checkout. Older catalogues displayed "price on request" publicly;
+# move those records into the stock-room review queue once, preserving all their
+# research so pricing them later is a small edit rather than a new ingestion.
+PRICE_PUBLICATION_MIGRATION="$DATA/.migrations/unpriced-to-review-v1.done"
+if [ ! -f "$PRICE_PUBLICATION_MIGRATION" ]; then
+  echo "moving unpriced catalogue records to review"
+  if (
+    cd /app/agent
+    python - <<'PY'
+from prakash_agent.config import load_config
+from prakash_agent.publication import hold_unpriced
+
+report = hold_unpriced(load_config())
+print(
+    "price publication migration complete — "
+    f"{report['held']} held, {report['updated']} updated of {report['checked']} checked"
+)
+PY
+  ); then
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$PRICE_PUBLICATION_MIGRATION"
+  else
+    echo "WARNING: price publication migration failed; it will retry after restart" >&2
+  fi
+fi
+
 # Bring old galleries under the same three-to-five-image target as new rows.
 # The network pass runs after the site starts and only reads the recorded Indian
 # brand/dealer pages. It keeps warnings current while filling galleries toward

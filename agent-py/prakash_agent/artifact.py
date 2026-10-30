@@ -270,15 +270,15 @@ def build_product(
     image_score = min(1.0, (len(images) / 3) * 0.5 + average_match * 0.5) if images else 0.0
     overall = round(identity * 0.45 + spec_score * 0.3 + image_score * 0.25, 3)
 
-    # Unpriced rows come from a brand master. They still list: the card says
-    # "price on request" and the counter quotes. Flagged so the shop can find them
-    # and fill the prices in, but not held back — a watch nobody can see is worth
-    # less than one priced on asking.
+    # A selling price is required before a watch can be published. Brand-master
+    # sheets often carry only a reference and quantity; keep those rows in the
+    # stock room, with all research intact, until the shop or a trusted Indian
+    # listing supplies a real rupee price.
     if row.price is None:
         flag("no-price")
-        notes.append("The sheet carried no price. The listing shows 'price on request' until one is set.")
+        notes.append("The sheet carried no price. This watch is held for review until a valid selling price is set.")
 
-    status = "ready"
+    status = "needs_review" if row.price is None else "ready"
 
     mrp = row.mrp if (row.mrp and row.price and row.mrp > row.price) else None
 
@@ -348,6 +348,9 @@ def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProdu
     is authoritative, so the estimate and its flag go.
     """
     changes: list[str] = []
+    was_held_for_price = product.status == "needs_review" and (
+        product.price.selling is None or "no-price" in product.review.flags
+    )
 
     if row.price is not None and row.price != product.price.selling:
         changes.append(f"price {format_inr(product.price.selling)} → {format_inr(row.price)}")
@@ -403,8 +406,16 @@ def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProdu
         if row.price is not None else list(product.review.flags)
     if flags != list(product.review.flags):
         product.review.flags = flags  # type: ignore[assignment]
-        product.review.notes = [n for n in product.review.notes if "Price taken from" not in n]
+        product.review.notes = [
+            note for note in product.review.notes
+            if "Price taken from" not in note
+            and "valid selling price" not in note
+            and "listing shows 'price on request'" not in note
+        ]
         changes.append("price is now the shop's own")
+    if row.price is not None and was_held_for_price:
+        product.status = "ready"
+        changes.append("published after the missing price was resolved")
     product.meta.updated_at = now_iso()
     return product, changes
 

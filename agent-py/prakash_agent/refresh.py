@@ -34,11 +34,13 @@ from pathlib import Path
 from typing import Any
 
 from .artifact import artifact_path, rebuild_index, write_artifact
+from .brands import is_indian_url
 from .config import AgentConfig, load_config
 from .events import EventBus
 from .http_client import HttpClient
 from .cache import Cache
 from .models import WatchProduct
+from .trust import tier
 from .util import now_iso, read_json, write_json
 
 #: A quote outside this is a strap, an EMI instalment or a currency mix-up.
@@ -99,13 +101,18 @@ def _money(value: Any) -> float | None:
 def source_url(product: WatchProduct) -> str:
     """The page this listing is reachable at.
 
-    The first source is the one the listing was built from — a storefront hit when
-    there was one, which is the case for nine listings in ten.
+    Only a trusted Indian brand or dealer page may change a price. Older artifacts
+    also record foreign and unverified pages as research leads; accepting the
+    first of those is how a dollar figure once arrived looking like rupees.
     """
-    for source in product.sources:
+    trusted = [
+        source for source in product.sources
+        if tier(source.url, product.brand) <= 2 and is_indian_url(source.url, product.brand)
+    ]
+    for source in trusted:
         if "/products/" in source.url or source.kind in ("official", "retailer"):
             return source.url
-    return product.sources[0].url if product.sources else ""
+    return trusted[0].url if trusted else ""
 
 
 async def read_source(url: str, http: HttpClient) -> Reading | None:
@@ -142,6 +149,9 @@ def apply(product: WatchProduct, reading: Reading) -> list[str]:
     """Writes what the source says onto the listing, within the rules above."""
     changes: list[str] = []
     flags = list(product.review.flags)
+    was_held_for_price = product.status == "needs_review" and (
+        product.price.selling is None or "no-price" in flags
+    )
 
     # The brand's list price, and therefore the discount we display.
     if reading.list_price and reading.list_price != product.price.mrp:
@@ -156,9 +166,8 @@ def apply(product: WatchProduct, reading: Reading) -> list[str]:
 
     # A looked-up price may be refreshed from the same place it was looked up, and
     # a listing with no price at all may be given one — the shop would rather show
-    # a figure from the trade, marked as such, than "price on request". A price the
-    # shop typed is neither of those: it is a commercial decision, not a fact, and
-    # nothing here may touch it.
+    # a figure from a trusted Indian listing, marked as such. A price the shop typed
+    # is a commercial decision, not a fact, and nothing here may touch it.
     fillable = "estimated-price" in flags or product.price.selling is None
     if fillable and reading.price and reading.price != product.price.selling:
         before = product.price.selling
@@ -172,6 +181,15 @@ def apply(product: WatchProduct, reading: Reading) -> list[str]:
             flags.append("estimated-price")
         flags = [f for f in flags if f != "no-price"]
         product.review.flags = flags  # type: ignore[assignment]
+        product.review.notes = [
+            note for note in product.review.notes
+            if "valid selling price" not in note
+            and "held for review until" not in note
+            and "listing shows 'price on request'" not in note
+        ]
+        if was_held_for_price:
+            product.status = "ready"
+            changes.append("published after the missing price was resolved")
 
     # Recompute the displayed saving from whatever now stands.
     mrp, selling = product.price.mrp, product.price.selling

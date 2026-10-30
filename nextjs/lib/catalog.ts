@@ -496,6 +496,31 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
     };
   }
 
+  // Price is a hard publication requirement. Keep this on the write boundary so
+  // a direct API call cannot publish an unpriced record even if it bypasses the
+  // admin form. Supplying a price also clears the obsolete warning immediately.
+  const priceFlags = next.review.flags.filter(
+    (flag) => flag !== "no-price",
+  ) as WatchProduct["review"]["flags"];
+  if (next.price.selling === null || next.price.selling <= 0) {
+    next.status = "needs_review";
+    priceFlags.push("no-price");
+  }
+  const priceNotes = next.review.notes.filter(
+    (note) =>
+      !note.includes("valid selling price") &&
+      !note.includes("held for review until") &&
+      !note.includes("listing shows 'price on request'"),
+  );
+  if (next.price.selling === null || next.price.selling <= 0) {
+    priceNotes.push("A valid selling price is required before publication.");
+  }
+  next.review = {
+    ...next.review,
+    flags: Array.from(new Set(priceFlags)),
+    notes: Array.from(new Set(priceNotes)),
+  };
+
   if (patch.imageOrder) {
     const byUrl = new Map(product.images.map((image) => [image.url, image]));
     next.images = patch.imageOrder

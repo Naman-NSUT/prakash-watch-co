@@ -64,8 +64,7 @@ export default async function BrandPage({
   const page = Math.min(state.page, pages);
   const shown = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Priced watches only: an unpriced one lists at "price on request" and belongs
-  // in no price range.
+  // Publication policy guarantees a price; the guard keeps legacy data harmless.
   const prices = published.filter(isPriced).map((entry) => entry.price.selling);
   const bounds = {
     low: prices.length ? Math.floor(Math.min(...prices)) : 0,

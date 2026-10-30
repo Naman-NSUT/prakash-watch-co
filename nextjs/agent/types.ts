@@ -14,7 +14,8 @@ export const SheetRowSchema = z.object({
   sheet: z.string(),
   brand: z.string().min(1),
   modelNumber: z.string().min(1),
-  price: z.number().positive(),
+  /** Missing on a brand-master row; that row is kept in review. */
+  price: z.number().positive().nullable(),
   mrp: z.number().positive().nullable(),
   modelName: z.string().nullable(),
   gender: z.string().nullable(),
@@ -176,7 +177,7 @@ export const REVIEW_FLAG_EXPLANATIONS: Record<ReviewFlag, string> = {
   "provisional-image":
     "No photograph could be confirmed as this exact reference, so the closest one found is shown and marked for replacement.",
   "llm-unavailable": "Written without research (dry run or model unavailable).",
-  "no-price": "No price yet — the listing shows 'price on request'. Set one when you know it.",
+  "no-price": "No valid selling price yet. The watch stays in review until one is set.",
   "estimated-price": "Price taken from what the trade is charging, not the shop's own sheet. Check it before relying on it.",
   "unverified-source":
     "Read off a shop the house has not vouched for — not the brand's own site, and not one of the authorised dealers. Replace this evidence when a trusted Indian listing is found.",

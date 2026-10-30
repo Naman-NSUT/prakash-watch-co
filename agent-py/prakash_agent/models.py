@@ -73,7 +73,7 @@ REVIEW_FLAG_EXPLANATIONS: dict[str, str] = {
     "manual-images-only": "Only the shop's own images were used.",
     "provisional-image": "No photograph could be confirmed as this exact reference, so the closest one found is shown and marked for replacement.",
     "llm-unavailable": "Written without research (dry run or model unavailable).",
-    "no-price": "No price yet — the listing shows 'price on request'. Set one when you know it.",
+    "no-price": "No valid selling price yet. The watch stays in review until one is set.",
     "estimated-price": "Price taken from what the trade is charging, not from the shop's own sheet. Check it before relying on it.",
 }
 
@@ -93,7 +93,7 @@ class SheetRow(Model):
     brand: str
     model_number: str
     #: None when the sheet is a brand master with no price column at all. Such a
-    #: row is listed as "price on request" until the shop supplies one.
+    #: row is kept in review until the shop or a trusted Indian listing supplies one.
     price: float | None = None
     mrp: float | None = None
     cost_price: float | None = None
@@ -197,7 +197,8 @@ class Copy(Model):
 
 class Price(Model):
     currency: Literal["INR"] = "INR"
-    #: None until the shop sets one. The storefront then says "price on request".
+    #: None until the shop or a trusted Indian listing supplies one. Unpriced
+    #: watches are never published.
     selling: float | None = None
     mrp: float | None = None
     discount_pct: int | None = None

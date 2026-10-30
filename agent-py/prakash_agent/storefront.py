@@ -50,7 +50,8 @@ MAX_PAGES = 40
 #:
 #: A retailer is a weaker source than the maker, so it is consulted second and the
 #: match is still exact on the reference: a near-match is how the wrong watch gets
-#: listed. Prices from these are not trusted anywhere — the shop's sheet sets those.
+#: listed. When the sheet has no price, an exact Indian listing may supply a clearly
+#: marked estimate; a sheet price always wins and is never overwritten.
 #: Measured against the shop's own sheet. The first two carry the bulk of the
 #: catalogue; the rest exist because 335 of 336 Casio rows are the shop's internal
 #: codes (A1149, four characters) rather than Casio references, and a retailer

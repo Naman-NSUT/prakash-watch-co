@@ -21,7 +21,7 @@ import { useMemo, useState } from "react";
  * filtering implementation, not two.
  */
 
-/** gender, type, movement, strap, brand slug, selling price (0 when unpriced). */
+/** gender, type, movement, strap, brand slug, selling price. */
 export type FinderRow = [string, string, string, string, string, number];
 
 export interface FinderOption {
@@ -67,7 +67,7 @@ export default function WatchFinder({
       }
       if (band) {
         const price = row[5];
-        // An unpriced piece — price on request — cannot answer a budget.
+        // A defensive legacy guard; unpriced records are held from publication.
         if (!price) return false;
         if (band.min !== null && price < band.min) return false;
         if (band.max !== null && price > band.max) return false;

@@ -33,8 +33,7 @@ export default async function CollectionsPage({
   const state = parseFilters(params);
 
   const [index, backdrops] = await Promise.all([getCatalogIndex(), getBackdrops()]);
-  // Priced as well as ready: a brand master can be ingested with no prices, and an
-  // unpriced watch has nothing to put on a card.
+  // Publication policy guarantees that every ready record has a selling price.
   const published = index.filter((entry) => entry.status === "ready");
 
   const matched = sortEntries(applyFilters(published, state), state.sort);
@@ -44,10 +43,8 @@ export default async function CollectionsPage({
   const page = Math.min(state.page, pages);
   const shown = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Bounds come from the whole catalogue, so the price field's placeholders stay
+  // Bounds come from every published, priced watch, so the placeholders stay
   // steady while filters narrow the results.
-  // Bounds come from the priced watches only. A brand master carries no prices, so
-  // those list at "price on request" and simply sit outside any price range.
   const prices = published.filter(isPriced).map((entry) => entry.price.selling);
   const bounds = {
     low: prices.length ? Math.floor(Math.min(...prices)) : 0,
