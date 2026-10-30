@@ -95,13 +95,20 @@ if [ ! -f "$GALLERY_MIGRATION" ] || [ ! -f "$COVER_MIGRATION" ]; then
   (
     cd /app/agent
     if [ ! -f "$GALLERY_MIGRATION" ]; then
-      echo "starting three-to-five image catalogue migration"
-      if python -m prakash_agent.topup --target 5; then
-        date -u +%Y-%m-%dT%H:%M:%SZ > "$GALLERY_MIGRATION"
-        echo "three-to-five image catalogue migration complete"
-      else
-        echo "WARNING: image catalogue migration did not finish; it will retry after restart" >&2
-      fi
+      # The 512 MB service may kill a long image pass after hundreds of watches.
+      # Keep retrying from the catalogue on disk: completed galleries are skipped,
+      # so each fresh process carries on with the watches that remain. `nice` keeps
+      # the public shop and the admin panel ahead of this background housekeeping.
+      while [ ! -f "$GALLERY_MIGRATION" ]; do
+        echo "starting three-to-five image catalogue migration"
+        if nice -n 10 python -m prakash_agent.topup --target 5; then
+          date -u +%Y-%m-%dT%H:%M:%SZ > "$GALLERY_MIGRATION"
+          echo "three-to-five image catalogue migration complete"
+        else
+          echo "WARNING: image catalogue migration stopped; retrying in 30 seconds" >&2
+          sleep 30
+        fi
+      done
     fi
 
     if [ ! -f "$COVER_MIGRATION" ]; then
