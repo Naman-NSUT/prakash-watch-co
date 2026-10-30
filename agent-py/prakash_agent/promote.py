@@ -134,10 +134,10 @@ async def promote_product(
     config: AgentConfig,
     http: HttpClient,
     cache: Cache,
-    target: int = 4,
+    target: int = 5,
 ) -> dict[str, Any]:
     brand = product.get("brand") or ""
-    reference = product.get("modelNumber") or ""
+    reference = product.get("reference") or product.get("modelNumber") or ""
     # A registry entry may carry a path — casio.com/in, rado.com/en-in — and a
     # catalogue is fetched from the host, not the locale folder.
     hosts = list(dict.fromkeys(d.split("/")[0] for d in official_domains(brand)))
@@ -189,7 +189,7 @@ async def run_promotion(
     *,
     brand: str | None = None,
     limit: int | None = None,
-    target: int = 4,
+    target: int = 5,
     dry_run: bool = False,
     on_each: Callable[[str, dict], None] | None = None,
 ) -> dict[str, Any]:

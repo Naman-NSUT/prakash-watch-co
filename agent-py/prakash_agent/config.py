@@ -103,7 +103,7 @@ class AgentConfig:
 
     concurrency: int = 3
     max_sources: int = 4
-    max_images: int = 10
+    max_images: int = 5
     min_image_width: int = 600
     image_mode: Literal["download", "reference"] = "download"
     #: Where photographs may come from.
@@ -166,7 +166,7 @@ def load_config(**overrides: object) -> AgentConfig:
         india_only=_bool("AGENT_INDIA_ONLY", False),
         concurrency=_int("AGENT_CONCURRENCY", 3),
         max_sources=_int("AGENT_MAX_SOURCES", 4),
-        max_images=_int("AGENT_MAX_IMAGES", 10),
+        max_images=_int("AGENT_MAX_IMAGES", 5),
         min_image_width=_int("AGENT_MIN_IMAGE_WIDTH", 600),
         image_mode="reference" if os.getenv("AGENT_IMAGE_MODE") == "reference" else "download",
         official_images=(os.getenv("AGENT_OFFICIAL_IMAGES") or "off"),  # type: ignore[arg-type]

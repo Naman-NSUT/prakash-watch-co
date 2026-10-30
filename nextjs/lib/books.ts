@@ -16,7 +16,7 @@
 import "server-only";
 import { ACCOUNTS, BY_CODE, CODES, accountForPayment, type Account } from "@/lib/accounts";
 import { balances, post, readJournal, type DraftEntry, type Entry } from "@/lib/journal";
-import { getAllProducts } from "@/lib/catalog";
+import { getCatalogIndex } from "@/lib/catalog";
 import type { Bill } from "@/lib/sales";
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
@@ -82,7 +82,7 @@ export async function postedBillNumbers(): Promise<Set<string>> {
 /** Posts any bill not yet in the books. Safe to run repeatedly. */
 export async function syncBills(bills: Bill[]): Promise<number> {
   const already = await postedBillNumbers();
-  const products = await getAllProducts();
+  const products = await getCatalogIndex();
   const costBySku = new Map(
     products.filter((p) => p.costPrice).map((p) => [p.sku, p.costPrice as number] as const),
   );
@@ -294,7 +294,7 @@ export interface StockValuation {
 }
 
 export async function stockValuation(): Promise<StockValuation> {
-  const products = await getAllProducts();
+  const products = await getCatalogIndex();
   const rows = products
     .filter((product) => (product.quantity ?? 0) > 0)
     .map((product) => ({

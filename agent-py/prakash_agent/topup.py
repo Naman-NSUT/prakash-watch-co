@@ -1,8 +1,8 @@
-"""Topping a listing up to four photographs, from the page it already came from.
+"""Keep every catalogue gallery between three and five photographs.
 
 Every listed watch was matched, once, against a shop that carries that exact
 reference. The page is recorded. So there is nothing to search for and nothing
-to decide: go back to that page, take the rest of its gallery, stop at four.
+to decide: go back to that page, take the rest of its gallery, stop at five.
 
 Two things make this nearly free. There is no research — no model is asked
 what the watch is, because that was settled when the listing was made. And
@@ -19,7 +19,9 @@ checked rather than assumed.
 from __future__ import annotations
 
 import asyncio
+import argparse
 import base64
+import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
@@ -29,17 +31,20 @@ from typing import Any, Callable
 
 from PIL import Image
 
-from .artifact import artifact_path, rebuild_index
+from .artifact import BLOCKING_FLAGS, artifact_path, rebuild_index
 from .config import AgentConfig
 from .cache import Cache
 from .http_client import HttpClient
 from .images import MAX_ASSET_BYTES, average_hash, hamming, open_bounded, prepare_background
 from .models import ProductImage, WatchProduct
-from .storefront import RETAILER_FEEDS, find_product
-from .util import read_json
+from .storefront import find_product
+from .trust import tier
+from .util import now_iso, read_json, write_json
 
-#: Shops whose own product page is taken as proof of identity.
-TRUSTED_HOSTS: tuple[str, ...] = RETAILER_FEEDS
+#: A published gallery is complete at three, while five is the storage and UI
+#: ceiling. Some source galleries have only three useful angles; those are fine.
+MIN_GALLERY = 3
+MAX_GALLERY = 5
 
 #: Two pictures of the same watch from the same shop are common — the gallery
 #: repeats the hero shot at another size. Closer than this and it is a repeat.
@@ -50,12 +55,9 @@ def _host(url: str) -> str:
     return (url or "").lower().split("//")[-1].split("/")[0].removeprefix("www.")
 
 
-def _is_trusted(url: str, brand_hosts: tuple[str, ...] = ()) -> bool:
-    host = _host(url)
-    if not host:
-        return False
-    hosts = (*TRUSTED_HOSTS, *brand_hosts)
-    return any(host == h or host.endswith(f".{h}") for h in hosts)
+def _is_trusted(url: str, brand: str) -> bool:
+    """Use the same path-aware Indian-market policy as research and review."""
+    return tier(url, brand) <= 2
 
 
 #: Shopify writes a gallery as one picture at a dozen sizes: the same file with
@@ -110,7 +112,63 @@ def source_pages_for(product: dict) -> list[str]:
         if url and url not in seen:
             seen.append(url)
 
-    return [url for url in seen if _is_trusted(url)]
+    brand = product.get("brand") or ""
+    return [url for url in seen if _is_trusted(url, brand)]
+
+
+def apply_gallery_policy(product: dict) -> bool:
+    """Cap a gallery and keep incomplete listings out of the shop window.
+
+    The function is intentionally shared by the preflight pass and every top-up
+    result, including failures. That means a source page being offline can never
+    leave a one-image watch published merely because recovery could not finish.
+    A listing that was already in review for another reason stays in review.
+    """
+    before = json.dumps(product, sort_keys=True, ensure_ascii=False)
+    previous_status = product.get("status")
+    review = product.setdefault("review", {})
+    previous_flags = list(review.get("flags") or [])
+    flags = [flag for flag in previous_flags if flag not in ("no-images", "few-images")]
+
+    images = list(product.get("images") or [])[:MAX_GALLERY]
+    product["images"] = images
+    if not images:
+        flags.append("no-images")
+    elif len(images) < MIN_GALLERY:
+        flags.append("few-images")
+    review["flags"] = list(dict.fromkeys(flags))
+    review.setdefault("notes", [])
+
+    confidence = product.setdefault("confidence", {})
+    average_match = (
+        sum(float(image.get("matchScore") or 0.0) for image in images) / len(images)
+        if images
+        else 0.0
+    )
+    image_score = min(1.0, (len(images) / MIN_GALLERY) * 0.5 + average_match * 0.5) if images else 0.0
+    confidence["images"] = round(image_score, 3)
+    confidence["overall"] = round(
+        float(confidence.get("identity") or 0.0) * 0.45
+        + float(confidence.get("specs") or 0.0) * 0.3
+        + image_score * 0.25,
+        3,
+    )
+
+    blocking = any(flag in BLOCKING_FLAGS for flag in review["flags"])
+    incomplete = len(images) < MIN_GALLERY
+    # Only auto-publish a formerly incomplete listing. A watch held for a human
+    # decision stays held even if its gallery is now complete.
+    recovered = "few-images" in previous_flags and not incomplete
+    if incomplete or blocking or confidence["overall"] < 0.55:
+        product["status"] = "needs_review"
+    elif previous_status == "ready" or recovered:
+        product["status"] = "ready"
+
+    meta = product.setdefault("meta", {})
+    if json.dumps(product, sort_keys=True, ensure_ascii=False) != before:
+        meta["updatedAt"] = now_iso()
+        return True
+    return False
 
 
 def names_the_reference(page_html: str, page_url: str, reference: str) -> bool:
@@ -156,6 +214,8 @@ async def top_up_product(
     target: int,
 ) -> TopUpResult:
     sku = product["sku"]
+    target = max(MIN_GALLERY, min(MAX_GALLERY, target))
+    apply_gallery_policy(product)
     existing = list(product.get("images") or [])
     before = len(existing)
     if before >= target:
@@ -165,7 +225,12 @@ async def top_up_product(
     if not pages:
         return TopUpResult(sku, before, before, None, "no trusted page on record")
 
-    reference = product.get("modelNumber") or ""
+    reference = product.get("reference") or product.get("modelNumber") or ""
+    proven_pages = {
+        image.get("sourcePage")
+        for image in existing
+        if image.get("sourcePage") and float(image.get("matchScore") or 0.0) >= 0.6
+    }
     have_urls = {canonical_image(image.get("sourceUrl", "")) for image in existing}
     have_names = {asset_name(image.get("sourceUrl", "")) for image in existing if image.get("sourceUrl")}
 
@@ -182,7 +247,7 @@ async def top_up_product(
             notes.append("page would not load")
             continue
         html = fetched["html"]
-        if not names_the_reference(html, candidate, reference):
+        if candidate not in proven_pages and not names_the_reference(html, candidate, reference):
             notes.append(f"page does not name {reference}")
             continue
         read.append(candidate)
@@ -200,13 +265,11 @@ async def top_up_product(
     # feed lookup, cached for the day, costing nothing but bandwidth. A second
     # dealer stocking the same watch is no less credible than the first.
     if before + len(wanted) < target:
-        from .cache import Cache as _Cache  # already imported above; kept local for clarity
-
         try:
             hit, _note = await find_product([], reference, http, cache, product.get("brand", ""))
         except Exception:  # noqa: BLE001
             hit = None
-        if hit and hit.url not in read:
+        if hit and _is_trusted(hit.url, product.get("brand", "")) and hit.url not in read:
             for url in hit.images:
                 full = canonical_image(url)
                 name = asset_name(url)
@@ -294,6 +357,8 @@ async def top_up_product(
                         "height": main.height,
                         "alt": f"{product.get('brand', '')} {reference}".strip(),
                         "kind": "detail",
+                        "view": "unclear",
+                        "viewConfidence": 0.0,
                         "blurDataURL": "data:image/webp;base64,"
                         + base64.b64encode(blur_buffer.getvalue()).decode("ascii"),
                         "sourceUrl": url,
@@ -307,9 +372,11 @@ async def top_up_product(
             continue
 
     if not added:
+        apply_gallery_policy(product)
         return TopUpResult(sku, before, before, page, "nothing usable in the gallery")
 
     product["images"] = [*existing, *added]
+    apply_gallery_policy(product)
     return TopUpResult(sku, before, len(product["images"]), page, f"added {len(added)}")
 
 
@@ -317,7 +384,7 @@ async def run_top_up(
     config: AgentConfig,
     *,
     brand: str | None = None,
-    target: int = 4,
+    target: int = MAX_GALLERY,
     limit: int | None = None,
     dry_run: bool = False,
     on_each: Callable[[TopUpResult], None] | None = None,
@@ -331,14 +398,33 @@ async def run_top_up(
     wanted = [
         entry
         for entry in index
-        if entry.get("status") == "ready"
+        if entry.get("status") != "failed"
         and (brand is None or (entry.get("brand") or "").upper() == brand.upper())
     ]
     wanted.sort(key=lambda entry: entry.get("modelNumber") or "")
     if limit:
         wanted = wanted[:limit]
 
+    target = max(MIN_GALLERY, min(MAX_GALLERY, target))
     results: list[TopUpResult] = []
+    policy_changes = 0
+
+    # First enforce the public contract without using the network. Rebuilding
+    # here withdraws incomplete galleries immediately; the slower recovery pass
+    # can then work in the background and republish each recovered watch at the
+    # final rebuild.
+    for entry in wanted:
+        path = artifact_path(config, entry["sku"])
+        product = read_json(path)
+        if not product:
+            continue
+        if apply_gallery_policy(product):
+            policy_changes += 1
+            if not dry_run:
+                validated = WatchProduct.model_validate(product)
+                path.write_text(json.dumps(validated.dump(), indent=2, ensure_ascii=False) + "\n", "utf-8")
+    if policy_changes and not dry_run:
+        rebuild_index(config)
     # The cache is shared with a research run, so a page already read today
     # is not fetched again.
     cache = Cache(Path(config.cache_dir))
@@ -349,27 +435,90 @@ async def run_top_up(
             product = read_json(path)
             if not product:
                 continue
+            before_product = json.dumps(product, sort_keys=True, ensure_ascii=False)
             result = await top_up_product(product, config, http, cache, target)
             results.append(result)
             if on_each:
                 on_each(result)
-            if result.after > result.before and not dry_run:
-                WatchProduct.model_validate(product)  # refuse to write a broken artifact
-                path.write_text(json.dumps(product, indent=2, ensure_ascii=False) + "\n", "utf-8")
+            changed = json.dumps(product, sort_keys=True, ensure_ascii=False) != before_product
+            if changed and not dry_run:
+                validated = WatchProduct.model_validate(product)  # refuse to write a broken artifact
+                path.write_text(json.dumps(validated.dump(), indent=2, ensure_ascii=False) + "\n", "utf-8")
     finally:
         await http.aclose()
 
-    if not dry_run and any(r.after > r.before for r in results):
+    if not dry_run and (policy_changes or any(r.after != r.before for r in results)):
         rebuild_index(config)
 
     touched = [r for r in results if r.after > r.before]
+    held = sum(1 for entry in (read_json(data_dir / "index.json") or []) if entry.get("status") != "ready" and entry.get("imageCount", 0) < MIN_GALLERY)
     return {
         "looked_at": len(results),
         "topped_up": len(touched),
         "photographs_added": sum(r.after - r.before for r in touched),
+        "policy_changes": policy_changes,
+        "held_below_minimum": held,
         "already_enough": sum(1 for r in results if r.note == "already has enough"),
         "no_page": sum(1 for r in results if r.note == "no trusted page on record"),
         "wrong_page": sum(1 for r in results if r.note.startswith("page does not name")),
         "nothing_new": sum(1 for r in results if r.note in ("gallery holds nothing new", "nothing usable in the gallery")),
         "results": results,
     }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """One-time or manual catalogue pass, with a small resumable status file."""
+    from .config import load_config
+
+    parser = argparse.ArgumentParser(description="Keep catalogue galleries between three and five images.")
+    parser.add_argument("--target", type=int, default=MAX_GALLERY)
+    parser.add_argument("--brand")
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args(argv)
+
+    config = load_config(max_images=MAX_GALLERY)
+    status_path = Path(config.report_dir) / "gallery-topup-status.json"
+    processed = 0
+
+    def publish(state: str, *, report: dict[str, Any] | None = None, error: str | None = None) -> None:
+        payload: dict[str, Any] = {
+            "state": state,
+            "updatedAt": now_iso(),
+            "processed": processed,
+            "minimum": MIN_GALLERY,
+            "maximum": MAX_GALLERY,
+            "error": error,
+        }
+        if report:
+            payload.update({key: value for key, value in report.items() if key != "results"})
+        write_json(status_path, payload)
+
+    def on_each(_result: TopUpResult) -> None:
+        nonlocal processed
+        processed += 1
+        if processed == 1 or processed % 10 == 0:
+            publish("running")
+
+    publish("running")
+    try:
+        report = asyncio.run(
+            run_top_up(
+                config,
+                brand=args.brand,
+                target=args.target,
+                limit=args.limit,
+                dry_run=args.dry_run,
+                on_each=on_each,
+            )
+        )
+    except Exception as error:  # noqa: BLE001
+        publish("failed", error=str(error))
+        raise
+    publish("complete", report=report)
+    print(json.dumps({key: value for key, value in report.items() if key != "results"}, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -58,7 +58,7 @@ ReviewFlag = Literal[
 
 REVIEW_FLAG_EXPLANATIONS: dict[str, str] = {
     "no-images": "No usable photograph was found — the listing cannot go live without one.",
-    "few-images": "Only one image. A second angle makes the listing considerably stronger.",
+    "few-images": "Fewer than three distinct photographs. Add more angles before publishing this listing.",
     "low-image-match": "The photographs may show a different colourway or reference.",
     "no-official-source": "Nothing from the brand's own site — specifications came from resellers.",
     "no-sources": "No page could be read at all. Check the reference number.",
@@ -264,6 +264,10 @@ class WatchProduct(Model):
     status: Status
     brand: str
     model_number: str
+    #: Manufacturer reference used for research when model_number is the shop's
+    #: own stock code. Persisted so later gallery/price passes can find the same
+    #: exact watch without repeating reference resolution.
+    reference: str | None = None
     model_name: str | None = None
     #: Source for a researched model name. None means the shop supplied it, the
     #: watch has no marketed name, or this is an older artifact.
@@ -307,12 +311,14 @@ class CatalogEntry(Model):
     status: Status
     brand: str
     model_number: str
+    reference: str | None = None
     model_name: str | None = None
     title: str
     price: Price
     #: What the shop paid per unit, when the sheet says. Needed for gross profit,
     #: cost of goods sold and an honest stock valuation.
     cost_price: float | None = None
+    quantity: int | None = None
     collection: str | None = None
     gender: Gender | None = None
     in_stock: bool = True
@@ -330,6 +336,7 @@ class CatalogEntry(Model):
     spec_count: int = 0
     confidence: float = 0.0
     flags: list[str] = Field(default_factory=list)
+    source_count: int = 0
     #: True sells it online, false sends the buyer to the counter, None follows
     #: the house's own setting.
     direct_sale: bool | None = None

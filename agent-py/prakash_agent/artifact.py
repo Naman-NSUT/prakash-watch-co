@@ -44,6 +44,7 @@ BLOCKING_FLAGS = (
     "no-sources",
     "model-mismatch",
     "no-images",
+    "few-images",
     "unverified-copy",
     "provisional-image",
     # Read off a shop outside the house's own list. Held, not discarded.
@@ -249,7 +250,7 @@ def build_product(
 
     if not images:
         flag("no-images")
-    elif len(images) < 2:
+    elif len(images) < 3:
         flag("few-images")
 
     discovered = [image for image in images if image.source_page is not None]
@@ -304,6 +305,7 @@ def build_product(
         status=status,
         brand=row.brand,
         model_number=row.model_number,
+        reference=row.reference,
         model_name=model_name,
         model_name_source_index=model_name_source_index,
         title=f"{row.brand} {model_name}" if model_name else f"{row.brand} {row.model_number}",
@@ -397,6 +399,10 @@ def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProdu
         product.model_name_source_index = None
         product.title = f"{product.brand} {supplied_model_name}"
 
+    if row.reference and not product.reference:
+        product.reference = row.reference
+        changes.append("manufacturer reference recorded")
+
     if not changes:
         return None
 
@@ -464,9 +470,12 @@ def rebuild_index(config: AgentConfig) -> list[dict]:
                 status=product.status,
                 brand=product.brand,
                 model_number=product.model_number,
+                reference=product.reference,
                 model_name=product.model_name,
                 title=product.title,
                 price=product.price,
+                cost_price=product.cost_price,
+                quantity=product.quantity,
                 collection=product.collection,
                 gender=product.gender,
                 in_stock=product.in_stock,
@@ -479,6 +488,7 @@ def rebuild_index(config: AgentConfig) -> list[dict]:
                 spec_count=len(product.specs),
                 confidence=product.confidence.overall,
                 flags=list(product.review.flags),
+                source_count=len(product.sources),
                 direct_sale=product.direct_sale,
                 created_at=product.meta.created_at,
                 updated_at=product.meta.updated_at,

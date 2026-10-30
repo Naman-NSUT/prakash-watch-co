@@ -1,4 +1,4 @@
-import { getAllProducts } from "@/lib/catalog";
+import { getCatalogIndex } from "@/lib/catalog";
 import BillWriter, { type Sellable } from "@/components/admin/BillWriter";
 import { Empty, PageHead } from "@/components/admin/ui";
 
@@ -7,7 +7,7 @@ import { isPriced } from "@/agent/types";
 export const dynamic = "force-dynamic";
 
 export default async function NewBillPage() {
-  const products = await getAllProducts();
+  const products = await getCatalogIndex();
 
   // Anything with stock can be sold, whether or not it is published — the shop
   // sells from the case, and a listing awaiting review is still a real watch.

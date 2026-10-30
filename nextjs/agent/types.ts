@@ -164,7 +164,7 @@ export type ReviewFlag = (typeof REVIEW_FLAGS)[number];
 /** Plain-English meaning of each flag, shown in run reports and the admin panel. */
 export const REVIEW_FLAG_EXPLANATIONS: Record<ReviewFlag, string> = {
   "no-images": "No usable photograph was found — the listing cannot go live without one.",
-  "few-images": "Only one image. A second angle makes the listing considerably stronger.",
+  "few-images": "Fewer than three distinct photographs. Add more angles before publishing this listing.",
   "low-image-match": "The photographs may show a different colourway or reference.",
   "no-official-source": "Nothing from the brand's own site — specifications came from resellers.",
   "no-sources": "No page could be read at all. Check the reference number.",
@@ -190,6 +190,8 @@ export const WatchProductSchema = z.object({
 
   brand: z.string(),
   modelNumber: z.string(),
+  /** Manufacturer reference when modelNumber is the shop's internal stock code. */
+  reference: z.string().nullable().default(null),
   modelName: z.string().nullable(),
   /** Citation for a researched model name; null when supplied by the shop. */
   modelNameSourceIndex: z.number().int().nonnegative().nullable().default(null),
@@ -291,9 +293,12 @@ export const CatalogEntrySchema = WatchProductSchema.pick({
   status: true,
   brand: true,
   modelNumber: true,
+  reference: true,
   modelName: true,
   title: true,
   price: true,
+  costPrice: true,
+  quantity: true,
   collection: true,
   gender: true,
   inStock: true,
@@ -309,15 +314,15 @@ export const CatalogEntrySchema = WatchProductSchema.pick({
    * What the stock room's own list needs.
    *
    * Drawing that list meant opening all 1,900 artifacts on every page load —
-   * 1.7 seconds to show a hundred rows. These four fields are the only things
-   * the table wanted that this record did not already carry, so it can now be
-   * built from this one file like the shopfront is. Defaulted, because an index
-   * written before they existed must still parse.
+   * 1.7 seconds to show a hundred rows. The operational summary fields also let
+   * overview, inventory, billing and analytics use this same one-file read.
+   * Defaulted, because an index written before they existed must still parse.
    */
   imageCount: z.number().int().nonnegative().default(0),
   specCount: z.number().int().nonnegative().default(0),
   confidence: z.number().default(0),
   flags: z.array(z.string()).default([]),
+  sourceCount: z.number().int().nonnegative().default(0),
   /** When the listing was written and last touched, for ordering the stock room. */
   createdAt: z.string().default(""),
   updatedAt: z.string().default(""),

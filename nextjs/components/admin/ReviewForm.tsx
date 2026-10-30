@@ -132,7 +132,7 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
     setMessage(null);
     try {
       const form = new FormData();
-      for (const file of files.slice(0, 8)) form.append("photos", file);
+      for (const file of files.slice(0, 5)) form.append("photos", file);
 
       const response = await fetch(`/api/admin/products/${product.sku}/photos`, { method: "POST", body: form });
       const payload = await response.json();
@@ -274,7 +274,7 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif"
             multiple
-            disabled={uploading || images.length >= 8}
+            disabled={uploading || images.length >= 5}
             onChange={(event) => {
               const files = [...(event.target.files ?? [])];
               event.target.value = "";
@@ -282,7 +282,7 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
             }}
           />
           <span className="mono">
-            {uploading ? "Uploading…" : images.length >= 8 ? "Eight is the limit" : "Add your own photograph"}
+            {uploading ? "Uploading…" : images.length >= 5 ? "Five is the limit" : "Add your own photograph"}
           </span>
         </label>
       </section>
@@ -432,8 +432,15 @@ export default function ReviewForm({ product }: { product: WatchProduct }) {
             {busy === "unpublish" ? "…" : "Take off the shop"}
           </button>
         ) : (
-          <button type="button" onClick={() => save("ready", "publish")} disabled={busy !== null} className="btn btn-solid" style={{ border: "none", cursor: "pointer" }}>
-            {busy === "publish" ? "…" : "Approve and publish"}
+          <button
+            type="button"
+            onClick={() => save("ready", "publish")}
+            disabled={busy !== null || images.length < 3}
+            title={images.length < 3 ? "Add at least three photographs before publishing." : undefined}
+            className="btn btn-solid"
+            style={{ border: "none", cursor: images.length < 3 ? "not-allowed" : "pointer", opacity: images.length < 3 ? 0.5 : 1 }}
+          >
+            {busy === "publish" ? "…" : images.length < 3 ? `Add ${3 - images.length} more to publish` : "Approve and publish"}
           </button>
         )}
 

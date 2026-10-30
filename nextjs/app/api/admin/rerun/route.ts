@@ -9,7 +9,7 @@
  */
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
-import { getAllProducts, getProduct } from "@/lib/catalog";
+import { getCatalogIndex, getProduct, type CatalogEntry, type WatchProduct } from "@/lib/catalog";
 
 export const runtime = "nodejs";
 // Vercel's Hobby plan refuses any function over 300s, and these admin routes
@@ -54,17 +54,17 @@ export async function POST(request: Request): Promise<Response> {
   const { skus, scope, reference } = parsed.data;
 
   // Resolve to the watches themselves.
-  let watches: Awaited<ReturnType<typeof getAllProducts>> = [];
+  let watches: Array<CatalogEntry | WatchProduct> = [];
   if (skus?.length) {
     const found = await Promise.all(skus.map((sku) => getProduct(sku)));
     watches = found.filter((p): p is NonNullable<typeof p> => p !== null);
   } else if (scope) {
-    const all = await getAllProducts();
+    const all = await getCatalogIndex();
     watches =
       scope === "review"
         ? all.filter((p) => p.status === "needs_review")
         : // "flagged" is the narrower set: listed, but carrying something wrong.
-          all.filter((p) => p.review.flags.some((f) => f !== "no-price" && f !== "estimated-price"));
+          all.filter((p) => p.flags.some((f) => f !== "no-price" && f !== "estimated-price"));
   } else {
     return Response.json({ errors: ["Give either skus or a scope."] }, { status: 400 });
   }
@@ -86,10 +86,12 @@ export async function POST(request: Request): Promise<Response> {
     watches: watches.map((product) => ({
       brand: product.brand,
       model_number: product.modelNumber,
-      reference: overrideRef || undefined,
+      reference: overrideRef || product.reference || undefined,
       // The shop's own figures survive the re-run. A price it looked up last time
       // is deliberately not sent, so it gets looked up afresh.
-      price: product.review.flags.includes("estimated-price") ? undefined : product.price.selling ?? undefined,
+      price: ("review" in product ? product.review.flags : product.flags).includes("estimated-price")
+        ? undefined
+        : product.price.selling ?? undefined,
       mrp: product.price.mrp ?? undefined,
       cost_price: product.costPrice ?? undefined,
       quantity: product.quantity ?? undefined,

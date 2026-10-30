@@ -14,6 +14,7 @@ import { loadConfig, COLLECTION_META, type CollectionId } from "@/agent/config";
 import {
   BackdropSchema,
   CatalogEntrySchema,
+  ProductImageSchema,
   WatchProductSchema,
   type Backdrop,
   type CatalogEntry,
@@ -276,11 +277,84 @@ export async function getRuns(limit = 10): Promise<RunReport[]> {
   return runs;
 }
 
+function catalogEntryOf(value: WatchProduct): CatalogEntry {
+  return CatalogEntrySchema.parse({
+    sku: value.sku,
+    slug: value.slug,
+    status: value.status,
+    brand: value.brand,
+    modelNumber: value.modelNumber,
+    reference: value.reference,
+    modelName: value.modelName,
+    title: value.title,
+    price: value.price,
+    costPrice: value.costPrice,
+    quantity: value.quantity,
+    collection: value.collection,
+    gender: value.gender,
+    inStock: value.inStock,
+    backdropId: value.backdropId,
+    facets: value.facets,
+    tags: value.tags,
+    image: value.images[0] ?? null,
+    tagline: value.copy.tagline,
+    imageCount: value.images.length,
+    specCount: value.specs.length,
+    confidence: value.confidence.overall,
+    flags: value.review.flags,
+    sourceCount: value.sources.length,
+    directSale: value.directSale,
+    createdAt: value.meta.createdAt,
+    updatedAt: value.meta.updatedAt,
+  });
+}
+
+async function writeIndex(entries: CatalogEntry[]): Promise<CatalogEntry[]> {
+  entries.sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
+  const path = join(config.dataDir, "index.json");
+  const temporary = `${path}.${process.pid}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(entries, null, 2)}\n`);
+  await fs.rename(temporary, path);
+  const stamp = await fs.stat(path);
+  indexMemo = { signature: `${stamp.mtimeMs}:${stamp.size}`, entries };
+  return entries;
+}
+
+let indexMutation: Promise<void> = Promise.resolve();
+
+/** Update one summary row without reopening and validating every artifact. */
+async function mutateIndex(change: (entries: CatalogEntry[]) => CatalogEntry[]): Promise<CatalogEntry[]> {
+  let result: CatalogEntry[] = [];
+  const operation = indexMutation.then(async () => {
+    const path = join(config.dataDir, "index.json");
+    let entries: CatalogEntry[] = [];
+    try {
+      entries = JSON.parse(await fs.readFile(path, "utf8")) as CatalogEntry[];
+    } catch {
+      entries = [];
+    }
+    result = await writeIndex(change(entries));
+  });
+  // A failed edit must not permanently jam later index updates.
+  indexMutation = operation.then(() => undefined, () => undefined);
+  await operation;
+  return result;
+}
+
+async function upsertIndex(product: WatchProduct): Promise<CatalogEntry[]> {
+  const entry = catalogEntryOf(product);
+  return mutateIndex((entries) => [...entries.filter((candidate) => candidate.sku !== product.sku), entry]);
+}
+
+async function removeFromIndex(sku: string): Promise<CatalogEntry[]> {
+  return mutateIndex((entries) => entries.filter((candidate) => candidate.sku !== sku));
+}
+
 /**
- * Rebuilds the compact index the collections page reads.
+ * Rebuilds the compact index after an agent batch or migration.
  *
- * The Python agent writes this after every run; this copy exists so an admin edit
- * updates the shop immediately without re-running the agent.
+ * Routine admin edits use upsertIndex instead, which changes one summary row
+ * and avoids roughly 1,900 file reads and validations per click.
  */
 export async function rebuildIndex(): Promise<CatalogEntry[]> {
   let files: string[] = [];
@@ -295,38 +369,13 @@ export async function rebuildIndex(): Promise<CatalogEntry[]> {
     try {
       const parsed = WatchProductSchema.safeParse(JSON.parse(await fs.readFile(join(config.dataDir, file), "utf8")));
       if (!parsed.success) continue;
-      const value = parsed.data;
-      entries.push(
-        CatalogEntrySchema.parse({
-          sku: value.sku,
-          slug: value.slug,
-          status: value.status,
-          brand: value.brand,
-          modelNumber: value.modelNumber,
-          modelName: value.modelName,
-          title: value.title,
-          price: value.price,
-          collection: value.collection,
-          gender: value.gender,
-          inStock: value.inStock,
-          backdropId: value.backdropId,
-          // Carried across explicitly. Both have schema defaults, so omitting them
-          // does not fail — it silently writes an empty facet set, which blanks
-          // the sidebar filters for every watch the next time anyone saves an edit.
-          facets: value.facets,
-          tags: value.tags,
-          image: value.images[0] ?? null,
-          tagline: value.copy.tagline,
-        }),
-      );
+      entries.push(catalogEntryOf(parsed.data));
     } catch {
       // A corrupt artifact must not break the shop.
     }
   }
 
-  entries.sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
-  await fs.writeFile(join(config.dataDir, "index.json"), `${JSON.stringify(entries, null, 2)}\n`);
-  return entries;
+  return writeIndex(entries);
 }
 
 /** Fields the admin panel is allowed to change. */
@@ -454,6 +503,21 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
       .filter((image): image is NonNullable<typeof image> => Boolean(image));
   }
 
+  // A public product page needs a useful gallery, not a lone card thumbnail.
+  // Apply this centrally so removing a photograph, a direct API edit, and the
+  // admin form all follow the same rule. A human may save an incomplete draft,
+  // but it cannot be published until three distinct photographs remain.
+  const galleryFlags: WatchProduct["review"]["flags"] = next.review.flags.filter(
+    (flag) => flag !== "no-images" && flag !== "few-images",
+  );
+  if (next.images.length === 0) galleryFlags.push("no-images");
+  else if (next.images.length < 3) galleryFlags.push("few-images");
+  next.review = { ...next.review, flags: galleryFlags };
+  if (next.images.length < 3) {
+    if (patch.status === "ready") throw new Error("Add at least three photographs before publishing.");
+    next.status = "needs_review";
+  }
+
   if (patch.backdropId !== undefined) next.backdropId = patch.backdropId;
 
   if (patch.specs) {
@@ -480,7 +544,7 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
   // Re-validate before writing so an edit cannot corrupt the artifact.
   const validated = WatchProductSchema.parse(next);
   await fs.writeFile(join(config.dataDir, `${sku}.json`), `${JSON.stringify(validated, null, 2)}\n`);
-  await rebuildIndex();
+  await upsertIndex(validated);
   return validated;
 }
 
@@ -495,15 +559,26 @@ export async function addImages(sku: string, images: unknown[]): Promise<WatchPr
   const product = await getProduct(sku);
   if (!product) return null;
 
+  const incoming = z.array(ProductImageSchema).parse(images);
+  const combined = [...product.images, ...incoming]
+    .filter((image, index, all) => all.findIndex((candidate) => candidate.url === image.url) === index)
+    .slice(0, 5);
+  const flags: WatchProduct["review"]["flags"] = product.review.flags.filter(
+    (flag) => flag !== "no-images" && flag !== "few-images",
+  );
+  if (combined.length === 0) flags.push("no-images");
+  else if (combined.length < 3) flags.push("few-images");
   const next = {
     ...product,
-    images: [...product.images, ...images],
+    images: combined,
+    review: { ...product.review, flags },
+    ...(combined.length < 3 ? { status: "needs_review" as const } : {}),
     meta: { ...product.meta, updatedAt: new Date().toISOString() },
   };
 
   const validated = WatchProductSchema.parse(next);
   await fs.writeFile(join(config.dataDir, `${sku}.json`), `${JSON.stringify(validated, null, 2)}\n`);
-  await rebuildIndex();
+  await upsertIndex(validated);
   return validated;
 }
 
@@ -516,7 +591,7 @@ export async function deleteProduct(sku: string): Promise<boolean> {
     return false;
   }
   await fs.rm(join(config.imageDir, sku), { recursive: true, force: true });
-  await rebuildIndex();
+  await removeFromIndex(sku);
   return true;
 }
 

@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_BYTES = 12 * 1024 * 1024;
-const MAX_IMAGES = 8;
+const MAX_IMAGES = 5;
 /** Matches what the agent writes, so shop photographs sit in the same grid. */
 const EDGE = 1200;
 

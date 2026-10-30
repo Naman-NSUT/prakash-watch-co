@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHead, Stat } from "@/components/admin/ui";
 import PriceDesk from "@/components/admin/PriceDesk";
 import RefreshPanel from "@/components/admin/RefreshPanel";
-import { getAllProducts } from "@/lib/catalog";
+import { getCatalogIndex } from "@/lib/catalog";
 import { getPriceWatch } from "@/lib/pricing";
 import { formatUsd } from "@/agent/format";
 
@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Price watch — Stock room" };
 
 export default async function PricingPage() {
-  const [report, products] = await Promise.all([getPriceWatch(), getAllProducts()]);
+  const [report, products] = await Promise.all([getPriceWatch(), getCatalogIndex()]);
   // What the refresh will actually walk: on the shop, and with a page to go back to.
-  const refreshable = products.filter((p) => p.status === "ready" && p.sources.length > 0).length;
+  const refreshable = products.filter((p) => p.status === "ready" && p.sourceCount > 0).length;
 
   return (
     <>

@@ -8,7 +8,7 @@
  * teaches its owner to distrust it.
  */
 import "server-only";
-import { getAllProducts, type WatchProduct } from "@/lib/catalog";
+import { getCatalogIndex, type CatalogEntry } from "@/lib/catalog";
 import { listBills, type Bill } from "@/lib/sales";
 import { formatInr } from "@/agent/format";
 import { getRuns } from "@/lib/catalog";
@@ -85,7 +85,7 @@ function dailySeries(bills: Bill[], days: number): Point[] {
 }
 
 export async function getOverview(): Promise<Overview> {
-  const [products, bills, runs] = await Promise.all([getAllProducts(), listBills(), getRuns(50)]);
+  const [products, bills, runs] = await Promise.all([getCatalogIndex(), listBills(), getRuns(50)]);
   const live = bills.filter((bill) => bill.status !== "void");
 
   const now = new Date();
@@ -106,9 +106,9 @@ export async function getOverview(): Promise<Overview> {
 
   // Catalogue health
   const published = products.filter((p) => p.status === "ready");
-  const withoutPhoto = products.filter((p) => p.images.length === 0);
-  const provisional = products.filter((p) => p.review.flags.includes("provisional-image"));
-  const specTotal = products.reduce((sum, p) => sum + p.specs.length, 0);
+  const withoutPhoto = products.filter((p) => p.imageCount === 0);
+  const provisional = products.filter((p) => p.flags.includes("provisional-image"));
+  const specTotal = products.reduce((sum, p) => sum + p.specCount, 0);
 
   // Top sellers
   const seller = new Map<string, { title: string; units: number; revenue: number }>();
@@ -187,9 +187,9 @@ export async function getOverview(): Promise<Overview> {
 
 /** Stock view: every sku with its count, value and how it is selling. */
 export async function getInventory(): Promise<
-  Array<{ product: WatchProduct; sold: number; value: number }>
+  Array<{ product: CatalogEntry; sold: number; value: number }>
 > {
-  const [products, bills] = await Promise.all([getAllProducts(), listBills()]);
+  const [products, bills] = await Promise.all([getCatalogIndex(), listBills()]);
   const sold = new Map<string, number>();
   for (const bill of bills) {
     if (bill.status === "void") continue;
@@ -273,7 +273,7 @@ const COLLECTION_LABELS: Record<string, string> = {
 };
 
 /** Groups a facet into ordered rows, dropping anything nothing falls into. */
-function tally(products: WatchProduct[], pick: (p: WatchProduct) => string | null | undefined, labels?: Record<string, string>, order?: string[]) {
+function tally(products: CatalogEntry[], pick: (p: CatalogEntry) => string | null | undefined, labels?: Record<string, string>, order?: string[]) {
   const counts = new Map<string, number>();
   for (const product of products) {
     const key = pick(product);
@@ -323,7 +323,7 @@ function bucketSeries(bills: Bill[], days: number, grain: AnalyticsFilter["grain
 }
 
 export async function getAnalytics(filter: AnalyticsFilter): Promise<Analytics> {
-  const [allProducts, allBills] = await Promise.all([getAllProducts(), listBills()]);
+  const [allProducts, allBills] = await Promise.all([getCatalogIndex(), listBills()]);
 
   const brandsAvailable = [...new Set(allProducts.map((p) => p.brand))].sort();
   const collectionsAvailable = [...new Set(allProducts.map((p) => p.collection).filter(Boolean) as string[])].sort();
@@ -397,7 +397,7 @@ export async function getAnalytics(filter: AnalyticsFilter): Promise<Analytics> 
       sku: p.sku,
       title: p.title,
       brand: p.brand,
-      days: Math.max(0, Math.round((now - new Date(p.meta.createdAt).getTime()) / 86_400_000)),
+      days: Math.max(0, Math.round((now - new Date(p.createdAt).getTime()) / 86_400_000)),
       value: (p.price.selling ?? 0) * (p.quantity ?? 0),
     }))
     .filter((row) => !soldBySku.has(row.sku))

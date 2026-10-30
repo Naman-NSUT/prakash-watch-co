@@ -63,20 +63,34 @@ PY
   fi
 fi
 
-# Existing galleries predate camera-angle classification. Run the audited,
-# resumable migration once on the persistent catalogue. It works in the
-# background so a deploy does not keep the shop offline while the vision model
-# inspects every watch; the storefront index changes only after the full pass.
-COVER_MIGRATION="$DATA/.migrations/cover-view-v1.done"
-if [ ! -f "$COVER_MIGRATION" ]; then
+# Bring old galleries under the same three-to-five-image contract as new rows.
+# The network pass runs after the site starts and only reads the recorded Indian
+# brand/dealer pages. It first withdraws incomplete listings locally, then fills
+# them toward five. Camera classification follows it so new angles cannot put a
+# caseback ahead of the dial. One coordinator owns catalogue writes at a time.
+GALLERY_MIGRATION="$DATA/.migrations/gallery-3-to-5-v1.done"
+COVER_MIGRATION="$DATA/.migrations/cover-view-v2.done"
+if [ ! -f "$GALLERY_MIGRATION" ] || [ ! -f "$COVER_MIGRATION" ]; then
   (
     cd /app/agent
-    echo "starting cover-view catalogue migration"
-    if python -m prakash_agent.cover_audit --apply --concurrency 8; then
-      date -u +%Y-%m-%dT%H:%M:%SZ > "$COVER_MIGRATION"
-      echo "cover-view catalogue migration complete"
-    else
-      echo "WARNING: cover-view catalogue migration did not finish; it will resume after restart" >&2
+    if [ ! -f "$GALLERY_MIGRATION" ]; then
+      echo "starting three-to-five image catalogue migration"
+      if python -m prakash_agent.topup --target 5; then
+        date -u +%Y-%m-%dT%H:%M:%SZ > "$GALLERY_MIGRATION"
+        echo "three-to-five image catalogue migration complete"
+      else
+        echo "WARNING: image catalogue migration did not finish; it will retry after restart" >&2
+      fi
+    fi
+
+    if [ ! -f "$COVER_MIGRATION" ]; then
+      echo "starting cover-view catalogue migration"
+      if python -m prakash_agent.cover_audit --apply --concurrency 8; then
+        date -u +%Y-%m-%dT%H:%M:%SZ > "$COVER_MIGRATION"
+        echo "cover-view catalogue migration complete"
+      else
+        echo "WARNING: cover-view catalogue migration did not finish; it will resume after restart" >&2
+      fi
     fi
   ) &
 fi
