@@ -88,7 +88,10 @@ async function fetchCatalog(): Promise<unknown[]> {
  */
 const cachedCatalog = unstable_cache(
   async () => gzipSync(JSON.stringify(await fetchCatalog())).toString("base64"),
-  ["pwc-public-catalog-gzip-v1", BACKEND],
+  // Bump when the index contract or publication policy changes. A stable key
+  // survives deployments, which is useful for ordinary code releases but would
+  // otherwise keep pre-migration image counts/statuses alive for five minutes.
+  ["pwc-public-catalog-gzip-v2", BACKEND],
   { revalidate: Math.round(FRESH_FOR_MS / 1000) },
 );
 
