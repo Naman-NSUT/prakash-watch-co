@@ -3,8 +3,8 @@ import Reveal from "./Reveal";
 const stores = [
   { t: "Dwarka", a: ["G5 & G6, Aggarwal Arcade", "Sector 12, Dwarka, New Delhi"], tag: "FLAGSHIP", accent: true },
   { t: "Sadar Bazar", a: ["No. 1277, Roshan Pura", "Sadar Bazar, Gurugram"], tag: "SINCE 1976", accent: false },
-  { t: "West Delhi", a: ["Multi-brand counter", "Address to confirm"], tag: "RETAIL", accent: false },
-  { t: "Service Centre", a: ["Workshop & warranty desk", "Address to confirm"], tag: "WORKSHOP", accent: true },
+  { t: "West Delhi", a: ["Multi-brand counter", "Call for the current address"], tag: "RETAIL", accent: false },
+  { t: "Service Centre", a: ["Workshop & warranty desk", "Call for the current address"], tag: "WORKSHOP", accent: true },
 ];
 
 export default function Boutiques() {

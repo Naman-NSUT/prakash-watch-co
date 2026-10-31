@@ -98,6 +98,9 @@ export function brandSlug(brand: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Spreadsheet tab labels are not watch houses and must never enter navigation. */
+const PLACEHOLDER_BRAND_SLUGS = new Set(["sheet1"]);
+
 /** The shop's notes on each brand, as stored — also what the shop front is sent. */
 export async function readBrandNotes(): Promise<BrandNote[]> {
   try {
@@ -208,17 +211,18 @@ export const getBrands = cache(async function getBrands(): Promise<BrandSummary[
   const [index, notes] = await Promise.all([getCatalogIndex(), readNotes()]);
   const published = index.filter((entry) => entry.status === PUBLISHED_STATUS);
 
-  const grouped = new Map<string, CatalogEntry[]>();
+  const grouped = new Map<string, { name: string; entries: CatalogEntry[] }>();
   for (const entry of published) {
-    const key = entry.brand.trim();
-    if (!key) continue;
-    const bucket = grouped.get(key);
-    if (bucket) bucket.push(entry);
-    else grouped.set(key, [entry]);
+    const name = entry.brand.trim();
+    const slug = brandSlug(name);
+    if (!slug || PLACEHOLDER_BRAND_SLUGS.has(slug)) continue;
+    const bucket = grouped.get(slug);
+    if (bucket) bucket.entries.push(entry);
+    else grouped.set(slug, { name, entries: [entry] });
   }
 
-  const summaries = [...grouped.entries()].map(([brand, entries]) =>
-    summarise(brand, entries, notes.get(brandSlug(brand))),
+  const summaries = [...grouped.entries()].map(([slug, group]) =>
+    summarise(group.name, group.entries, notes.get(slug)),
   );
 
   const orderOf = (summary: BrandSummary) => notes.get(summary.slug)?.order ?? Number.MAX_SAFE_INTEGER;

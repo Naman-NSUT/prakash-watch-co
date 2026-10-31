@@ -118,7 +118,7 @@ export function verifyCheckoutSignature(fields: {
 }
 
 /** What Razorpay's servers send, signed with the webhook secret. The real record. */
-export function verifyWebhookSignature(rawBody: string, signature: string): boolean {
+export function verifyWebhookSignature(rawBody: string | Buffer, signature: string): boolean {
   const config = razorpayConfig();
   if (!config?.webhookSecret) return false;
   const expected = createHmac("sha256", config.webhookSecret).update(rawBody).digest("hex");

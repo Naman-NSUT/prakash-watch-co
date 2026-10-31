@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { findByPaymentOrder, updateOrder } from "@/lib/orders";
-import { findByOrder, settle } from "@/lib/payments";
+import { confirmCapturedPayment } from "@/lib/payment-confirmation";
 import { fetchPayment, verifyCheckoutSignature } from "@/lib/razorpay";
 
 export const runtime = "nodejs";
@@ -46,37 +45,27 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: false, error: "That payment could not be verified." }, { status: 400 });
   }
 
-  const order = await findByPaymentOrder(fields.razorpay_order_id);
-  if (!order) return Response.json({ ok: false, error: "No such order." }, { status: 404 });
-  if (order.status !== "placed") {
-    return Response.json({ ok: true, orderId: order.id, number: order.number, already: true });
-  }
-
   // Razorpay's own word, not the browser's.
   const captured = await fetchPayment(fields.razorpay_payment_id);
-  const asked = await findByOrder(fields.razorpay_order_id);
-  if (!captured || captured.status !== "captured") {
+  if (!captured || captured.order_id !== fields.razorpay_order_id) {
     return Response.json({ ok: false, error: "That payment has not been captured." }, { status: 402 });
   }
-  if (asked && captured.amount !== asked.amountPaise) {
-    return Response.json({ ok: false, error: "That payment does not match the order." }, { status: 409 });
+  const result = await confirmCapturedPayment({
+    id: captured.id,
+    orderId: captured.order_id,
+    amount: captured.amount,
+    currency: captured.currency,
+    status: captured.status,
+    method: captured.method,
+  }, "checkout");
+  if (!result.ok) {
+    return Response.json({ ok: false, error: result.error }, { status: result.status });
   }
 
-  await settle(fields.razorpay_order_id, {
-    paymentId: fields.razorpay_payment_id,
-    status: "paid",
-    method: captured.method ?? "",
-    confirmedBy: "checkout",
+  return Response.json({
+    ok: true,
+    orderId: result.order.id,
+    number: result.order.number,
+    ...(result.already ? { already: true } : {}),
   });
-
-  await updateOrder(order.id, {
-    status: "paid",
-    payment: {
-      orderId: fields.razorpay_order_id,
-      paymentId: fields.razorpay_payment_id,
-      method: captured.method ?? "",
-    },
-  });
-
-  return Response.json({ ok: true, orderId: order.id, number: order.number });
 }

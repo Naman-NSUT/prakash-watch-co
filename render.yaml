@@ -85,3 +85,13 @@ services:
       # Lets the public site read the catalogue. Set the same value on Vercel.
       - key: PWC_PUBLIC_API_TOKEN
         generateValue: true
+
+      # --- Online payments ----------------------------------------------
+      # Use the live key pair on production. The webhook secret is a separate
+      # value chosen when /api/checkout/webhook is registered in Razorpay.
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false

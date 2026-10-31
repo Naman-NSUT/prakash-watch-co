@@ -65,6 +65,13 @@ reach.
    - `ADMIN_PASSWORD` — the admin panel password. Use a long random one.
    - `OPENROUTER_API_KEY` — the agent's key, from openrouter.ai/keys.
 
+   For online checkout, also add the production Razorpay values
+   `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`.
+   Create a Live-mode webhook in Razorpay for
+   `https://prakash-backend.onrender.com/api/checkout/webhook`, subscribe it to
+   `payment.captured`, and use the same webhook secret in Render. The webhook
+   secret is separate from the API key secret.
+
    It generates `ADMIN_SECRET`, `AGENT_SERVICE_TOKEN` and `PWC_PUBLIC_API_TOKEN`
    itself.
 3. Apply. The first build takes about five minutes. When it is live, open
@@ -194,6 +201,9 @@ much. It is set to $10 in `render.yaml`.
 | `AGENT_SERVICE_TOKEN` | Render | Shared secret between the site and the agent |
 | `OPENROUTER_API_KEY` | you | The agent's model access |
 | `PWC_PUBLIC_API_TOKEN` | Render | Lets the shop front read the catalogue |
+| `RAZORPAY_KEY_ID` | you | Live Razorpay account identifier used by checkout |
+| `RAZORPAY_KEY_SECRET` | you | Live Razorpay API secret; never expose it to the browser |
+| `RAZORPAY_WEBHOOK_SECRET` | you | Verifies the raw `payment.captured` webhook body |
 | `AGENT_BUDGET_USD` | `render.yaml` | Most one run may spend, in US dollars |
 | `AGENT_CONCURRENCY` | `render.yaml` | Watches researched at once |
 | `PWC_DATA_ROOT` | the image | Where the disk is mounted. Leave it |
