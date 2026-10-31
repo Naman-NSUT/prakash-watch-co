@@ -45,7 +45,7 @@ export async function GET(request: Request): Promise<Response> {
   const rows: unknown[][] = [
     [
       "Reference", "Brand", "Watch", "Collection", "For",
-      "Price (incl. GST)", "MRP", "In stock", "Units",
+      "Price (incl. GST)", "MRP", "Availability (derived)", "Quantity",
       "On the website", "Photographs", "Specifications", "Confidence",
       "Sold online", "Held for", "Listed on", "Last changed", "Page",
     ],
@@ -56,7 +56,10 @@ export async function GET(request: Request): Promise<Response> {
 
   for (const entry of entries) {
     const price = entry.price.selling ?? 0;
-    const count = entry.inStock ? 1 : 0;
+    // Quantity is the editable source of truth. Older exports flattened every
+    // positive count to 1, so downloading, editing and uploading the shop's own
+    // sheet could quietly destroy a real multi-piece count.
+    const count = entry.quantity ?? (entry.inStock ? 1 : 0);
     units += count;
     value += price * count;
 

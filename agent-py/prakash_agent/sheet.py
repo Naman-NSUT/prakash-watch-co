@@ -39,7 +39,7 @@ ALIASES: dict[Canonical, tuple[str, ...]] = {
     "modelName": ("modelname", "productname", "name", "watchname", "title", "series"),
     "price": (
         "price", "sellingprice", "saleprice", "ourprice", "offerprice", "priceinr",
-        "pricers", "rate", "netprice", "finalprice",
+        "pricers", "priceinclgst", "rate", "netprice", "finalprice",
         # Indian stock lists head the discounted selling price "Amount". Read as a
         # unit price; a line total would misprice a multi-unit row.
         "amount", "netamount", "unitprice",
@@ -142,6 +142,30 @@ def _header_score(cells: list[str]) -> int:
     return sum(1 for cell in cells if _normalise_header(cell or "") in ALIAS_TO_FIELD)
 
 
+def _column_priority(field: Canonical, alias: str) -> int:
+    """Choose the editable count when a sheet also carries derived availability.
+
+    The catalogue export contains both ``In stock`` (yes/no) and ``Units`` (the
+    count). Both are useful to a person reading the file, but both used to map to
+    ``quantity`` and the leftmost yes/no column won. A shop could edit Units,
+    upload the same file, see a successful run, and have every change ignored.
+
+    Prefer an explicit numeric count. The low-priority aliases remain supported
+    for distributor sheets where ``In stock`` is itself a number.
+    """
+    if field != "quantity":
+        return 0
+    return {
+        "qty": 50,
+        "quantity": 50,
+        "stockqty": 45,
+        "units": 45,
+        "stock": 30,
+        "available": 10,
+        "instock": 10,
+    }.get(alias, 0)
+
+
 def _find_header_row(grid: Grid) -> int:
     """Returns the 1-indexed header row, or 0 when there isn't one."""
     best_row, best_score = 0, 1  # Require at least two recognised headers.
@@ -183,17 +207,26 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
             if brand_site:
                 break
 
-        columns: dict[Canonical, int] = {}
+        candidates: dict[Canonical, list[tuple[int, str, str]]] = {}
         for column_index, label in enumerate(grid.row(header_row)):
             if not label:
                 continue
-            field = ALIAS_TO_FIELD.get(_normalise_header(label))
-            # Leftmost column wins when two headers claim the same field.
-            if field and field not in columns:
-                columns[field] = column_index
-                header_map[f"{grid.name} · {label}"] = field
+            alias = _normalise_header(label)
+            field = ALIAS_TO_FIELD.get(alias)
+            if field:
+                candidates.setdefault(field, []).append((column_index, label, alias))
             else:
                 unmapped.append(f"{grid.name} · {label}")
+
+        columns: dict[Canonical, int] = {}
+        for field, options in candidates.items():
+            # Higher semantic priority wins; the leftmost column breaks ties.
+            chosen = max(options, key=lambda option: (_column_priority(field, option[2]), -option[0]))
+            columns[field] = chosen[0]
+            header_map[f"{grid.name} · {chosen[1]}"] = field
+            for option in options:
+                if option != chosen:
+                    unmapped.append(f"{grid.name} · {option[1]}")
 
         if "modelNumber" not in columns:
             skipped.append({"sheet": grid.name, "reason": "no model number column"})
