@@ -62,16 +62,36 @@ export default function CourierDesk({ initial }: { initial: CourierView }) {
       setNote("Enter the six-digit pickup PIN code before testing.");
       return;
     }
-    setNote("Asking the courier…");
+    setState("saving");
+    setNote("Saving the settings…");
     try {
+      // Testing an unsaved token used to ask Delhivery with the previous saved
+      // settings and then report the PIN as unsupported. Persist the exact form
+      // being tested first so the result always describes what is on screen.
+      const saveResponse = await fetch("/api/admin/courier", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...view, token }),
+      });
+      const saved = await saveResponse.json();
+      if (!saveResponse.ok) {
+        setNote(saved.errors?.[0] ?? "Those settings did not save.");
+        setState("error");
+        return;
+      }
+      setView(saved);
+      setToken("");
+      setNote("Asking the courier…");
+
       const response = await fetch(`/api/checkout/serviceable?pincode=${pincode}`);
       const payload = await response.json();
       if (!payload.known) {
         setNote(
-          view.tokenSet
+          saved.tokenSet
             ? "Delhivery did not return a serviceability answer. Check the saved token and try again."
             : "No Delhivery token is saved. Paste the token, save the settings, then test again.",
         );
+        setState("error");
         return;
       }
       setNote(
@@ -79,8 +99,11 @@ export default function CourierDesk({ initial }: { initial: CourierView }) {
           ? `Working — the courier answers for ${[payload.district, payload.state].filter(Boolean).join(", ")}.`
           : "The courier answered, but does not serve that PIN code.",
       );
+      setState("saved");
+      window.setTimeout(() => setState("idle"), 2400);
     } catch {
-      setNote("No answer from the courier. Check the token.");
+      setNote("Could not save or reach Delhivery. Check the token and try again.");
+      setState("error");
     }
   }
 
@@ -137,7 +160,7 @@ export default function CourierDesk({ initial }: { initial: CourierView }) {
         <button type="button" className="ops-btn" data-variant="solid" disabled={state === "saving"} onClick={save}>
           {state === "saving" ? "Saving…" : state === "saved" ? "Saved ✓" : "Save"}
         </button>
-        <button type="button" className="ops-btn" onClick={test}>Test the connection</button>
+        <button type="button" className="ops-btn" disabled={state === "saving"} onClick={test}>Save &amp; test connection</button>
         {note && <span className="ops-note" style={{ margin: 0 }}>{note}</span>}
       </div>
     </details>
