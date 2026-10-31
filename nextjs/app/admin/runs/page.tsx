@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import { Empty, PageHead, Stat } from "@/components/admin/ui";
 import { getRuns } from "@/lib/catalog";
+import type { RunReport } from "@/agent/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,11 @@ const dateTime = new Intl.DateTimeFormat("en-IN", {
 function when(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? "—" : dateTime.format(date);
+}
+
+function count(run: RunReport, key: keyof RunReport["counts"]): number {
+  const value = run.counts?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 function duration(startedAt: string, finishedAt: string): string {
@@ -45,9 +51,9 @@ export default async function RunsPage() {
         <>
           <section className="ops-cards" aria-label="Latest agent run">
             <Stat label="Latest run" value={when(latest.startedAt)} sub={basename(latest.sourceFile || "Uploaded sheet")} />
-            <Stat label="Published" value={(latest.counts.ready ?? 0).toLocaleString("en-IN")} sub={`${latest.counts.updated ?? 0} existing listings updated`} tone="accent" />
-            <Stat label="Needs attention" value={(latest.counts.needsReview ?? 0).toLocaleString("en-IN")} sub={`${latest.counts.rowsRejected ?? 0} sheet rows rejected`} tone={(latest.counts.needsReview ?? 0) > 0 ? "warn" : "plain"} />
-            <Stat label="Photographs saved" value={(latest.counts.imagesSaved ?? 0).toLocaleString("en-IN")} sub={`${duration(latest.startedAt, latest.finishedAt)} total`} />
+            <Stat label="Published" value={count(latest, "ready").toLocaleString("en-IN")} sub={`${count(latest, "updated")} existing listings updated`} tone="accent" />
+            <Stat label="Needs attention" value={count(latest, "needsReview").toLocaleString("en-IN")} sub={`${count(latest, "rowsRejected")} sheet rows rejected`} tone={count(latest, "needsReview") > 0 ? "warn" : "plain"} />
+            <Stat label="Photographs saved" value={count(latest, "imagesSaved").toLocaleString("en-IN")} sub={`${duration(latest.startedAt, latest.finishedAt)} total`} />
           </section>
 
           <section className="ops-panel" style={{ marginTop: 20, padding: 0 }}>
@@ -66,8 +72,8 @@ export default async function RunsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {runs.map((run) => (
-                    <tr key={run.runId}>
+                  {runs.map((run, index) => (
+                    <tr key={run.runId || `${run.startedAt || "run"}-${index}`}>
                       <td>
                         {when(run.startedAt)}
                         <span className="mono" style={{ display: "block", marginTop: 3, fontSize: 9, color: "var(--faint)" }}>
@@ -80,11 +86,11 @@ export default async function RunsPage() {
                           {run.model || "Model not recorded"}
                         </span>
                       </td>
-                      <td className="ops-num">{(run.counts.rowsRead ?? 0).toLocaleString("en-IN")}</td>
-                      <td className="ops-num" style={{ color: "var(--accent-soft)" }}>{(run.counts.ready ?? 0).toLocaleString("en-IN")}</td>
-                      <td className="ops-num" style={{ color: (run.counts.needsReview ?? 0) ? "var(--warn)" : undefined }}>{(run.counts.needsReview ?? 0).toLocaleString("en-IN")}</td>
-                      <td className="ops-num" style={{ color: (run.counts.failed ?? 0) ? "var(--bad)" : undefined }}>{(run.counts.failed ?? 0).toLocaleString("en-IN")}</td>
-                      <td className="ops-num">{(run.counts.imagesSaved ?? 0).toLocaleString("en-IN")}</td>
+                      <td className="ops-num">{count(run, "rowsRead").toLocaleString("en-IN")}</td>
+                      <td className="ops-num" style={{ color: "var(--accent-soft)" }}>{count(run, "ready").toLocaleString("en-IN")}</td>
+                      <td className="ops-num" style={{ color: count(run, "needsReview") ? "var(--warn)" : undefined }}>{count(run, "needsReview").toLocaleString("en-IN")}</td>
+                      <td className="ops-num" style={{ color: count(run, "failed") ? "var(--bad)" : undefined }}>{count(run, "failed").toLocaleString("en-IN")}</td>
+                      <td className="ops-num">{count(run, "imagesSaved").toLocaleString("en-IN")}</td>
                       <td>
                         <span className="ops-chip" data-tone={run.dryRun ? "warn" : "mute"}>{run.dryRun ? "Dry run" : "Committed"}</span>
                         <span className="mono" style={{ display: "block", marginTop: 5, fontSize: 9, color: "var(--faint)" }}>

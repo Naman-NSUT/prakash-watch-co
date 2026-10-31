@@ -269,7 +269,8 @@ export async function getRuns(limit = 10): Promise<RunReport[]> {
   const runs: RunReport[] = [];
   for (const file of files.slice(0, limit)) {
     try {
-      runs.push(JSON.parse(await fs.readFile(join(config.reportDir, file), "utf8")) as RunReport);
+      const value = JSON.parse(await fs.readFile(join(config.reportDir, file), "utf8")) as unknown;
+      if (value && typeof value === "object") runs.push(value as RunReport);
     } catch {
       // Skip unreadable reports.
     }
