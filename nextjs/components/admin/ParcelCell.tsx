@@ -5,7 +5,7 @@ import { useState } from "react";
 /**
  * The parcel on one order.
  *
- * Before a waybill there are two ways to get one: take a number from the
+ * Before a waybill there are two ways to get one: reserve a number from the
  * courier's pool, or type the one already booked in Delhivery's own panel —
  * because the shop may well have booked it there, and two waybills for one
  * parcel is a parcel nobody can find.
@@ -65,7 +65,7 @@ export default function ParcelCell({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <button type="button" className="ops-btn" disabled={busy} onClick={() => book()} style={{ fontSize: 10, padding: "5px 9px" }}>
-          {busy ? "…" : "Take a waybill"}
+          {busy ? "…" : "Reserve waybill"}
         </button>
         <span style={{ display: "flex", gap: 4 }}>
           <input
@@ -79,6 +79,9 @@ export default function ParcelCell({
           <button type="button" className="ops-btn" disabled={busy || !typed.trim()} onClick={() => book(typed.trim())} style={{ fontSize: 10, padding: "4px 7px" }}>
             Use
           </button>
+        </span>
+        <span className="mono" style={{ fontSize: 8.5, color: "var(--faint)", lineHeight: 1.45 }}>
+          Tracking number only. Create the shipment and pickup in Delhivery One.
         </span>
         {note && <span className="mono" style={{ fontSize: 8.5, color: "var(--bad)" }}>{note}</span>}
       </div>
@@ -96,7 +99,7 @@ export default function ParcelCell({
       >
         {waybill} ↗
       </a>
-      <span className="mono" style={{ fontSize: 8.5, color: "var(--faint)" }}>{status || "not scanned yet"}</span>
+      <span className="mono" style={{ fontSize: 8.5, color: "var(--faint)" }}>{status || "reserved — manifest in Delhivery One"}</span>
       <button type="button" className="ops-btn" disabled={busy} onClick={check} style={{ fontSize: 9, padding: "3px 7px", alignSelf: "flex-start" }}>
         {busy ? "Asking…" : "Where is it?"}
       </button>

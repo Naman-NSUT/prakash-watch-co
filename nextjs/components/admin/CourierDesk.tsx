@@ -28,6 +28,7 @@ export interface CourierView {
 export default function CourierDesk({ initial }: { initial: CourierView }) {
   const [view, setView] = useState(initial);
   const [token, setToken] = useState("");
+  const [editingToken, setEditingToken] = useState(false);
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [note, setNote] = useState("");
 
@@ -48,6 +49,7 @@ export default function CourierDesk({ initial }: { initial: CourierView }) {
       }
       setView(payload);
       setToken("");
+      setEditingToken(false);
       setState("saved");
       window.setTimeout(() => setState("idle"), 2400);
     } catch {
@@ -81,6 +83,7 @@ export default function CourierDesk({ initial }: { initial: CourierView }) {
       }
       setView(saved);
       setToken("");
+      setEditingToken(false);
       setNote("Asking the courier…");
 
       const response = await fetch(`/api/checkout/serviceable?pincode=${pincode}`);
@@ -131,21 +134,47 @@ export default function CourierDesk({ initial }: { initial: CourierView }) {
         refused. Everything here stays on the shop&apos;s own server.
       </p>
 
-      <label style={{ display: "block", marginTop: 12 }}>
+      <div style={{ display: "block", marginTop: 12 }}>
         <span className="ops-sublabel" style={{ marginTop: 0 }}>API token</span>
-        <input
-          className="ops-field"
-          type="password"
-          value={token}
-          placeholder={view.tokenSet ? `kept — ends ${view.tokenTail}` : "paste the token"}
-          onChange={(event) => setToken(event.target.value)}
-          style={{ width: "100%" }}
-          autoComplete="off"
-        />
-        <span className="ops-note" style={{ display: "block", marginTop: 4 }}>
-          Leave blank to keep the one already saved.
-        </span>
-      </label>
+        {editingToken ? (
+          <>
+            <input
+              className="ops-field"
+              type="password"
+              name="pwc-delhivery-api-token"
+              value={token}
+              placeholder="paste the Delhivery token"
+              onChange={(event) => setToken(event.target.value)}
+              style={{ width: "100%" }}
+              autoComplete="new-password"
+              data-1p-ignore
+              data-lpignore="true"
+            />
+            <span className="ops-note" style={{ display: "block", marginTop: 4 }}>
+              {view.tokenSet ? "Paste a replacement, or cancel to keep the saved token." : "Paste the production B2C API token."}
+            </span>
+            {view.tokenSet && (
+              <button
+                type="button"
+                className="ops-btn"
+                style={{ marginTop: 8 }}
+                onClick={() => { setToken(""); setEditingToken(false); }}
+              >
+                Keep saved token
+              </button>
+            )}
+          </>
+        ) : (
+          <div className="ops-row" style={{ alignItems: "center" }}>
+            <span className="ops-note" style={{ margin: 0 }}>
+              {view.tokenSet ? `Saved securely — ends ${view.tokenTail}.` : "No token saved."}
+            </span>
+            <button type="button" className="ops-btn" onClick={() => setEditingToken(true)}>
+              {view.tokenSet ? "Replace token" : "Add token"}
+            </button>
+          </div>
+        )}
+      </div>
 
       {field("Pickup location name", "pickupName", "As registered with Delhivery — not the shop's trading name unless they match.")}
       {field("Pickup phone", "pickupPhone")}

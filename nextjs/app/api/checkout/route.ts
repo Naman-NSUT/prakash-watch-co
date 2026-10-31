@@ -72,6 +72,14 @@ export async function POST(request: Request): Promise<Response> {
       errors.push(`${product.title} is not in the case at the moment.`);
       continue;
     }
+    if (typeof product.quantity === "number" && wanted.quantity > product.quantity) {
+      errors.push(
+        product.quantity === 1
+          ? `Only one ${product.title} is available.`
+          : `Only ${product.quantity} of ${product.title} are available.`,
+      );
+      continue;
+    }
     const price = product.price.selling;
     if (!price || price <= 0) {
       errors.push(`${product.title} is not priced for the website.`);

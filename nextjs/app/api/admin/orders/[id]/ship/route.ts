@@ -21,12 +21,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const order = await getOrder(id);
   if (!order) return Response.json({ error: "No such order." }, { status: 404 });
+  if (order.status === "placed") {
+    return Response.json({ error: "Payment has not cleared for this order." }, { status: 409 });
+  }
+  if (order.status === "cancelled") {
+    return Response.json({ error: "A cancelled order cannot be shipped." }, { status: 409 });
+  }
+  if (order.shipment.waybill) {
+    return Response.json({ error: `This order already has waybill ${order.shipment.waybill}.` }, { status: 409 });
+  }
 
   let typed = "";
   try {
     typed = String(((await request.json()) as { waybill?: string }).waybill ?? "").trim();
   } catch {
     typed = "";
+  }
+  if (typed && !/^[A-Za-z0-9]{6,}$/.test(typed)) {
+    return Response.json({ error: "That is not a valid waybill number." }, { status: 400 });
   }
 
   // A number the shop already has beats taking a fresh one: two waybills for
