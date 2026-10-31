@@ -9,9 +9,9 @@ import { DEFAULT_GST_RATE } from "@/lib/sales";
  *
  * The counter has bills; the website has orders, and they are different things.
  * A bill records a sale that has already happened in front of someone. An order
- * records a stranger's intention, and only becomes a sale when the money
- * arrives — so it carries its own state, and the stock does not move until
- * Razorpay says the payment was captured.
+ * records a stranger's intention, and only becomes a sale when the shop accepts
+ * a captured payment — so it carries its own state, and the stock does not move
+ * until an administrator approves the paid order.
  *
  * Every price here is settled on the server from the catalogue. What the
  * browser sends is a list of references and quantities, nothing more: a cart is
@@ -84,14 +84,38 @@ export const OrderSchema = z.object({
     .prefault({}),
 
   /**
+   * The exact stock change prepared when a paid order is approved.
+   *
+   * `before` and `after` make the operation recoverable if the server restarts
+   * between changing the catalogue, writing the ledger and marking the order
+   * approved. A retry can set the same target count without subtracting twice.
+   */
+  stockApproval: z
+    .object({
+      preparedAt: z.string().default(""),
+      committedAt: z.string().default(""),
+      lines: z
+        .array(
+          z.object({
+            sku: z.string(),
+            before: z.number().int().nonnegative(),
+            after: z.number().int().nonnegative(),
+          }),
+        )
+        .default([]),
+    })
+    .prefault({}),
+
+  /**
    * placed    — the customer filled the form; no money yet
-   * paid      — Razorpay captured it, and the stock has moved
+   * paid      — Razorpay captured it; waiting for the shop to accept it
+   * approved  — the shop accepted it, and the stock has moved
    * packed    — the shop has it ready
    * shipped   — it has left the counter
    * delivered — done
    * cancelled — abandoned, refused or refunded
    */
-  status: z.enum(["placed", "paid", "packed", "shipped", "delivered", "cancelled"]).default("placed"),
+  status: z.enum(["placed", "paid", "approved", "packed", "shipped", "delivered", "cancelled"]).default("placed"),
   note: z.string().default(""),
 });
 export type Order = z.infer<typeof OrderSchema>;
@@ -152,6 +176,7 @@ export async function createOrder(input: {
     total,
     payment: { orderId: "", paymentId: "", method: "" },
     shipment: { waybill: "", status: "", lastScanAt: "", checkedAt: "" },
+    stockApproval: { preparedAt: "", committedAt: "", lines: [] },
     status: "placed",
     note: "",
   };

@@ -16,8 +16,8 @@ export const runtime = "nodejs";
  * prices would be a way to buy a Tissot for a rupee.
  *
  * Nothing is charged here either. This creates the order and asks Razorpay for
- * a payment order; the money is confirmed separately, and the stock does not
- * move until it is.
+ * a payment order; the money is confirmed separately, then the shop approves
+ * the paid order before stock moves.
  */
 const CheckoutSchema = z.object({
   lines: z

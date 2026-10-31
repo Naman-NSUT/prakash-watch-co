@@ -40,19 +40,29 @@ export async function readLedger(): Promise<Movement[]> {
   }
 }
 
-export async function appendMovements(entries: Omit<Movement, "id" | "at">[]): Promise<Movement[]> {
-  const existing = await readLedger();
-  const stamped: Movement[] = entries.map((entry, index) => ({
-    ...entry,
-    id: `mv_${Date.now().toString(36)}${index}`,
-    at: new Date().toISOString(),
-    reference: entry.reference ?? "",
-    note: entry.note ?? "",
-  }));
+let ledgerMutation: Promise<void> = Promise.resolve();
 
-  const next = [...existing, ...stamped];
-  await fs.mkdir(join(LEDGER_PATH, ".."), { recursive: true });
-  await fs.writeFile(LEDGER_PATH, `${JSON.stringify(next, null, 2)}\n`);
+export async function appendMovements(entries: Omit<Movement, "id" | "at">[]): Promise<Movement[]> {
+  let stamped: Movement[] = [];
+  const operation = ledgerMutation.then(async () => {
+    const existing = await readLedger();
+    stamped = entries.map((entry, index) => ({
+      ...entry,
+      id: `mv_${Date.now().toString(36)}${index}`,
+      at: new Date().toISOString(),
+      reference: entry.reference ?? "",
+      note: entry.note ?? "",
+    }));
+
+    const next = [...existing, ...stamped];
+    await fs.mkdir(join(LEDGER_PATH, ".."), { recursive: true });
+    const temporary = `${LEDGER_PATH}.${process.pid}.tmp`;
+    await fs.writeFile(temporary, `${JSON.stringify(next, null, 2)}\n`);
+    await fs.rename(temporary, LEDGER_PATH);
+  });
+  // One failed write must not jam every later bill or stock adjustment.
+  ledgerMutation = operation.then(() => undefined, () => undefined);
+  await operation;
   return stamped;
 }
 

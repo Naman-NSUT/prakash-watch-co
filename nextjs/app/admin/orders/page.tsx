@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Empty, PageHead, formatInr } from "@/components/admin/ui";
 import OrderStatus from "@/components/admin/OrderStatus";
 import ParcelCell from "@/components/admin/ParcelCell";
+import ApproveOrder from "@/components/admin/ApproveOrder";
 import CourierDesk from "@/components/admin/CourierDesk";
 import { listOrders } from "@/lib/orders";
 import { getCourierSettings, withoutToken } from "@/lib/courier";
@@ -40,24 +41,25 @@ export default async function OrdersPage() {
       {orders.length === 0 ? (
         <Empty
           title="No website orders"
-          body="Orders appear here the moment a payment clears. A house has to be set to sell online in Brands before its watches can be bought here at all."
+          body="Orders appear here when a customer starts payment. A house has to be set to sell online in Brands before its watches can be bought here at all."
         />
       ) : (
-        <div className="ops-panel" style={{ padding: 0 }}>
-          <table className="ops-table">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Watches</th>
-                <th style={{ textAlign: "right" }}>Total</th>
-                <th>Parcel</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id} style={{ opacity: order.status === "placed" ? 0.55 : 1 }}>
+        <div className="ops-panel ops-orders-panel">
+          <div className="ops-orders-scroll">
+            <table className="ops-table ops-orders-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th>Watches</th>
+                  <th style={{ textAlign: "right" }}>Total</th>
+                  <th>Parcel</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                <tr key={order.id} style={{ opacity: order.status === "placed" || order.status === "cancelled" ? 0.55 : 1 }}>
                   <td>
                     <span className="mono" style={{ fontSize: 11 }}>{order.number}</span>
                     <span className="mono" style={{ display: "block", fontSize: 9, color: "var(--faint)", marginTop: 3 }}>
@@ -87,8 +89,10 @@ export default async function OrdersPage() {
                     </span>
                   </td>
                   <td>
-                    {order.status === "placed" ? (
+                    {order.status === "placed" || order.status === "cancelled" ? (
                       <span className="mono" style={{ fontSize: 9, color: "var(--faint)" }}>—</span>
+                    ) : order.status === "paid" ? (
+                      <span className="mono ops-order-wait">Approve to unlock shipping</span>
                     ) : (
                       <ParcelCell id={order.id} waybill={order.shipment.waybill} status={order.shipment.status} />
                     )}
@@ -96,14 +100,19 @@ export default async function OrdersPage() {
                   <td>
                     {order.status === "placed" ? (
                       <span className="ops-chip" data-tone="mute">Not paid</span>
+                    ) : order.status === "cancelled" ? (
+                      <span className="ops-chip" data-tone="bad">Cancelled</span>
+                    ) : order.status === "paid" ? (
+                      <ApproveOrder id={order.id} />
                     ) : (
                       <OrderStatus id={order.id} status={order.status} />
                     )}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </>

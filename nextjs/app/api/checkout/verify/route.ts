@@ -2,8 +2,6 @@ import { z } from "zod";
 import { findByPaymentOrder, updateOrder } from "@/lib/orders";
 import { findByOrder, settle } from "@/lib/payments";
 import { fetchPayment, verifyCheckoutSignature } from "@/lib/razorpay";
-import { appendMovements } from "@/lib/ledger";
-import { getProduct, updateProduct } from "@/lib/catalog";
 
 export const runtime = "nodejs";
 
@@ -13,7 +11,8 @@ export const runtime = "nodejs";
  * The browser tells us a payment succeeded, and the browser is not to be
  * believed: the signature it returns is checked against the shop's own secret,
  * and then the payment is read back from Razorpay's servers to see that it was
- * really captured and really for this amount. Only then does the stock move.
+ * really captured and really for this amount. A captured payment marks the
+ * order paid; stock moves later, when the shop approves the order.
  *
  * Razorpay's webhook confirms the same thing independently, which is what
  * catches a customer who paid and closed the tab. Both paths land here, and
@@ -69,28 +68,6 @@ export async function POST(request: Request): Promise<Response> {
     method: captured.method ?? "",
     confirmedBy: "checkout",
   });
-
-  // The money is in, so the watches leave the case. The ledger is written
-  // first, because a movement without a stock change is a discrepancy the shop
-  // can see and correct, while a stock change without a movement is a figure
-  // nobody can explain.
-  for (const line of order.lines) {
-    try {
-      await appendMovements([{
-        sku: line.sku,
-        kind: "sale",
-        delta: -line.quantity,
-        reference: order.number,
-        note: `Sold on the website to ${order.customer.name}`,
-      }]);
-      const product = await getProduct(line.sku);
-      const left = Math.max(0, (product?.quantity ?? line.quantity) - line.quantity);
-      await updateProduct(line.sku, { quantity: left, inStock: left > 0 });
-    } catch {
-      // A stock record that will not move must not lose the sale; the shop sees
-      // the order either way and can correct the count by hand.
-    }
-  }
 
   await updateOrder(order.id, {
     status: "paid",

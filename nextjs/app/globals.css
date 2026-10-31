@@ -594,6 +594,24 @@ textarea.svc-input { resize: vertical; line-height: 1.65; }
 .ops-btn[data-variant="solid"] { background: var(--text); border-color: var(--text); color: var(--bg); }
 .ops-btn[data-variant="solid"]:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--bg); }
 
+/* Website orders keep their six operational columns on a phone, with a local
+   horizontal scroll instead of pushing the whole stock room off the viewport. */
+.ops-orders-panel { padding: 0; overflow: hidden; }
+.ops-orders-scroll { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ops-orders-table { min-width: 980px; }
+.ops-order-approval { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 150px; }
+.ops-order-approval > .mono,
+.ops-order-wait { max-width: 170px; font-size: 8.5px; line-height: 1.45; color: var(--faint); }
+.ops-order-approval > .ops-error { margin: 0; max-width: 220px; font-size: 10px; line-height: 1.45; }
+.ops-order-approval .ops-btn { padding: 7px 10px; font-size: 9px; }
+
+@media (max-width: 760px) {
+  .ops-orders-scroll { scroll-snap-type: x proximity; }
+  .ops-orders-table td:first-child,
+  .ops-orders-table th:first-child { position: sticky; left: 0; z-index: 1; background: var(--card); }
+  .ops-orders-table tbody tr:hover td:first-child { background: var(--card-hover); }
+}
+
 /* --- Workshop tracker ------------------------------------------------------
    Dense by intent: someone stands at a counter with this open and a customer in
    front of them, so the answer to "where is my watch" has to be one glance and

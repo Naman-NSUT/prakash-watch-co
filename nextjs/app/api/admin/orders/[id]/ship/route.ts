@@ -21,11 +21,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const order = await getOrder(id);
   if (!order) return Response.json({ error: "No such order." }, { status: 404 });
-  if (order.status === "placed") {
-    return Response.json({ error: "Payment has not cleared for this order." }, { status: 409 });
+  if (order.status === "placed" || order.status === "paid") {
+    return Response.json(
+      { error: order.status === "placed" ? "Payment has not cleared for this order." : "Approve this order before shipping it." },
+      { status: 409 },
+    );
   }
   if (order.status === "cancelled") {
     return Response.json({ error: "A cancelled order cannot be shipped." }, { status: 409 });
+  }
+  if (order.status === "delivered") {
+    return Response.json({ error: "This order is already delivered." }, { status: 409 });
   }
   if (order.shipment.waybill) {
     return Response.json({ error: `This order already has waybill ${order.shipment.waybill}.` }, { status: 409 });
@@ -58,7 +64,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const updated = await updateOrder(id, {
     shipment: { ...order.shipment, waybill },
-    status: order.status === "paid" ? "packed" : order.status,
+    status: order.status === "approved" ? "packed" : order.status,
   });
   return Response.json({ waybill, status: updated?.status });
 }

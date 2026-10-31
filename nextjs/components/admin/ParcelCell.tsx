@@ -43,6 +43,8 @@ export default function ParcelCell({
         return;
       }
       router.refresh();
+    } catch {
+      setNote("The connection dropped. Try again.");
     } finally {
       setBusy(false);
     }
@@ -56,6 +58,8 @@ export default function ParcelCell({
       const payload = await response.json();
       setNote(response.ok ? payload.status || "No scan yet" : payload.error);
       if (response.ok) router.refresh();
+    } catch {
+      setNote("The connection dropped. Try again.");
     } finally {
       setBusy(false);
     }
