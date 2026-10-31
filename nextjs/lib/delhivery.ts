@@ -9,9 +9,10 @@ import "server-only";
  * field names and not yet exercised says so, because an untested courier call
  * fails at the moment a customer's watch is waiting to ship.
  *
- * Nothing in this file is called automatically. A shipment is manifested when
- * the shop marks an order packed, and a pickup when the shop asks for one —
- * both deliberate acts, because both cost money and summon a van.
+ * Nothing in this file is called automatically. The current integration checks
+ * serviceability, reserves a waybill and reads tracking scans. Shipment
+ * manifestation and pickup still happen in Delhivery One; reserving a waybill
+ * alone does not create a shipment.
  */
 const BASE = "https://track.delhivery.com";
 const TIMEOUT_MS = 20_000;
@@ -73,8 +74,14 @@ export async function serviceable(pincode: string): Promise<Serviceability | nul
     delivery_codes?: { postal_code?: Record<string, string | number> }[];
   }>(`/c/api/pin-codes/json/?filter_codes=${pincode}`, { token: config.token });
 
-  const code = payload?.delivery_codes?.[0]?.postal_code;
-  if (!code) return null;
+  // Null means the account is not configured, authentication failed, or the
+  // courier could not be reached. An empty successful response is different: it
+  // is Delhivery's definite answer that the PIN is not serviceable.
+  if (payload === null) return null;
+  const code = payload.delivery_codes?.[0]?.postal_code;
+  if (!code) {
+    return { deliverable: false, prepaid: false, cod: false, district: "", state: "" };
+  }
   return {
     deliverable: true,
     prepaid: String(code.pre_paid ?? "").toUpperCase() === "Y",

@@ -18,7 +18,9 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const answer = await serviceable(pincode);
-  if (!answer) return Response.json({ known: true, deliverable: false, pincode });
+  // Missing credentials and a temporary Delhivery failure are unknown, not a
+  // refusal. The checkout deliberately stays quiet and lets the order proceed.
+  if (!answer) return Response.json({ known: false, pincode });
   return Response.json({
     known: true,
     deliverable: answer.deliverable && answer.prepaid,
