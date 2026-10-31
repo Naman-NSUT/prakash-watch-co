@@ -57,10 +57,23 @@ export default function CourierDesk({ initial }: { initial: CourierView }) {
   }
 
   async function test() {
+    const pincode = view.pickupPincode.trim();
+    if (!/^\d{6}$/.test(pincode)) {
+      setNote("Enter the six-digit pickup PIN code before testing.");
+      return;
+    }
     setNote("Asking the courier…");
     try {
-      const response = await fetch(`/api/checkout/serviceable?pincode=${view.pickupPincode || "110005"}`);
+      const response = await fetch(`/api/checkout/serviceable?pincode=${pincode}`);
       const payload = await response.json();
+      if (!payload.known) {
+        setNote(
+          view.tokenSet
+            ? "Delhivery did not return a serviceability answer. Check the saved token and try again."
+            : "No Delhivery token is saved. Paste the token, save the settings, then test again.",
+        );
+        return;
+      }
       setNote(
         payload.deliverable
           ? `Working — the courier answers for ${[payload.district, payload.state].filter(Boolean).join(", ")}.`
