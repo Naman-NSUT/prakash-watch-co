@@ -18,6 +18,7 @@ import { ACCOUNTS, BY_CODE, CODES, accountForPayment, type Account } from "@/lib
 import { balances, post, readJournal, type DraftEntry, type Entry } from "@/lib/journal";
 import { getCatalogIndex } from "@/lib/catalog";
 import type { Bill } from "@/lib/sales";
+import { splitInclusiveGst } from "@/lib/gst";
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
@@ -27,8 +28,8 @@ const round2 = (value: number) => Math.round(value * 100) / 100;
  * The entry a sale makes.
  *
  *   Dr  Cash / Bank / Debtors      total including GST
- *   Dr  Discount allowed           whatever was given off list
- *     Cr  Sales                    at list value
+ *   Dr  Discount allowed           taxable value given off list
+ *     Cr  Sales                    at the list's taxable value
  *     Cr  Output GST               tax charged
  *
  * Booking sales at list and the reduction as "discount allowed" is deliberate:
@@ -37,7 +38,12 @@ const round2 = (value: number) => Math.round(value * 100) / 100;
  */
 export function saleEntry(bill: Bill): DraftEntry {
   const listValue = bill.lines.reduce((sum, line) => sum + line.listPrice * line.quantity, 0);
-  const discount = round2(Math.max(0, listValue - bill.taxable));
+  const chargedFromLines = bill.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+  // Bills written before GST-inclusive ticket pricing stored line prices before
+  // tax and a larger total. Preserve those historical entries when syncing.
+  const pricesIncludeGst = Math.abs(bill.total - chargedFromLines) < 0.02;
+  const listTaxable = pricesIncludeGst ? splitInclusiveGst(listValue, bill.gstRate).taxable : round2(listValue);
+  const discount = round2(Math.max(0, listTaxable - bill.taxable));
 
   return {
     date: bill.issuedAt.slice(0, 10),
@@ -49,7 +55,7 @@ export function saleEntry(bill: Bill): DraftEntry {
     lines: [
       { account: accountForPayment(bill.payment), debit: bill.total, note: bill.payment },
       { account: CODES.discount, debit: discount },
-      { account: CODES.sales, credit: round2(listValue) },
+      { account: CODES.sales, credit: listTaxable },
       { account: CODES.outputGst, credit: bill.gstAmount, note: `GST ${bill.gstRate}%` },
     ],
   };

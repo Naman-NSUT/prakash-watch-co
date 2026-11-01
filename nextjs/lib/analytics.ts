@@ -342,7 +342,15 @@ export async function getAnalytics(filter: AnalyticsFilter): Promise<Analytics> 
   // with the Casio sold on the same invoice.
   const bills = allBills
     .filter((bill) => bill.status !== "void" && bill.issuedAt >= since)
-    .map((bill) => ({ ...bill, lines: bill.lines.filter((line) => inScope.has(line.sku)) }))
+    .map((bill) => {
+      const fullLineValue = bill.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+      const lines = bill.lines.filter((line) => inScope.has(line.sku));
+      const scopedLineValue = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+      // Stored tax remains authoritative for older bills whose prices were
+      // entered before the till switched to GST-inclusive ticket prices.
+      const scopedGstAmount = fullLineValue > 0 ? bill.gstAmount * (scopedLineValue / fullLineValue) : 0;
+      return { ...bill, lines, scopedGstAmount };
+    })
     .filter((bill) => bill.lines.length > 0);
 
   const lineValue = (bill: Bill) => bill.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
@@ -354,7 +362,7 @@ export async function getAnalytics(filter: AnalyticsFilter): Promise<Analytics> 
     (sum, bill) => sum + bill.lines.reduce((n, line) => n + Math.max(0, line.listPrice - line.unitPrice) * line.quantity, 0),
     0,
   );
-  const gstCollected = bills.reduce((sum, bill) => sum + (lineValue(bill) * bill.gstRate) / 100, 0);
+  const gstCollected = bills.reduce((sum, bill) => sum + bill.scopedGstAmount, 0);
 
   const stockUnits = products.reduce((sum, p) => sum + (p.quantity ?? 0), 0);
   const stockValue = products.reduce((sum, p) => sum + (p.price.selling ?? 0) * (p.quantity ?? 0), 0);

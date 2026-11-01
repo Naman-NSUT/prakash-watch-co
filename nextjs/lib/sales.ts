@@ -18,6 +18,7 @@ import { z } from "zod";
 import { loadConfig } from "@/agent/config";
 import { getProduct, updateProduct } from "@/lib/catalog";
 import { appendMovements } from "@/lib/ledger";
+import { roundMoney, splitInclusiveGst } from "@/lib/gst";
 
 const config = loadConfig();
 const BILLS_DIR = join(config.dataDir, "..", "bills");
@@ -43,7 +44,7 @@ export const BillLineSchema = z.object({
   title: z.string(),
   modelNumber: z.string(),
   quantity: z.number().int().positive(),
-  /** Charged before tax, per unit, after any discount given at the counter. */
+  /** GST-inclusive price charged per unit, after any discount at the counter. */
   unitPrice: z.number().nonnegative(),
   /** What the catalogue listed, kept so the discount given is visible later. */
   listPrice: z.number().nonnegative(),
@@ -119,7 +120,7 @@ export const BillDraftSchema = z.object({
 });
 export type BillDraft = z.infer<typeof BillDraftSchema>;
 
-const round2 = (value: number) => Math.round(value * 100) / 100;
+const round2 = roundMoney;
 
 /** Indian financial year, which is what an invoice number is expected to carry. */
 function financialYear(date: Date): string {
@@ -241,8 +242,7 @@ export async function createBill(draft: BillDraft): Promise<BillResult> {
   // makes it a tax invoice and what a customer claiming input credit needs.
   const listTotal = lines.reduce((sum, line) => sum + line.listPrice * line.quantity, 0);
   const charged = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-  const taxable = round2(charged / (1 + draft.gstRate / 100));
-  const gstAmount = round2(charged - taxable);
+  const { taxable, gstAmount } = splitInclusiveGst(charged, draft.gstRate);
 
   const now = new Date();
   const bill: Bill = {

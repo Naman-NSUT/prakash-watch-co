@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatInr } from "@/agent/format";
+import { splitInclusiveGst } from "@/lib/gst";
 
 /**
  * Billing work done on the bench.
@@ -66,9 +67,8 @@ export default function RepairBillWriter({ tickets }: { tickets: TicketForBillin
     const value = Number(line.amount);
     return Number.isFinite(value) && value > 0 ? value * line.quantity : 0;
   };
-  const taxable = lines.reduce((sum, line) => sum + amountOf(line), 0);
-  const gstAmount = Math.round(((taxable * gstRate) / 100) * 100) / 100;
-  const total = taxable + gstAmount;
+  const total = lines.reduce((sum, line) => sum + amountOf(line), 0);
+  const { taxable, gstAmount } = splitInclusiveGst(total, gstRate);
 
   async function save() {
     setErrors([]);
@@ -246,8 +246,9 @@ export default function RepairBillWriter({ tickets }: { tickets: TicketForBillin
         </div>
 
         <dl className="ops-totals">
-          <div><dt>Work</dt><dd className="mono">{formatInr(taxable)}</dd></div>
-          <div><dt>GST at {gstRate}%</dt><dd className="mono">{formatInr(gstAmount)}</dd></div>
+          <div><dt>Work</dt><dd className="mono">{formatInr(total)}</dd></div>
+          <div><dt>Taxable value</dt><dd className="mono">{formatInr(taxable)}</dd></div>
+          <div><dt>GST at {gstRate}% (included)</dt><dd className="mono">{formatInr(gstAmount)}</dd></div>
           <div className="ops-totals-due"><dt>Total</dt><dd className="mono">{formatInr(total)}</dd></div>
         </dl>
 

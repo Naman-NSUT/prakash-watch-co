@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { loadConfig } from "@/agent/config";
 import { DEFAULT_GST_RATE } from "@/lib/sales";
+import { roundMoney, splitInclusiveGst } from "@/lib/gst";
 
 /**
  * An order placed on the website.
@@ -120,12 +121,11 @@ export const OrderSchema = z.object({
 });
 export type Order = z.infer<typeof OrderSchema>;
 
-const round2 = (value: number) => Math.round(value * 100) / 100;
+const round2 = roundMoney;
 
 /** The tax split of a GST-inclusive total, the same arithmetic a bill uses. */
 export function splitGst(total: number, rate: number = DEFAULT_GST_RATE) {
-  const taxable = round2(total / (1 + rate / 100));
-  return { taxable, gstAmount: round2(total - taxable) };
+  return splitInclusiveGst(total, rate);
 }
 
 async function ensureDir(): Promise<string> {

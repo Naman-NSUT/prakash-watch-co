@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { splitInclusiveGst } from "@/lib/gst";
 import { Icons } from "./ui";
 
 export interface Sellable {
@@ -50,9 +51,9 @@ export default function BillWriter({ stock }: { stock: Sellable[] }) {
 
   const totals = useMemo(() => {
     const list = lines.reduce((sum, l) => sum + (bySku.get(l.sku)?.price ?? 0) * l.quantity, 0);
-    const taxable = lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-    const gst = (taxable * gstRate) / 100;
-    return { list, taxable, gst, total: taxable + gst, discount: Math.max(0, list - taxable) };
+    const total = lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+    const { taxable, gstAmount } = splitInclusiveGst(total, gstRate);
+    return { list, taxable, gst: gstAmount, total, discount: Math.max(0, list - total) };
   }, [lines, gstRate, bySku]);
 
   function add(item: Sellable) {
@@ -195,8 +196,8 @@ export default function BillWriter({ stock }: { stock: Sellable[] }) {
 
         <Row label="List price" value={inr(totals.list)} />
         {totals.discount > 0 && <Row label="Discount" value={`− ${inr(totals.discount)}`} tone="var(--warn)" />}
-        <Row label="Before tax" value={inr(totals.taxable)} />
-        <Row label={`GST ${gstRate}%`} value={inr(totals.gst)} />
+        <Row label="Taxable value" value={inr(totals.taxable)} />
+        <Row label={`GST ${gstRate}% (included)`} value={inr(totals.gst)} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
           <span style={{ fontSize: 13 }}>To pay</span>

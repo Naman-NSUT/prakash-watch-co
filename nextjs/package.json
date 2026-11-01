@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "demo:seed": "node scripts/demo.mjs seed && node scripts/books-demo.mjs seed",
     "demo:purge": "node scripts/demo.mjs purge && node scripts/books-demo.mjs purge"

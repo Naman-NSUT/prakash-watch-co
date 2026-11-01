@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ModelRecord, PublisherTally } from "@/lib/sourcebook.shared";
 
+const PAGE_SIZE = 100;
+
 /**
  * Every reference the agent has ever researched, and where it read it.
  *
@@ -23,6 +25,7 @@ export default function SourceBook({
   const [query, setQuery] = useState("");
   const [openSku, setOpenSku] = useState<string | null>(null);
   const [onlyDelisted, setOnlyDelisted] = useState(false);
+  const [page, setPage] = useState(1);
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -38,6 +41,10 @@ export default function SourceBook({
     });
   }, [records, query, onlyDelisted]);
 
+  const pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const safePage = Math.min(page, pages);
+  const shownPage = shown.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const delisted = records.filter((record) => !record.stillListed).length;
 
   return (
@@ -47,14 +54,17 @@ export default function SourceBook({
           className="ops-field ops-search"
           placeholder="Model number, brand or publisher…"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(1);
+          }}
           aria-label="Search the source book"
         />
         <div className="ops-filters">
-          <button type="button" className="ops-filter" data-on={!onlyDelisted} onClick={() => setOnlyDelisted(false)}>
+          <button type="button" className="ops-filter" data-on={!onlyDelisted} onClick={() => { setOnlyDelisted(false); setPage(1); }}>
             All <span className="mono">{records.length}</span>
           </button>
-          <button type="button" className="ops-filter" data-on={onlyDelisted} onClick={() => setOnlyDelisted(true)}>
+          <button type="button" className="ops-filter" data-on={onlyDelisted} onClick={() => { setOnlyDelisted(true); setPage(1); }}>
             No longer listed <span className="mono">{delisted}</span>
           </button>
         </div>
@@ -95,7 +105,7 @@ export default function SourceBook({
         </p>
       ) : (
         <div className="ops-tickets">
-          {shown.map((record) => {
+          {shownPage.map((record) => {
             const open = openSku === record.sku;
             return (
               <article key={`${record.brand}-${record.modelNumber}`} className="ops-ticket" data-open={open}>
@@ -184,6 +194,33 @@ export default function SourceBook({
             );
           })}
         </div>
+      )}
+
+      {shown.length > PAGE_SIZE && (
+        <nav className="ops-pager" aria-label="Source book pages">
+          <span className="mono ops-pager-count">
+            {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, shown.length)} OF {shown.length}
+          </span>
+          <span className="ops-pager-steps">
+            <button
+              type="button"
+              className="ops-btn"
+              disabled={safePage === 1}
+              onClick={() => { setPage((current) => Math.max(1, current - 1)); setOpenSku(null); }}
+            >
+              ← Previous
+            </button>
+            <span className="mono ops-pager-of">{safePage} / {pages}</span>
+            <button
+              type="button"
+              className="ops-btn"
+              disabled={safePage === pages}
+              onClick={() => { setPage((current) => Math.min(pages, current + 1)); setOpenSku(null); }}
+            >
+              Next →
+            </button>
+          </span>
+        </nav>
       )}
     </div>
   );
