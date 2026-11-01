@@ -248,7 +248,7 @@ export default function BrandDesk({
         <h2 className="serif">How {name} sells</h2>
         <p className="ops-note">
           {sellsOnline
-            ? `A ${name} in stock shows the shop's own buying buttons on its page.`
+            ? `An in-stock ${name} watch shows the shop's own buying buttons on its page.`
             : `Every ${name} page asks the customer to contact the store, in stock or not.`}{" "}
           Some makers hold their dealers to selling in person, and some watches are a conversation rather than a
           checkout. Off unless the shop says otherwise.
