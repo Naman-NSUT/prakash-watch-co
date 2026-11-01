@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHead, Stat } from "@/components/admin/ui";
 import TicketBoard from "@/components/admin/TicketBoard";
 import { listTickets, getCounts, STATUS_LABELS } from "@/lib/repairs";
@@ -32,6 +33,15 @@ export default async function RepairsPage() {
           tone={counts.overdue > 0 ? "warn" : undefined}
         />
       </section>
+
+      <div className="ops-toolbar">
+        <Link href="/service" target="_blank" rel="noreferrer" className="ops-btn" data-variant="solid">
+          Take in a repair
+        </Link>
+        <Link href="/admin/billing/repair" className="ops-btn">
+          Bill repair work
+        </Link>
+      </div>
 
       {counts.total === 0 ? (
         <p className="ops-empty">
