@@ -106,6 +106,22 @@ class Grid:
         return row[column_index] if 0 <= column_index < len(row) else ""
 
 
+@dataclass(frozen=True)
+class SheetLayout:
+    """The agent's interpretation of one worksheet before rows are normalised.
+
+    Column numbers are the spreadsheet's 1-based numbers. A layout can therefore
+    describe a distributor file with decorative title rows, unfamiliar headings,
+    or no heading row at all without rewriting the parser for that supplier.
+    """
+
+    sheet: str
+    header_row: int
+    data_start_row: int
+    columns: dict[Canonical, int]
+    brand_value: str | None = None
+
+
 def _load_grids(path: Path) -> list[Grid]:
     suffix = path.suffix.lower()
 
@@ -176,8 +192,16 @@ def _find_header_row(grid: Grid) -> int:
     return best_row
 
 
-def parse_sheet(path: str | Path) -> SheetParseResult:
-    """Reads every worksheet that has a recognisable header row."""
+def parse_sheet(
+    path: str | Path,
+    layouts: dict[str, SheetLayout] | None = None,
+) -> SheetParseResult:
+    """Normalises every usable worksheet into the shop's canonical row shape.
+
+    When ``layouts`` is supplied, those are the AI agent's interpretation of the
+    workbook. A worksheet the agent did not map is skipped instead of being
+    guessed from aliases: stock updates must use the reviewed interpretation.
+    """
     path = Path(path)
     grids = _load_grids(path)
 
@@ -190,15 +214,23 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
     seen: dict[str, str] = {}
 
     for grid in grids:
-        header_row = _find_header_row(grid)
-        if not header_row:
+        layout = layouts.get(grid.name) if layouts is not None else None
+        if layouts is not None and layout is None:
+            skipped.append({"sheet": grid.name, "reason": "agent did not map this worksheet"})
+            continue
+        header_row = layout.header_row if layout else _find_header_row(grid)
+        data_start_row = layout.data_start_row if layout else header_row + 1
+        if not layout and not header_row:
             skipped.append({"sheet": grid.name, "reason": "no recognisable header row"})
+            continue
+        if layout and (data_start_row < 1 or data_start_row > grid.row_count + 1):
+            skipped.append({"sheet": grid.name, "reason": "agent returned an invalid data start row"})
             continue
 
         # Stock lists note the brand's website in or above the header row. It is not
         # a data column, but it tells the agent exactly where to look.
         brand_site: str | None = None
-        for probe in range(1, header_row + 1):
+        for probe in range(1, max(header_row, data_start_row - 1, 1) + 1):
             for cell in grid.row(probe):
                 found = _extract_urls(cell)
                 if found:
@@ -207,26 +239,34 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
             if brand_site:
                 break
 
-        candidates: dict[Canonical, list[tuple[int, str, str]]] = {}
-        for column_index, label in enumerate(grid.row(header_row)):
-            if not label:
-                continue
-            alias = _normalise_header(label)
-            field = ALIAS_TO_FIELD.get(alias)
-            if field:
-                candidates.setdefault(field, []).append((column_index, label, alias))
-            else:
-                unmapped.append(f"{grid.name} · {label}")
-
         columns: dict[Canonical, int] = {}
-        for field, options in candidates.items():
-            # Higher semantic priority wins; the leftmost column breaks ties.
-            chosen = max(options, key=lambda option: (_column_priority(field, option[2]), -option[0]))
-            columns[field] = chosen[0]
-            header_map[f"{grid.name} · {chosen[1]}"] = field
-            for option in options:
-                if option != chosen:
-                    unmapped.append(f"{grid.name} · {option[1]}")
+        if layout:
+            for field, column_index in layout.columns.items():
+                if field not in ALIASES or column_index < 1:
+                    continue
+                columns[field] = column_index
+                label = grid.cell(header_row, column_index) if header_row else ""
+                header_map[f"{grid.name} · {label or f'column {column_index}'}"] = field
+        else:
+            candidates: dict[Canonical, list[tuple[int, str, str]]] = {}
+            for column_index, label in enumerate(grid.row(header_row)):
+                if not label:
+                    continue
+                alias = _normalise_header(label)
+                field = ALIAS_TO_FIELD.get(alias)
+                if field:
+                    candidates.setdefault(field, []).append((column_index, label, alias))
+                else:
+                    unmapped.append(f"{grid.name} · {label}")
+
+            for field, options in candidates.items():
+                # Higher semantic priority wins; the leftmost column breaks ties.
+                chosen = max(options, key=lambda option: (_column_priority(field, option[2]), -option[0]))
+                columns[field] = chosen[0]
+                header_map[f"{grid.name} · {chosen[1]}"] = field
+                for option in options:
+                    if option != chosen:
+                        unmapped.append(f"{grid.name} · {option[1]}")
 
         if "modelNumber" not in columns:
             skipped.append({"sheet": grid.name, "reason": "no model number column"})
@@ -244,9 +284,10 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
             return grid.cell(row_index, index) if index is not None else ""
 
         used_here = 0
-        for row_index in range(header_row + 1, grid.row_count + 1):
+        for row_index in range(data_start_row, grid.row_count + 1):
             # Tabs are usually named for the brand, covering sheets with no brand column.
-            brand = squish(read(row_index, "brand")) or squish(grid.name)
+            fallback_brand = layout.brand_value if layout else grid.name
+            brand = squish(read(row_index, "brand")) or squish(fallback_brand)
             model_number = squish(read(row_index, "modelNumber"))
             price_text = read(row_index, price_field) if price_field else ""
 
@@ -261,11 +302,13 @@ def parse_sheet(path: str | Path) -> SheetParseResult:
             if not model_number:
                 problems.append("missing model number")
 
-            # Only complain about a price when the sheet claimed to have one: a
-            # column of blanks is a mistake, a missing column is a decision.
+            # An unreadable value is unsafe; a blank is simply "not supplied".
+            # This matters for a stock-count sheet that retains an empty Price
+            # column from an export: its quantity can still update an existing
+            # watch, while a genuinely new unpriced watch is held for review.
             price = parse_money(price_text)
-            if price is None and price_field is not None:
-                problems.append(f'unreadable price "{price_text}"' if price_text else "missing price")
+            if price is None and price_text:
+                problems.append(f'unreadable price "{price_text}"')
 
             key = f"{brand.lower()}|{model_number.lower()}"
             if not problems:

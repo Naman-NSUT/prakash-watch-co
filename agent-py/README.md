@@ -15,7 +15,7 @@ search ──▶ (reference confirmed?) ──no──▶ search
    scrape ─▶ extract ─▶ copy ─▶ images ─▶ assemble
 ```
 
-**Per sheet** — every row is fanned out to the watch graph with `Send`, bounded by `max_concurrency`, then fanned back in to write the index and the run report. Rows are independent, so one unreachable site cannot cost the shop the other two hundred listings.
+**Per sheet** — the agent first reads the workbook's own structure and produces a normalized preview. After that preview is accepted, every row is fanned out to the watch graph with `Send`, bounded by `max_concurrency`, then fanned back in to write the index and the run report. Rows are independent, so one unreachable site cannot cost the shop the other two hundred listings.
 
 ## Setup
 
@@ -76,7 +76,11 @@ A price found online never overrides yours. If a page quotes a wildly different 
 
 ## The spreadsheet
 
-Only **brand**, **model number** and **price** are required, and the parser adapts to how the shop already writes them. From the real stock file:
+The workbook does not need a fixed template. Before an import, the configured AI model identifies the product table, header row and meaning of each useful column. The admin panel shows the resulting canonical list — brand, reference, name, price, MRP, units and source row — before enabling the update. If the model cannot make a safe interpretation, the import stops and inventory is unchanged.
+
+Deterministic code validates the agent's layout and parses every value. It rejects duplicate references and unreadable money/count fields, preserves a numeric zero as sold out, and never lets worksheet text issue instructions to the model. The model chooses the structure; it does not write inventory directly.
+
+From the real stock file:
 
 - **One tab per brand**, and the tabs disagree with each other. Every tab is read on its own terms.
 - **`Group`** means brand; **`Amount`** means the discounted selling price.

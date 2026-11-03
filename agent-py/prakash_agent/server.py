@@ -64,11 +64,11 @@ async def preflight(
 ) -> dict[str, Any]:
     """What this sheet would cost, and how much of it can be looked up.
 
-    Spends nothing. It reads the same published catalogues the run would read —
-    cached for a day, so asking before every run is free after the first — and
-    reports how many rows a shop can answer outright against how many would have
-    to be searched for. The shop can then decide whether the balance covers it
-    before committing, instead of finding out two thirds of the way through.
+    The agent first spends one small, cached layout call to turn the workbook's
+    unknown format into a normalized list. It then reads the same published
+    catalogues the run would read — cached for a day — and reports how many rows
+    a shop can answer outright against how many would have to be searched for.
+    The actual run reuses that cached layout interpretation.
     """
     _check_token(x_agent_token)
 
@@ -81,7 +81,7 @@ async def preflight(
         raise HTTPException(status_code=400, detail="That file is larger than 8 MB.")
 
     from .preflight import plan_rows, summarise
-    from .sheet import parse_sheet
+    from .sheet_intelligence import SheetInterpretationError, parse_sheet_with_agent
 
     config = load_config(force=force)
     upload_dir = Path(config.upload_dir)
@@ -89,12 +89,37 @@ async def preflight(
     saved = upload_dir / f"{int(time.time())}-preflight-{_UNSAFE.sub('_', file.filename or 'sheet.xlsx')}"
     saved.write_bytes(payload)
 
-    parsed = parse_sheet(saved)
+    try:
+        interpretation = await parse_sheet_with_agent(saved, config)
+    except SheetInterpretationError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    parsed = interpretation.parsed
     # `force` means the run will redo listed rows, so they are not free skips.
     plans = await plan_rows(parsed.rows, config, force=force)
     report = summarise(plans)
     report["rejected"] = len(parsed.errors)
     report["balanceUsd"] = await _balance()
+    report["interpretedBy"] = interpretation.model
+    report["parseCostUsd"] = interpretation.cost_usd
+    report["parseWarning"] = interpretation.warning
+    report["headerMap"] = parsed.header_map
+    report["skippedSheets"] = parsed.skipped_sheets
+    # The agent first makes this canonical list. The admin previews it before the
+    # same cached interpretation is allowed to touch inventory.
+    report["normalizedRows"] = [
+        {
+            "brand": row.brand,
+            "modelNumber": row.model_number,
+            "modelName": row.model_name,
+            "price": row.price,
+            "mrp": row.mrp,
+            "quantity": row.quantity,
+            "sheet": row.sheet,
+            "row": row.row_number,
+        }
+        for row in parsed.rows[:500]
+    ]
+    report["normalizedTotal"] = len(parsed.rows)
     return report
 
 

@@ -17,6 +17,9 @@ export type AgentEvent =
       unmapped: string[];
       sheets: string[];
       skippedSheets: Array<{ sheet: string; reason: string }>;
+      interpretedBy?: string | null;
+      parseCostUsd?: number;
+      warning?: string | null;
     }
   /** Which half of an uploaded sheet this run is the shop's business. */
   | {

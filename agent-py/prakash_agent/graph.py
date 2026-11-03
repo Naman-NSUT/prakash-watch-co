@@ -69,7 +69,7 @@ from .research import (
     rank_candidates,
     scrape_page,
 )
-from .sheet import parse_sheet
+from .sheet_intelligence import parse_sheet_with_agent
 from .util import read_json, make_sku, now_iso
 
 MAX_SEARCH_ROUNDS = 3
@@ -793,6 +793,7 @@ async def _execute(
     source_file: str,
     rows_read: int,
     sheet_errors: list[SheetRowError],
+    initial_cost_usd: float = 0.0,
 ) -> RunReport:
     """Runs the watch graph over a list of rows and writes the run report.
 
@@ -806,6 +807,9 @@ async def _execute(
     )
 
     deps = Deps(cfg, bus, run_id)
+    # Layout interpretation is the first model call in a sheet run. Carry its
+    # spend into the same budget and report as the product research that follows.
+    deps.llm.spent_usd = initial_cost_usd
     deps.source_file = source_file
 
     try:
@@ -852,7 +856,7 @@ async def _execute(
         model="dry-run" if cfg.dry_run else deps.llm.model,
         dry_run=cfg.dry_run,
         counts=counts,
-        cost_usd=round(sum(r.cost_usd for r in results), 6),
+        cost_usd=round(initial_cost_usd + sum(r.cost_usd for r in results), 6),
         results=results,
         sheet_errors=sheet_errors,
     )
@@ -909,7 +913,8 @@ async def run_ingestion(
     run_id = f"run-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     started_at = now_iso()
 
-    parsed = parse_sheet(file)
+    interpretation = await parse_sheet_with_agent(file, cfg)
+    parsed = interpretation.parsed
     bus.emit(
         {
             "type": "sheet:parsed",
@@ -919,6 +924,9 @@ async def run_ingestion(
             "unmapped": parsed.unmapped_headers,
             "sheets": parsed.sheets,
             "skippedSheets": parsed.skipped_sheets,
+            "interpretedBy": interpretation.model,
+            "parseCostUsd": interpretation.cost_usd,
+            "warning": interpretation.warning,
         }
     )
 
@@ -1003,6 +1011,7 @@ async def run_ingestion(
         source_file=parsed.file_name,
         rows_read=len(parsed.rows),
         sheet_errors=parsed.errors,
+        initial_cost_usd=interpretation.cost_usd,
     )
 
 

@@ -14,7 +14,7 @@ interface LogLine {
   tone: "plain" | "good" | "warn" | "bad" | "dim";
 }
 
-/** What the agent reports about a sheet before any of it is paid for. */
+/** The agent's normalized preview and the work that would follow it. */
 interface SheetPlan {
   rows: number;
   catalogued: number;
@@ -25,6 +25,22 @@ interface SheetPlan {
   estimatedCostCoveredUsd: number;
   balanceUsd: number | null;
   rejected: number;
+  interpretedBy: string | null;
+  parseCostUsd: number;
+  parseWarning: string | null;
+  normalizedTotal: number;
+  normalizedRows: {
+    brand: string;
+    modelNumber: string;
+    modelName: string | null;
+    price: number | null;
+    mrp: number | null;
+    quantity: number | null;
+    sheet: string;
+    row: number;
+  }[];
+  headerMap: Record<string, string>;
+  skippedSheets: { sheet: string; reason: string }[];
   brands: {
     brand: string;
     rows: number;
@@ -59,8 +75,8 @@ function describe(event: StreamMessage): { text: string; tone: LogLine["tone"] }
   switch (event.type) {
     case "sheet:parsed":
       return {
-        text: `Sheet read — ${event.rows} usable row(s)${event.rejected ? `, ${event.rejected} rejected` : ""}.`,
-        tone: event.rejected ? "warn" : "plain",
+        text: `${event.interpretedBy ? "Agent mapped" : "Sheet read"} — ${event.rows} usable row(s)${event.rejected ? `, ${event.rejected} rejected` : ""}.${event.warning ? ` ${event.warning}` : ""}`,
+        tone: event.rejected || event.warning ? "warn" : "plain",
       };
     case "run:models":
       return { text: `Using ${event.model}.`, tone: "dim" };
@@ -166,7 +182,7 @@ export default function UploadPanel() {
     });
   }, []);
 
-  /** What the sheet would cost, before committing to it. Spends nothing. */
+  /** Ask the agent to normalize the sheet before committing to it. */
   async function check() {
     if (!file || checking || running) return;
     setChecking(true);
@@ -181,7 +197,17 @@ export default function UploadPanel() {
         append(body?.error ?? "That could not be checked.", "bad");
         return;
       }
-      setPlan(body as SheetPlan);
+      const received = body as Partial<SheetPlan> & Omit<SheetPlan, "normalizedRows" | "normalizedTotal" | "parseCostUsd" | "parseWarning" | "interpretedBy" | "headerMap" | "skippedSheets">;
+      setPlan({
+        ...received,
+        normalizedRows: received.normalizedRows ?? [],
+        normalizedTotal: received.normalizedTotal ?? received.rows,
+        parseCostUsd: received.parseCostUsd ?? 0,
+        parseWarning: received.parseWarning ?? null,
+        interpretedBy: received.interpretedBy ?? null,
+        headerMap: received.headerMap ?? {},
+        skippedSheets: received.skippedSheets ?? [],
+      });
     } catch (error) {
       append(`Could not check the sheet: ${(error as Error).message}`, "bad");
     } finally {
@@ -207,7 +233,7 @@ export default function UploadPanel() {
     if (running) return;
     setMissing(null);
     if (isSheet) {
-      if (!file) return;
+      if (!file || !plan) return;
       const form = new FormData();
       form.set("file", file);
       form.set("mode", mode);
@@ -320,9 +346,9 @@ export default function UploadPanel() {
 
         <p style={{ margin: "0 0 22px", fontSize: 14, lineHeight: 1.65, fontWeight: 300, color: "var(--muted)", maxWidth: 620 }}>
           {mode === "add"
-            ? "Upload the inventory list as .xlsx or .csv. It needs a brand column and a model number column; price may be added later. Anything already listed is left untouched. Every valid new watch is researched and published automatically, with quality gaps flagged here while recovery continues."
+            ? "Upload any .xlsx or .csv stock list. The agent first identifies its tables and columns, then shows the normalized watch list before anything changes. Existing listings stay untouched; valid new watches are researched and listed."
             : mode === "update"
-              ? "For a revised price list, a discount sheet or a fresh stock count. In a downloaded catalogue sheet, edit Price (incl. GST), MRP or Quantity; availability is calculated from Quantity. Rows matching a watch already listed are updated — nothing is researched, nothing is bought, and any unlisted reference is set aside rather than added."
+              ? "For any revised price list, discount sheet or stock count. The agent reads the workbook's own format and shows a normalized preview first. Quantity controls availability, including an explicit zero. Matching watches are updated; unlisted references are set aside."
               : "For a single piece that arrived outside the monthly sheet. Give the make, the reference and what the shop charges; the rest is researched, published automatically and kept under the same quality checks."}
         </p>
       </div>
@@ -387,7 +413,10 @@ export default function UploadPanel() {
           event.preventDefault();
           setDragging(false);
           const dropped = event.dataTransfer.files?.[0];
-          if (dropped) setFile(dropped);
+          if (dropped) {
+            setFile(dropped);
+            setPlan(null);
+          }
         }}
         style={{
           display: "block",
@@ -404,7 +433,10 @@ export default function UploadPanel() {
           type="file"
           accept=".xlsx,.csv"
           disabled={running}
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          onChange={(event) => {
+            setFile(event.target.files?.[0] ?? null);
+            setPlan(null);
+          }}
           style={{ display: "none" }}
         />
         <span className="mono" style={{ fontSize: 11, letterSpacing: "0.16em", color: file ? "var(--text)" : "var(--dim)", textTransform: "uppercase" }}>
@@ -454,7 +486,7 @@ export default function UploadPanel() {
         </label>
         )}
 
-        {mode === "add" && (
+        {isSheet && (
           <button
             type="button"
             onClick={check}
@@ -466,21 +498,21 @@ export default function UploadPanel() {
               opacity: !file || running ? 0.45 : 1,
             }}
           >
-            {checking ? "Checking…" : "Check before spending"}
+            {checking ? "Agent reading…" : "Read and preview"}
           </button>
         )}
 
         <button
           type="button"
           onClick={start}
-          disabled={running || (isSheet ? !file : !one.brand.trim() || !one.modelNumber.trim() || !one.price.trim())}
+          disabled={running || (isSheet ? !file || !plan : !one.brand.trim() || !one.modelNumber.trim() || !one.price.trim())}
           className="btn btn-solid"
           style={{
             // The check button takes the gap when it is shown.
-            marginLeft: mode === "add" ? undefined : "auto",
+            marginLeft: isSheet ? undefined : "auto",
             border: "none",
             cursor: running ? "not-allowed" : "pointer",
-            opacity: (isSheet && !file) || running ? 0.45 : 1,
+            opacity: (isSheet && (!file || !plan)) || running ? 0.45 : 1,
           }}
         >
           {running
@@ -496,6 +528,57 @@ export default function UploadPanel() {
       {plan && !running && (
         <div style={{ padding: "0 26px 24px" }}>
           <div style={{ border: "1px solid var(--line)", background: "var(--panel)", padding: "18px 20px" }}>
+            <p style={{ margin: "0 0 10px", fontSize: 14, lineHeight: 1.6, color: "var(--text)" }}>
+              The agent interpreted the workbook and made a normalized list of <strong>{plan.normalizedTotal}</strong>{" "}
+              watch{plan.normalizedTotal === 1 ? "" : "es"}.
+              {plan.parseCostUsd > 0 && <> Layout reading cost ${plan.parseCostUsd.toFixed(4)}.</>}
+            </p>
+            {plan.parseWarning && (
+              <p style={{ margin: "0 0 10px", fontSize: 13, lineHeight: 1.55, color: "var(--warn)" }}>
+                {plan.parseWarning}
+              </p>
+            )}
+            {plan.normalizedRows.length > 0 && (
+              <div style={{ margin: "0 0 18px" }}>
+                <div className="ops-table-wrap" style={{ maxHeight: 300 }}>
+                  <table className="ops-table">
+                  <thead>
+                    <tr>
+                      <th>Brand</th>
+                      <th>Reference</th>
+                      <th>Name</th>
+                      <th className="ops-num">Price</th>
+                      <th className="ops-num">Units</th>
+                      <th>Source row</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {plan.normalizedRows.map((row) => (
+                      <tr key={`${row.sheet}-${row.row}-${row.brand}-${row.modelNumber}`}>
+                        <td>{row.brand}</td>
+                        <td className="mono">{row.modelNumber}</td>
+                        <td>{row.modelName || "—"}</td>
+                        <td className="ops-num mono">
+                          {row.price === null ? "—" : `₹${row.price.toLocaleString("en-IN")}`}
+                        </td>
+                        <td className="ops-num mono" style={{ color: row.quantity === 0 ? "var(--warn)" : undefined }}>
+                          {row.quantity === null ? "—" : row.quantity}
+                        </td>
+                        <td className="mono" style={{ color: "var(--faint)" }}>
+                          {row.sheet} · {row.row}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  </table>
+                </div>
+                {plan.normalizedRows.length < plan.normalizedTotal && (
+                  <p className="ops-note">
+                    Showing the first {plan.normalizedRows.length} of {plan.normalizedTotal} normalized rows.
+                  </p>
+                )}
+              </div>
+            )}
             <p style={{ margin: "0 0 4px", fontSize: 15, lineHeight: 1.6, color: "var(--text)" }}>
               {plan.toResearch === 0 ? (
                 <>Every one of the {plan.rows} rows is already listed. Nothing to research.</>
