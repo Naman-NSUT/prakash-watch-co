@@ -542,25 +542,31 @@ def build_watch_graph(deps: Deps):
             deps.llm,
             stage,
             official_hosts=hosts,
+            reset_output=False,
         )
 
         notes = list(state.get("notes", [])) + [
             f"Rejected image {r['url']}: {r['reason']}" for r in recovered["rejected"][:3]
         ]
 
+        combined = merge_recovered_images(
+            list(state.get("images", [])),
+            [image.model_dump() for image in recovered["images"]],
+            deps.config.max_images,
+        )
         return {
             "image_attempt": 1,
-            "images": [image.model_dump() for image in recovered["images"]],
+            "images": combined,
             "cost_usd": cost + recovered["cost_usd"],
             "notes": notes,
-            "backdrop_id": recovered.get("backdrop_id"),
-            "provisional_image": recovered.get("provisional", False),
+            "backdrop_id": state.get("backdrop_id") or recovered.get("backdrop_id"),
+            "provisional_image": state.get("provisional_image", False) or recovered.get("provisional", False),
             "queries": [*state.get("queries", []), query],
         }
 
     def route_after_images(state: WatchState) -> str:
-        """One recovery pass when nothing usable was found."""
-        if not state.get("images") and not state.get("image_attempt"):
+        """One broader recovery pass until the listing has a three-image gallery."""
+        if needs_image_recovery(list(state.get("images", [])), bool(state.get("image_attempt"))):
             return "recover_images"
         return "assemble"
 
@@ -1108,6 +1114,32 @@ async def run_rows(
 #: is around ₹800; anything under a few hundred rupees is a foreign figure, a
 #: battery, or a strap.
 PRICE_FLOOR_INR = 500.0
+
+# A product page should show a useful gallery rather than stopping after the
+# first dial shot. The recovery search is deliberately broader for photographs;
+# specifications still come only from the trusted Indian evidence bundle.
+MIN_GALLERY_IMAGES = 3
+
+
+def needs_image_recovery(images: list[dict[str, Any]], attempted: bool) -> bool:
+    return len(images) < MIN_GALLERY_IMAGES and not attempted
+
+
+def merge_recovered_images(
+    current: list[dict[str, Any]], recovered: list[dict[str, Any]], limit: int
+) -> list[dict[str, Any]]:
+    """Keep the best main image first and fill the gallery with distinct angles."""
+    merged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for image in [*current, *recovered]:
+        key = str(image.get("source_url") or image.get("url") or "")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(image)
+        if len(merged) >= limit:
+            break
+    return merged
 
 #: How far below the brand's own median a looked-up price may sit before it is
 #: refused. A fifth is generous — a clearance Titan against a median Titan — and

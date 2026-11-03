@@ -650,6 +650,7 @@ async def process_images(
     llm: OpenRouterClient,
     on_stage,
     official_hosts: list[str] | None = None,
+    reset_output: bool = True,
 ) -> dict:
     """Runs the whole image stage for one watch and returns publish-ready records."""
     candidates = collect_candidates(row, pages, official_hosts, config.official_images)
@@ -763,9 +764,10 @@ async def process_images(
 
     output_dir = Path(config.image_dir) / sku
     if config.image_mode == "download" and scored:
-        # Start clean, so a re-run that keeps fewer images does not leave the old
-        # ones behind under names nothing points at any more.
-        shutil.rmtree(output_dir, ignore_errors=True)
+        # The main pass starts clean. A recovery pass keeps those confirmed files
+        # and writes additional angles beside them before the two lists are merged.
+        if reset_output:
+            shutil.rmtree(output_dir, ignore_errors=True)
         output_dir.mkdir(parents=True, exist_ok=True)
 
     images: list[ProductImage] = []
