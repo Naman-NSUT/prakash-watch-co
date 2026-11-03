@@ -30,6 +30,7 @@ export const Icons = {
   banners: icon(<><rect x="3" y="5" width="18" height="11" rx="1.5" /><path d="M3 19.5h18" /><path d="M7.5 11.5l2.5-2.5 3 3 2-2 2.5 2.5" /></>),
   brands: icon(<><path d="M3 7.5h18" /><path d="M5 7.5V5.5a1 1 0 011-1h12a1 1 0 011 1v2" /><rect x="3" y="7.5" width="18" height="12" rx="1.5" /><path d="M9.5 12.5h5" /></>),
   offers: icon(<><path d="M20.6 13.4L12 22l-9-9V4a1 1 0 011-1h8.6l8 8a1.4 1.4 0 010 2.4z" /><path d="M7.5 7.5h.01" /></>),
+  storage: icon(<><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>),
 };
 
 export function PageHead({ title, lead, action }: { title: string; lead?: string; action?: React.ReactNode }) {

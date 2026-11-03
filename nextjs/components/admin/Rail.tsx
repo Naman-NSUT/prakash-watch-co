@@ -19,6 +19,7 @@ const SECTIONS = [
   { href: "/admin/catalogue", label: "Catalogue", icon: Icons.catalogue },
   { href: "/admin/sources", label: "Source book", icon: Icons.sources },
   { href: "/admin/runs", label: "Agent runs", icon: Icons.runs },
+  { href: "/admin/storage", label: "Storage", icon: Icons.storage },
 ];
 
 /**
