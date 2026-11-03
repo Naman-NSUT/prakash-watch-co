@@ -73,6 +73,10 @@ services:
         value: "5"
       - key: AGENT_MIN_IMAGE_WIDTH
         value: "600"
+      # Cached shop catalogues can be very large. JSON is compressed in the cache,
+      # and old reproducible entries are evicted before they can fill the disk.
+      - key: AGENT_CACHE_MAX_MB
+        value: "512"
       - key: AGENT_IMAGE_MODE
         value: download
       - key: AGENT_RESPECT_ROBOTS
