@@ -11,6 +11,37 @@ from prakash_agent.openrouter import OpenRouterClient
 from prakash_agent.sheet_intelligence import SheetInterpretationError, parse_sheet_with_agent
 
 
+class SheetCommercialUpdateTest(TestCase):
+    def test_mrp_equal_to_selling_price_is_not_a_change(self) -> None:
+        """An exported shelf price must not create a phantom MRP update."""
+        from prakash_agent.artifact import apply_sheet_update
+        from prakash_agent.models import SheetRow, WatchProduct
+
+        product = WatchProduct.model_validate({
+            "sku": "alba-al4307x1",
+            "slug": "alba-al4307x1",
+            "status": "ready",
+            "brand": "ALBA",
+            "modelNumber": "AL4307X1",
+            "title": "ALBA AL4307X1",
+            "price": {"currency": "INR", "selling": 10500, "mrp": None, "discountPct": None},
+            "inStock": False,
+            "quantity": 0,
+            "copy": {"tagline": "", "short": "", "long": "", "bullets": [], "seoTitle": "", "seoDescription": ""},
+            "images": [],
+            "specs": [],
+            "sources": [],
+            "attributes": {},
+            "facets": {},
+            "confidence": {"overall": 0, "identity": 0, "specs": 0, "images": 0},
+            "review": {"flags": [], "notes": []},
+            "meta": {"runId": "test", "sheetRow": 2, "sourceFile": "test.xlsx", "model": "test", "createdAt": "2026-11-03T00:00:00Z", "updatedAt": "2026-11-03T00:00:00Z", "costUsd": 0, "queries": []},
+        })
+        row = SheetRow(row_number=2, sheet="Sheet1", brand="ALBA", model_number="AL4307X1", price=10500, mrp=10500, quantity=0)
+
+        self.assertIsNone(apply_sheet_update(product, row))
+
+
 class CatalogueExportRoundTripTest(TestCase):
     def test_exported_price_and_units_are_imported(self) -> None:
         """The shop's own export can be edited and uploaded without losing counts."""

@@ -356,9 +356,16 @@ def apply_sheet_update(product: WatchProduct, row: SheetRow) -> tuple[WatchProdu
         changes.append(f"price {format_inr(product.price.selling)} → {format_inr(row.price)}")
         product.price.selling = row.price
 
-    if row.mrp is not None and row.mrp != product.price.mrp:
-        changes.append(f"MRP {format_inr(product.price.mrp)} → {format_inr(row.mrp)}")
-        product.price.mrp = row.mrp
+    if row.mrp is not None:
+        # A catalogue export can carry MRP equal to the selling price. That is not
+        # a struck-through list price and normalisation below removes it again.
+        # Comparing the raw figure first used to report (and write) a change such
+        # as "MRP — → ₹11,495" even though the stored product stayed exactly
+        # the same. Compare the effective value instead so a no-op stays a no-op.
+        effective_mrp = row.mrp if product.price.selling and row.mrp > product.price.selling else None
+        if effective_mrp != product.price.mrp:
+            changes.append(f"MRP {format_inr(product.price.mrp)} → {format_inr(effective_mrp)}")
+            product.price.mrp = effective_mrp
 
     # Recomputed rather than carried, so a revised price cannot leave a stale
     # discount percentage on the card.

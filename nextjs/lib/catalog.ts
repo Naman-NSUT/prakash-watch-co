@@ -550,13 +550,23 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
   if (patch.backdropId !== undefined) next.backdropId = patch.backdropId;
 
   if (patch.specs) {
-    // sourceIndex is dropped deliberately: once a line has been edited by hand it
-    // is no longer what the cited page said, and the listing must not imply it is.
+    // Keep the citation when the admin form sends an unchanged specification.
+    // The review form submits the whole page on every save, including when the
+    // only edit was a stock count. Dropping every source index here made a simple
+    // inventory correction turn all researched specifications into
+    // "unattributed" claims. A genuinely edited or new line still loses its
+    // citation, because it is now the shop's word rather than the source's.
     next.specs = patch.specs.map((spec) => ({
       label: spec.label,
       value: spec.value,
       group: spec.group || "Specification",
-      sourceIndex: null,
+      sourceIndex:
+        product.specs.find(
+          (existing) =>
+            existing.label === spec.label &&
+            existing.value === spec.value &&
+            existing.group === (spec.group || "Specification"),
+        )?.sourceIndex ?? null,
     }));
   }
 
