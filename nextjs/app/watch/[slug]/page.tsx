@@ -51,6 +51,8 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
   // it, means "follow the house".
   const house = await getBrand(brandSlug(product.brand));
   const sellsOnline = product.directSale ?? house?.directSale ?? false;
+  const sellingPrice = product.price.selling;
+  const hasOnlinePrice = sellingPrice !== null && sellingPrice > 0;
 
   const backdrops = await getBackdrops();
   const backdrop = backdropVisual(product.backdropId ? backdrops.get(product.backdropId) : undefined);
@@ -150,7 +152,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
               asking about — the same reference often comes back in — so the
               invitation changes rather than disappearing. */}
           <div style={{ display: "flex", gap: 13, marginTop: 38, flexWrap: "wrap" }}>
-            {product.inStock && sellsOnline ? (
+            {product.inStock && sellsOnline && hasOnlinePrice ? (
               <AddToBag
                 item={{
                   sku: product.sku,
@@ -158,7 +160,7 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
                   title: product.title,
                   brand: product.brand,
                   image: product.images[0]?.url ?? "",
-                  price: product.price.selling ?? 0,
+                  price: sellingPrice,
                 }}
               />
             ) : (
@@ -189,6 +191,11 @@ export default async function WatchPage({ params }: { params: Promise<{ slug: st
             <p style={{ margin: "16px 0 0", maxWidth: 460, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, color: "var(--muted)" }}>
               {product.brand} is sold at the counter rather than online. Message us and we will hold it, send more
               photographs, or show you what else has come in.
+            </p>
+          ) : !hasOnlinePrice ? (
+            <p style={{ margin: "16px 0 0", maxWidth: 460, fontSize: 13.5, lineHeight: 1.7, fontWeight: 300, color: "var(--muted)" }}>
+              This reference needs a confirmed selling price before it can be bought online. Contact the boutique for
+              its current price and availability.
             </p>
           ) : null}
 

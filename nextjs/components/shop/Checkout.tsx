@@ -91,11 +91,27 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const total = bag.items.reduce((sum, line) => sum + line.price * line.quantity, 0);
+  const unpricedLines = bag.items.filter(
+    (line) => !Number.isFinite(line.price) || line.price <= 0,
+  );
+  const hasUnpricedLine = unpricedLines.length > 0;
+  const total = bag.items.reduce(
+    (sum, line) =>
+      Number.isFinite(line.price) && line.price > 0
+        ? sum + line.price * line.quantity
+        : sum,
+    0,
+  );
   const taxable = Math.round((total / 1.18) * 100) / 100;
 
   async function pay() {
     setErrors([]);
+    if (hasUnpricedLine || total <= 0) {
+      setErrors([
+        "A confirmed selling price is required before this watch can be paid for online. Remove it from the bag or contact the boutique.",
+      ]);
+      return;
+    }
     setBusy(true);
     try {
       const response = await fetch("/api/checkout", {
@@ -195,28 +211,33 @@ export default function Checkout() {
   return (
     <div className="checkout">
       <section>
-        {bag.items.map((line) => (
-          <article key={line.sku} className="checkout-line">
-            <span className="checkout-shot">
-              {line.image ? <img src={mediaPreviewUrl(line.image, 160)} alt="" /> : null}
-            </span>
-            <div style={{ minWidth: 0 }}>
-              <Link href={`/watch/${line.slug}`} className="serif" style={{ fontSize: 19, color: "var(--text)" }}>
-                {line.title}
-              </Link>
-              <p className="mono" style={{ margin: "4px 0 0", fontSize: 9.5, letterSpacing: ".16em", color: "var(--faint)", textTransform: "uppercase" }}>
-                {line.brand}
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-                <button type="button" className="checkout-step" onClick={() => bag.setQuantity(line.sku, line.quantity - 1)} aria-label="One fewer">−</button>
-                <span className="mono" style={{ fontSize: 13, minWidth: 18, textAlign: "center" }}>{line.quantity}</span>
-                <button type="button" className="checkout-step" onClick={() => bag.setQuantity(line.sku, line.quantity + 1)} aria-label="One more">+</button>
-                <button type="button" className="checkout-remove mono" onClick={() => bag.remove(line.sku)}>Remove</button>
+        {bag.items.map((line) => {
+          const hasPrice = Number.isFinite(line.price) && line.price > 0;
+          return (
+            <article key={line.sku} className="checkout-line">
+              <span className="checkout-shot">
+                {line.image ? <img src={mediaPreviewUrl(line.image, 160)} alt="" /> : null}
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <Link href={`/watch/${line.slug}`} className="serif" style={{ fontSize: 19, color: "var(--text)" }}>
+                  {line.title}
+                </Link>
+                <p className="mono" style={{ margin: "4px 0 0", fontSize: 9.5, letterSpacing: ".16em", color: "var(--faint)", textTransform: "uppercase" }}>
+                  {line.brand}
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+                  <button type="button" className="checkout-step" onClick={() => bag.setQuantity(line.sku, line.quantity - 1)} aria-label="One fewer">−</button>
+                  <span className="mono" style={{ fontSize: 13, minWidth: 18, textAlign: "center" }}>{line.quantity}</span>
+                  <button type="button" className="checkout-step" onClick={() => bag.setQuantity(line.sku, line.quantity + 1)} aria-label="One more">+</button>
+                  <button type="button" className="checkout-remove mono" onClick={() => bag.remove(line.sku)}>Remove</button>
+                </div>
               </div>
-            </div>
-            <span className="mono" style={{ fontSize: 15, whiteSpace: "nowrap" }}>{inr(line.price * line.quantity)}</span>
-          </article>
-        ))}
+              <span className="mono" style={{ fontSize: 15, whiteSpace: "nowrap" }}>
+                {hasPrice ? inr(line.price * line.quantity) : "Price unavailable"}
+              </span>
+            </article>
+          );
+        })}
 
         <div className="checkout-form">
           <h2 className="serif" style={{ fontSize: 22, margin: "0 0 18px" }}>Where it should go</h2>
@@ -247,14 +268,23 @@ export default function Checkout() {
           To pay
         </h2>
         <dl style={{ margin: 0 }}>
-          <div className="checkout-row"><dt>Taxable value</dt><dd className="mono">{inr(taxable)}</dd></div>
-          <div className="checkout-row"><dt>GST @ 18% (included)</dt><dd className="mono">{inr(total - taxable)}</dd></div>
+          <div className="checkout-row"><dt>Taxable value</dt><dd className="mono">{hasUnpricedLine ? "—" : inr(taxable)}</dd></div>
+          <div className="checkout-row"><dt>GST @ 18% (included)</dt><dd className="mono">{hasUnpricedLine ? "—" : inr(total - taxable)}</dd></div>
           <div className="checkout-row"><dt>Delivery</dt><dd className="mono">Free</dd></div>
-          <div className="checkout-row checkout-sum"><dt>Total</dt><dd className="mono">{inr(total)}</dd></div>
+          <div className="checkout-row checkout-sum"><dt>Total</dt><dd className="mono">{hasUnpricedLine ? "—" : inr(total)}</dd></div>
         </dl>
         <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, fontWeight: 300, color: "var(--muted)" }}>
           Every price includes GST. Insured delivery across India, and the manufacturer's warranty starts the day it reaches you.
         </p>
+
+        {hasUnpricedLine && (
+          <div className="checkout-errors" role="alert">
+            <p>
+              {unpricedLines.length === 1 ? unpricedLines[0].title : "One or more watches"} needs a confirmed selling
+              price before online checkout. Remove it from the bag or contact the boutique.
+            </p>
+          </div>
+        )}
 
         {errors.length > 0 && (
           <div className="checkout-errors" role="alert">
@@ -262,8 +292,8 @@ export default function Checkout() {
           </div>
         )}
 
-        <button type="button" className="btn btn-solid" style={{ width: "100%", marginTop: 18, justifyContent: "center" }} disabled={busy} onClick={pay}>
-          {busy ? "One moment…" : `Pay ${inr(total)}`}
+        <button type="button" className="btn btn-solid" style={{ width: "100%", marginTop: 18, justifyContent: "center" }} disabled={busy || hasUnpricedLine || total <= 0} onClick={pay}>
+          {busy ? "One moment…" : hasUnpricedLine || total <= 0 ? "Price needed" : `Pay ${inr(total)}`}
         </button>
         <p className="mono" style={{ margin: "12px 0 0", fontSize: 9, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--faint)", textAlign: "center" }}>
           Card · UPI · Net banking
