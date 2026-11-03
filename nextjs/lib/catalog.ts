@@ -279,6 +279,7 @@ export async function getRuns(limit = 10): Promise<RunReport[]> {
 }
 
 function catalogEntryOf(value: WatchProduct): CatalogEntry {
+  const inStock = typeof value.quantity === "number" ? value.quantity > 0 : value.inStock;
   return CatalogEntrySchema.parse({
     sku: value.sku,
     slug: value.slug,
@@ -293,7 +294,7 @@ function catalogEntryOf(value: WatchProduct): CatalogEntry {
     quantity: value.quantity,
     collection: value.collection,
     gender: value.gender,
-    inStock: value.inStock,
+    inStock,
     backdropId: value.backdropId,
     facets: value.facets,
     tags: value.tags,
@@ -486,6 +487,13 @@ export async function updateProduct(sku: string, patch: ProductPatch): Promise<W
     copy: { ...product.copy, ...(patch.copy ?? {}) },
     meta: { ...product.meta, updatedAt: new Date().toISOString() },
   };
+
+  // Quantity is the counted figure and therefore the source of truth. Keeping
+  // this invariant here protects every caller, including future admin tools
+  // that may patch a count without remembering to patch the display flag too.
+  if (patch.quantity !== undefined && patch.quantity !== null) {
+    next.inStock = patch.quantity > 0;
+  }
 
   if (patch.price) {
     const { selling, mrp } = patch.price;

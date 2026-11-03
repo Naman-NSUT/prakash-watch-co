@@ -31,6 +31,10 @@ const TOKEN = process.env.PWC_PUBLIC_API_TOKEN ?? "";
  * the plans this runs on.
  */
 const FRESH_FOR_MS = 5 * 60_000;
+// A product answer is small and carries the two facts that must follow the
+// counter quickly: today's price and whether there is a piece left. The 3 MB
+// catalogue keeps its five-minute cache; one watch refreshes within 30 seconds.
+const PRODUCT_FRESH_FOR_MS = 30_000;
 const TIMEOUT_MS = 15_000;
 const CATALOG_PATH = "/api/public/catalog";
 const CATALOG_ATTEMPTS = 3;
@@ -44,6 +48,7 @@ type Slot = { at: number; value?: unknown; pending?: Promise<unknown> };
 const slots = new Map<string, Slot>();
 
 async function fetchJson<T>(path: string, timeoutMs = TIMEOUT_MS, sharedCache = true): Promise<T> {
+  const freshForMs = path.startsWith("/api/public/product/") ? PRODUCT_FRESH_FOR_MS : FRESH_FOR_MS;
   const response = await fetch(`${BACKEND}${path}`, {
     headers: TOKEN ? { "x-pwc-token": TOKEN } : undefined,
     // Product records, brand notes and the other small public answers fit in
@@ -52,7 +57,7 @@ async function fetchJson<T>(path: string, timeoutMs = TIMEOUT_MS, sharedCache = 
     // handled separately below because its uncompressed answer is larger than
     // one cache item.
     ...(sharedCache
-      ? { next: { revalidate: Math.round(FRESH_FOR_MS / 1000) } }
+      ? { next: { revalidate: Math.round(freshForMs / 1000) } }
       : { cache: "no-store" as const }),
     signal: AbortSignal.timeout(timeoutMs),
   });
@@ -108,8 +113,9 @@ async function readCatalog(): Promise<unknown[]> {
 export async function remoteJson<T>(path: string): Promise<T> {
   const now = Date.now();
   const slot = slots.get(path);
+  const freshForMs = path.startsWith("/api/public/product/") ? PRODUCT_FRESH_FOR_MS : FRESH_FOR_MS;
 
-  if (slot && "value" in slot && now - slot.at < FRESH_FOR_MS) return slot.value as T;
+  if (slot && "value" in slot && now - slot.at < freshForMs) return slot.value as T;
   // Many requests arriving together share one fetch rather than each starting one.
   if (slot?.pending) return slot.pending as Promise<T>;
 

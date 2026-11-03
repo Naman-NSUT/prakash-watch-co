@@ -12,10 +12,12 @@ import { brandSlug, getBrand } from "@/lib/brands";
 import { backdropVisual } from "@/lib/backdrop-light";
 
 // Render each listing on demand, then keep the finished page at Vercel's edge
-// for the same short window as its product data. A cold Render service should
+// for the same short window as its product data. Stock and prices change at the
+// counter, so an individual watch refreshes much sooner than the full catalogue.
+// A cold Render service should
 // never make a repeat visitor wait just to open a watch they already saw in the
 // catalogue.
-export const revalidate = 300;
+export const revalidate = 30;
 export const dynamic = "force-static";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

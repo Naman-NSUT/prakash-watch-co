@@ -46,6 +46,7 @@ function publicEntry(entry: CatalogEntry): CatalogEntry {
   // never draws that, and it should not be carrying it around either.
   return {
     ...rest,
+    inStock: typeof rest.quantity === "number" ? rest.quantity > 0 : rest.inStock,
     image: rest.image ? { ...rest.image, sourceUrl: "", sourcePage: null, matchScore: 0 } : rest.image,
   } as CatalogEntry;
 }
@@ -55,6 +56,7 @@ function publicEntry(entry: CatalogEntry): CatalogEntry {
 function publicProduct(product: WatchProduct): WatchProduct {
   return {
     ...product,
+    inStock: typeof product.quantity === "number" ? product.quantity > 0 : product.inStock,
     costPrice: null,
     quantity: null,
     // Where the shop researched a watch is its own working note. The pages show
