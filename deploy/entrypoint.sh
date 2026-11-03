@@ -110,6 +110,29 @@ PY
   fi
 fi
 
+# A small block in an old catalogue export used "Sheet1" as the brand and put
+# the real brand before the reference (for example "ALBA AH7FE5X1"). Repair the
+# identity in place, including its media folder, so a corrected stock sheet
+# updates the existing watch instead of creating a duplicate.
+PLACEHOLDER_BRAND_MIGRATION="$DATA/.migrations/placeholder-brands-v1.done"
+if [ ! -f "$PLACEHOLDER_BRAND_MIGRATION" ]; then
+  echo "repairing placeholder catalogue brands"
+  if (
+    cd /app/agent
+    python - <<'PY'
+from prakash_agent.catalog_migrations import repair_placeholder_brands
+from prakash_agent.config import load_config
+
+report = repair_placeholder_brands(load_config())
+print(f"placeholder brand migration complete — {report['repaired']} repaired, {len(report['conflicts'])} conflicts")
+PY
+  ); then
+    date -u +%Y-%m-%dT%H:%M:%SZ > "$PLACEHOLDER_BRAND_MIGRATION"
+  else
+    echo "WARNING: placeholder brand migration failed; it will retry after restart" >&2
+  fi
+fi
+
 # Bring old galleries under the same three-to-five-image target as new rows.
 # The network pass runs after the site starts and only reads the recorded Indian
 # brand/dealer pages. It keeps warnings current while filling galleries toward

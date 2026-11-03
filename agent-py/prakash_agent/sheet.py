@@ -63,6 +63,7 @@ ALIAS_TO_FIELD: dict[str, Canonical] = {
 
 REQUIRED_ANY_PRICE = ("price", "mrp")
 _URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
+_PLACEHOLDER_BRAND = re.compile(r"^(?:sheet\d*|stock|inventory|catalog(?:ue)?|data)$", re.IGNORECASE)
 
 
 def _normalise_header(text: str) -> str:
@@ -84,6 +85,31 @@ def _extract_urls(text: str) -> list[str]:
         return []
     parts = re.split(r"[\s,;|]+", text)
     return [p.strip().rstrip("),.") for p in parts if _URL.match(p.strip().rstrip("),."))]
+
+
+def _is_placeholder_brand(value: str) -> bool:
+    return bool(_PLACEHOLDER_BRAND.fullmatch(_normalise_header(value)))
+
+
+def _repair_embedded_brand(brand: str, model_number: str, known_brands: list[str]) -> tuple[str, str]:
+    """Split rows where an export put ``ALBA AH7FE5X1`` in Reference.
+
+    Some catalogue exports lose the real brand in a small block of rows and put
+    the worksheet name (usually ``Sheet1``) in the Brand column. The reference
+    still begins with a brand already used elsewhere in that workbook. Reusing
+    only those observed brands avoids guessing an unfamiliar prefix.
+    """
+    if not _is_placeholder_brand(brand):
+        return brand, model_number
+
+    folded = model_number.casefold()
+    for candidate in sorted(known_brands, key=len, reverse=True):
+        prefix = f"{candidate.casefold()} "
+        if folded.startswith(prefix):
+            reference = squish(model_number[len(candidate):])
+            if reference:
+                return candidate, reference
+    return brand, model_number
 
 
 class Grid:
@@ -283,12 +309,24 @@ def parse_sheet(
             index = columns.get(field)
             return grid.cell(row_index, index) if index is not None else ""
 
+        # Learn trustworthy brand spellings from the same table before repairing
+        # isolated rows whose Brand cell contains a worksheet placeholder.
+        known_brand_map: dict[str, str] = {}
+        if "brand" in columns:
+            for probe in range(data_start_row, grid.row_count + 1):
+                candidate = squish(read(probe, "brand"))
+                if candidate and not _is_placeholder_brand(candidate):
+                    known_brand_map.setdefault(candidate.casefold(), candidate)
+        known_brands = list(known_brand_map.values())
+
         used_here = 0
         for row_index in range(data_start_row, grid.row_count + 1):
             # Tabs are usually named for the brand, covering sheets with no brand column.
             fallback_brand = layout.brand_value if layout else grid.name
-            brand = squish(read(row_index, "brand")) or squish(fallback_brand)
+            raw_brand = squish(read(row_index, "brand")) or squish(fallback_brand)
+            brand = raw_brand
             model_number = squish(read(row_index, "modelNumber"))
+            brand, model_number = _repair_embedded_brand(brand, model_number, known_brands)
             price_text = read(row_index, price_field) if price_field else ""
 
             # A completely empty line is spacing, not an error.
@@ -323,6 +361,9 @@ def parse_sheet(
 
             quantity = parse_count(read(row_index, "quantity"))
             product_urls = _extract_urls(read(row_index, "productUrl"))
+            model_name = squish(read(row_index, "modelName"))
+            if _is_placeholder_brand(raw_brand) and model_name.casefold().startswith(f"{raw_brand.casefold()} "):
+                model_name = squish(model_name[len(raw_brand):])
 
             rows.append(
                 SheetRow(
@@ -334,7 +375,7 @@ def parse_sheet(
                     # When MRP doubles as the price there is no discount to advertise.
                     mrp=None if mrp_is_price else parse_money(read(row_index, "mrp")),
                     cost_price=parse_money(read(row_index, "costPrice")),
-                    model_name=squish(read(row_index, "modelName")) or None,
+                    model_name=model_name or None,
                     gender=squish(read(row_index, "gender")) or None,
                     collection_hint=squish(read(row_index, "collectionHint")) or None,
                     quantity=quantity,

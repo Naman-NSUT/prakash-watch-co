@@ -125,6 +125,27 @@ class CatalogueExportRoundTripTest(TestCase):
         self.assertIsNone(parsed.rows[0].price)
         self.assertEqual(parsed.rows[0].quantity, 0)
 
+    def test_repairs_sheet_placeholder_brand_from_the_reference(self) -> None:
+        """A malformed export block must still update the existing real brand."""
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "placeholder-brand.xlsx"
+            workbook = Workbook()
+            sheet = workbook.active
+            sheet.title = "Sheet1"
+            sheet.append(["Reference", "Brand", "Name", "Price", "Units"])
+            sheet.append(["AH7EF7X1", "ALBA", "Deep Blue Dial", 13500, 1])
+            sheet.append(["ALBA AH7FE5X1", "Sheet1", "Sheet1 Deep Blue Dial With Leather Strap", 13500, 0])
+            workbook.save(path)
+
+            parsed = parse_sheet(path)
+
+        self.assertEqual(len(parsed.errors), 0)
+        repaired = parsed.rows[1]
+        self.assertEqual(repaired.brand, "ALBA")
+        self.assertEqual(repaired.model_number, "AH7FE5X1")
+        self.assertEqual(repaired.model_name, "Deep Blue Dial With Leather Strap")
+        self.assertEqual(repaired.quantity, 0)
+
 
 class AgentWorkbookInterpretationTest(IsolatedAsyncioTestCase):
     async def test_agent_maps_unknown_columns_before_normalization(self) -> None:
